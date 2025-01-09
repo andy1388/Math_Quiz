@@ -7,8 +7,8 @@
 /* 左側導航欄 */
 .sidebar {
     width: 300px;
-    background: #f8f9fa;
-    border-right: 1px solid #dee2e6;
+    background: #2c3e50;
+    color: white;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
@@ -36,45 +36,43 @@
 
 /* 章節樣式 */
 .chapter-section {
-    margin-bottom: 1rem;
+    margin: 0;
 }
 
 .chapter-title {
-    font-weight: 600;
-    color: #fff;
-    background: #2c3e50;
     padding: 0.75rem 1rem;
-    border-radius: 4px;
+    background: #34495e;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .section-title {
-    font-weight: 500;
-    color: #2c3e50;
-    background: #e9ecef;
-    padding: 0.5rem 1rem;
-    margin: 0.5rem 0;
+    padding: 0.75rem 1rem;
+    background: #2c3e50;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .topic-link {
-    text-decoration: none;
-    color: #495057;
     display: block;
-    padding: 0.5rem 1rem;
-    margin: 0.25rem 0;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+    padding: 0.75rem 1rem;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.topic-link:hover {
-    background: #e9ecef;
-    color: #2c3e50;
-    padding-left: 1.5rem;
+.topic-link:not(.has-generator) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.topic-link.has-generator:hover {
+    background: #34495e;
 }
 
 .topic-link.active {
-    background: #2c3e50;
+    background: #34495e;
     color: white;
-    padding-left: 1.5rem;
 }
 
 /* 主要內容區 */
@@ -282,10 +280,16 @@
     text-align: center;
 }
 
+/* 移除默認的列表樣式 */
+.sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* 展開/收起箭頭 */
 details > summary {
     list-style: none;
-    cursor: pointer;
-    padding: 0.5rem;
 }
 
 details > summary::-webkit-details-marker {
@@ -378,4 +382,49 @@ details[open] > summary::before {
 
 .question-area::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+}
+
+/* 修改章節樣式 */
+.chapter-section ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.5rem;
+    list-style: none;
+}
+
+.chapter-section ul li {
+    flex: 0 1 auto;
+    min-width: 200px;
+}
+
+/* 調整子章節的樣式 */
+.chapter-section ul ul {
+    display: block;  /* 子章節內的內容保持垂直排列 */
+    padding-left: 1.5rem;
+}
+
+.chapter-section ul ul li {
+    width: 100%;
+}
+
+/* 調整標題樣式 */
+.chapter-title, .section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;  /* 確保標題佔滿整行 */
+}
+
+.section-title {
+    margin: 0.5rem 0;
+    padding: 0.5rem;
+    border-radius: 4px;
+    background: #e9ecef;
+}
+
+/* 調整文件夾圖標的大小和對齊 */
+.chapter-title:before, .section-title:before {
+    font-size: 1.2em;
+    line-height: 1;
 } 

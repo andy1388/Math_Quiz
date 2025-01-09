@@ -1,4 +1,14 @@
-document.addEventListener('DOMContentLoaded', () => {
+let AVAILABLE_GENERATORS = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const response = await fetch('/api/questions/available-generators');
+        if (!response.ok) throw new Error('無法獲取生成器列表');
+        AVAILABLE_GENERATORS = await response.json();
+    } catch (error) {
+        console.error('加載生成器列表失敗:', error);
+    }
+    
     // 初始化加載中一的內容
     loadGradeContent('F1');
 
@@ -53,24 +63,29 @@ function parseContent(content) {
         line = line.trim();
         if (!line) return;
 
+        // 匹配主章節，例如 [F1L0] Basic Mathematics
         const chapterMatch = line.match(/^\[(F1L\d+)\]\s*(.+)/);
+        // 匹配子章節，例如 [F1L0.1] Revision on Fundamental Arithmetic
         const sectionMatch = line.match(/^\[(F1L\d+\.\d+)\]\s*(.+)/);
+        // 匹配具體題目，例如 [F1L0.1.1] Arithmetic Operations
         const topicMatch = line.match(/^\[(F1L\d+\.\d+\.\d+)\]\s*(.+)/);
 
         if (chapterMatch && !sectionMatch) {
             // 主章節
             currentChapter = {
                 id: chapterMatch[1],
-                title: chapterMatch[2],
-                sections: []
+                title: `${chapterMatch[1]} ${chapterMatch[2]}`,
+                sections: [],
+                hasGenerator: checkGeneratorExists(chapterMatch[1])
             };
             chapters.push(currentChapter);
         } else if (sectionMatch && !topicMatch) {
             // 子章節
             currentSection = {
                 id: sectionMatch[1],
-                title: sectionMatch[2],
-                topics: []
+                title: `${sectionMatch[1]} ${sectionMatch[2]}`,
+                topics: [],
+                hasGenerator: checkGeneratorExists(sectionMatch[1])
             };
             if (currentChapter) {
                 currentChapter.sections.push(currentSection);
@@ -80,7 +95,8 @@ function parseContent(content) {
             if (currentSection) {
                 currentSection.topics.push({
                     id: topicMatch[1],
-                    title: topicMatch[2]
+                    title: `${topicMatch[1]} ${topicMatch[2]}`,
+                    hasGenerator: checkGeneratorExists(topicMatch[1])
                 });
             }
         }
@@ -93,17 +109,24 @@ function renderSidebar(chapters) {
     const topicNav = document.querySelector('.topic-nav');
     topicNav.innerHTML = chapters.map(chapter => `
         <div class="chapter-section">
-            <details open>
-                <summary class="chapter-title">${chapter.title}</summary>
+            <details>
+                <summary class="chapter-title">
+                    ${chapter.id} ${chapter.title}
+                </summary>
                 <ul>
                     ${chapter.sections.map(section => `
                         <li>
                             <details>
-                                <summary class="section-title">${section.title}</summary>
+                                <summary class="section-title">
+                                    ${section.id} ${section.title}
+                                </summary>
                                 <ul class="topic-list">
                                     ${section.topics.map(topic => `
                                         <li>
-                                            <a href="#" class="topic-link" data-topic="${topic.id}">
+                                            <a href="#" 
+                                               class="topic-link ${topic.hasGenerator ? 'has-generator' : ''}" 
+                                               data-topic="${topic.id}"
+                                               ${!topic.hasGenerator ? 'disabled' : ''}>
                                                 ${topic.title}
                                             </a>
                                         </li>
@@ -117,14 +140,8 @@ function renderSidebar(chapters) {
         </div>
     `).join('');
 
-    // 默認展開第一個章節
-    const firstChapter = topicNav.querySelector('details');
-    if (firstChapter) {
-        firstChapter.open = true;
-    }
-
     // 添加事件監聽器
-    document.querySelectorAll('.topic-link').forEach(link => {
+    document.querySelectorAll('.topic-link.has-generator').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
             document.querySelectorAll('.topic-link').forEach(l => l.classList.remove('active'));
@@ -213,4 +230,16 @@ function nextQuestion() {
     if (activeTopic) {
         startPractice(activeTopic.dataset.topic, difficulty);
     }
+}
+
+function checkGeneratorExists(topicId) {
+    // 檢查完整的主題ID是否存在
+    if (AVAILABLE_GENERATORS.includes(topicId)) {
+        return true;
+    }
+    
+    // 檢查是否有子主題的生成器
+    return AVAILABLE_GENERATORS.some(generator => 
+        generator.startsWith(topicId + '.')
+    );
 } 
