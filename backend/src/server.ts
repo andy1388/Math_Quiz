@@ -39,9 +39,22 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // 啟動服務器
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
+const port: number = Number(process.env.PORT) || 3000;
+
+const server = app.listen(port, () => {
     console.log(`服務器運行在 http://localhost:${port}`);
+}).on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+        console.log(`端口 ${port} 已被占用，嘗試使用其他端口...`);
+        server.close();
+        // 嘗試下一個端口
+        const nextPort = port + 1;
+        app.listen(nextPort, () => {
+            console.log(`服務器運行在 http://localhost:${nextPort}`);
+        });
+    } else {
+        console.error('服務器啟動失敗:', err);
+    }
 });
 
 export default app; 

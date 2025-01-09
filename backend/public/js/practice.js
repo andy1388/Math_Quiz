@@ -2,155 +2,151 @@ let AVAILABLE_GENERATORS = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // 獲取目錄結構
         const response = await fetch('/api/questions/available-generators');
         if (!response.ok) throw new Error('無法獲取生成器列表');
-        AVAILABLE_GENERATORS = await response.json();
-    } catch (error) {
-        console.error('加載生成器列表失敗:', error);
-    }
-    
-    // 初始化加載中一的內容
-    loadGradeContent('F1');
-
-    // 難度選擇
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const difficulty = btn.dataset.difficulty;
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            // 如果已經選擇了題目，則重新生成
-            const activeTopic = document.querySelector('.topic-link.active');
-            if (activeTopic) {
-                startPractice(activeTopic.dataset.topic, difficulty);
-            }
+        const structure = await response.json();
+        
+        console.log('目錄結構:', structure); // 添加調試日誌
+        
+        // 渲染側邊欄
+        renderSidebar(structure);
+        
+        // 初始展開所有目錄
+        document.querySelectorAll('.directory-content').forEach(content => {
+            content.style.display = 'block';
         });
-    });
+        document.querySelectorAll('.directory-name').forEach(name => {
+            name.classList.add('expanded');
+        });
+        
+        // 難度選擇
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const difficulty = btn.dataset.difficulty;
+                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const activeTopic = document.querySelector('.topic-link.active');
+                if (activeTopic) {
+                    startPractice(activeTopic.dataset.topic, difficulty);
+                }
+            });
+        });
+    } catch (error) {
+        console.error('初始化失敗:', error);
+    }
 });
 
-async function loadGradeContent(grade) {
-    try {
-        // 使用 text/plain 格式讀取
-        const response = await fetch('/contents/F1_Content.txt', {
-            headers: {
-                'Accept': 'text/plain'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const content = await response.text();
-        const chapters = parseContent(content);
-        renderSidebar(chapters);
-    } catch (error) {
-        console.error('加載章節失敗:', error);
-        document.querySelector('.topic-nav').innerHTML = `
-            <div class="error-message">
-                加載章節失敗，請刷新頁面重試 (${error.message})
-            </div>
-        `;
-    }
-}
-
-function parseContent(content) {
-    const lines = content.split('\n');
-    const chapters = [];
-    let currentChapter = null;
-    let currentSection = null;
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (!line) return;
-
-        // 匹配主章節，例如 [F1L0] Basic Mathematics
-        const chapterMatch = line.match(/^\[(F1L\d+)\]\s*(.+)/);
-        // 匹配子章節，例如 [F1L0.1] Revision on Fundamental Arithmetic
-        const sectionMatch = line.match(/^\[(F1L\d+\.\d+)\]\s*(.+)/);
-        // 匹配具體題目，例如 [F1L0.1.1] Arithmetic Operations
-        const topicMatch = line.match(/^\[(F1L\d+\.\d+\.\d+)\]\s*(.+)/);
-
-        if (chapterMatch && !sectionMatch) {
-            // 主章節
-            currentChapter = {
-                id: chapterMatch[1],
-                title: `${chapterMatch[1]} ${chapterMatch[2]}`,
-                sections: [],
-                hasGenerator: checkGeneratorExists(chapterMatch[1])
-            };
-            chapters.push(currentChapter);
-        } else if (sectionMatch && !topicMatch) {
-            // 子章節
-            currentSection = {
-                id: sectionMatch[1],
-                title: `${sectionMatch[1]} ${sectionMatch[2]}`,
-                topics: [],
-                hasGenerator: checkGeneratorExists(sectionMatch[1])
-            };
-            if (currentChapter) {
-                currentChapter.sections.push(currentSection);
-            }
-        } else if (topicMatch) {
-            // 具體題目
-            if (currentSection) {
-                currentSection.topics.push({
-                    id: topicMatch[1],
-                    title: `${topicMatch[1]} ${topicMatch[2]}`,
-                    hasGenerator: checkGeneratorExists(topicMatch[1])
-                });
-            }
-        }
-    });
-
-    return chapters;
-}
-
-function renderSidebar(chapters) {
+function renderSidebar(structure) {
     const topicNav = document.querySelector('.topic-nav');
-    topicNav.innerHTML = chapters.map(chapter => `
-        <div class="chapter-section">
-            <details>
-                <summary class="chapter-title">
-                    ${chapter.id} ${chapter.title}
-                </summary>
-                <ul>
-                    ${chapter.sections.map(section => `
-                        <li>
-                            <details>
-                                <summary class="section-title">
-                                    ${section.id} ${section.title}
-                                </summary>
-                                <ul class="topic-list">
-                                    ${section.topics.map(topic => `
-                                        <li>
-                                            <a href="#" 
-                                               class="topic-link ${topic.hasGenerator ? 'has-generator' : ''}" 
-                                               data-topic="${topic.id}"
-                                               ${!topic.hasGenerator ? 'disabled' : ''}>
-                                                ${topic.title}
-                                            </a>
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                            </details>
-                        </li>
-                    `).join('')}
-                </ul>
-            </details>
-        </div>
-    `).join('');
+    topicNav.innerHTML = renderDirectoryStructure(structure);
 
-    // 添加事件監聽器
-    document.querySelectorAll('.topic-link.has-generator').forEach(link => {
-        link.addEventListener('click', (e) => {
+    // 添加展開/收起功能
+    document.querySelectorAll('.directory-item > .directory-name').forEach(dirName => {
+        dirName.addEventListener('click', () => {
+            const content = dirName.nextElementSibling;
+            if (content) {
+                content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                dirName.classList.toggle('expanded');
+            }
+        });
+    });
+
+    // 添加生成器點擊事件
+    document.querySelectorAll('.generator-item').forEach(item => {
+        item.addEventListener('click', (e) => {
             e.preventDefault();
-            document.querySelectorAll('.topic-link').forEach(l => l.classList.remove('active'));
-            link.classList.add('active');
+            document.querySelectorAll('.generator-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            const topic = item.dataset.topic;
             const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
-            startPractice(link.dataset.topic, difficulty);
+            startPractice(topic, difficulty);
         });
     });
 }
+
+function renderDirectoryStructure(items) {
+    return `
+        <div class="directory">
+            ${items.map(item => {
+                if (item.type === 'directory') {
+                    return `
+                        <div class="directory-item">
+                            <div class="directory-name">📁 ${item.name}</div>
+                            <div class="directory-content">
+                                ${item.children ? renderDirectoryStructure(item.children) : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="generator-item" data-topic="${item.topic}">
+                            📄 ${item.name.replace('_Generator_Q1.ts', '')}
+                        </div>
+                    `;
+                }
+            }).join('')}
+        </div>
+    `;
+}
+
+// 更新 CSS
+const style = document.createElement('style');
+style.textContent = `
+    .topic-nav {
+        padding: 1rem;
+        background: #2c3e50;
+        height: 100%;
+        overflow-y: auto;
+    }
+
+    .directory {
+        padding-left: 1rem;
+    }
+    
+    .directory-item {
+        margin: 0.5rem 0;
+    }
+    
+    .directory-name {
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 4px;
+        color: white;
+        background: rgba(255,255,255,0.1);
+        margin-bottom: 0.5rem;
+    }
+    
+    .directory-name:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .directory-content {
+        margin-left: 1rem;
+        border-left: 1px solid rgba(255,255,255,0.1);
+        padding-left: 1rem;
+    }
+    
+    .generator-item {
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 4px;
+        color: rgba(255,255,255,0.8);
+        margin-bottom: 0.25rem;
+        transition: all 0.2s ease;
+    }
+    
+    .generator-item:hover {
+        background: rgba(255,255,255,0.1);
+        color: white;
+    }
+    
+    .generator-item.active {
+        background: #3498db;
+        color: white;
+    }
+`;
+document.head.appendChild(style);
 
 async function startPractice(topic, difficulty) {
     try {
