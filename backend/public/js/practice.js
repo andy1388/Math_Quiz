@@ -160,36 +160,57 @@ function displayQuestion(question) {
             <div class="options">
                 ${question.options.map((option, index) => `
                     <label class="option">
-                        <input type="radio" name="answer" value="${index}">
+                        <input type="radio" name="answer" value="${index}" 
+                            onchange="checkAnswer(${question.correctIndex}, this)">
                         <span>${String.fromCharCode(65 + index)}. ${option}</span>
                     </label>
                 `).join('')}
             </div>
             
-            <button onclick="checkAnswer(${question.correctIndex})" class="submit-btn">
-                提交答案
-            </button>
-            
             <div class="explanation" style="display: none;">
                 ${question.explanation.replace(/\n/g, '<br>')}
+                <div class="next-question-container">
+                    <button onclick="nextQuestion()" class="next-btn">
+                        下一題 <span class="arrow">→</span>
+                    </button>
+                </div>
             </div>
         </div>
     `;
 }
 
-function checkAnswer(correctIndex) {
-    const selectedAnswer = document.querySelector('input[name="answer"]:checked');
-    if (!selectedAnswer) {
-        alert('請選擇一個答案');
-        return;
-    }
-
+function checkAnswer(correctIndex, selectedInput) {
     const explanation = document.querySelector('.explanation');
     const options = document.querySelectorAll('.option');
+    const selectedIndex = parseInt(selectedInput.value);
     
-    options.forEach((option, index) => {
-        option.classList.add(index === correctIndex ? 'correct' : 'wrong');
+    // 移除之前的正確/錯誤樣式
+    options.forEach(option => {
+        option.classList.remove('correct', 'wrong');
     });
     
+    // 添加新的正確/錯誤樣式
+    options.forEach((option, index) => {
+        if (index === correctIndex) {
+            option.classList.add('correct');
+        } else if (index === selectedIndex) {
+            option.classList.add('wrong');
+        }
+    });
+    
+    // 顯示解釋
     explanation.style.display = 'block';
+    
+    // 禁用所有選項
+    document.querySelectorAll('input[name="answer"]').forEach(input => {
+        input.disabled = true;
+    });
+}
+
+function nextQuestion() {
+    const activeTopic = document.querySelector('.topic-link.active');
+    const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
+    if (activeTopic) {
+        startPractice(activeTopic.dataset.topic, difficulty);
+    }
 } 

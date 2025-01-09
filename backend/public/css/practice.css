@@ -83,6 +83,12 @@
     padding: 2rem;
     background: #fff;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.content-header {
+    margin-bottom: 2rem;
 }
 
 /* 難度選擇器 */
@@ -110,11 +116,11 @@
     color: white;
 }
 
+/* 問題區域的調整 */
 .question-area {
     background: white;
     border-radius: 8px;
     padding: 2rem;
-    min-height: 400px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
@@ -122,10 +128,21 @@
     text-align: center;
     color: #6c757d;
     font-size: 1.2rem;
-    margin-top: 3rem;
+    margin: auto;
+    padding: 2rem;
 }
 
 /* 響應式設計 */
+@media (max-width: 1200px) {
+    .options {
+        gap: 1rem;
+    }
+    
+    .option {
+        padding: 1rem;
+    }
+}
+
 @media (max-width: 768px) {
     .practice-layout {
         flex-direction: column;
@@ -136,6 +153,18 @@
         height: auto;
         max-height: 300px;
     }
+
+    .question-area {
+        max-height: calc(100vh - 400px);
+    }
+
+    .options {
+        grid-template-columns: 1fr;
+    }
+
+    .option {
+        min-height: 50px;
+    }
 }
 
 .question-content {
@@ -143,10 +172,24 @@
     margin: 0 auto;
 }
 
+/* 題目文字的樣式 */
+.question-content h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
+.question-content p {
+    font-size: 1.3rem;
+    margin-bottom: 2rem;
+    color: #2c3e50;
+}
+
+/* 選項區域的調整 */
 .options {
     margin: 2rem 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
 }
 
@@ -154,25 +197,59 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem;
+    padding: 1.5rem;
     border: 1px solid #dee2e6;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+    background: white;
+    position: relative;
+    min-height: 80px;
 }
 
 .option:hover {
-    background: #f8f9fa;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/* 正確答案的樣式 */
 .option.correct {
     background: #d4edda;
     border-color: #c3e6cb;
 }
 
+.option.correct::after {
+    content: '✓';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #28a745;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+/* 錯誤答案的樣式 */
 .option.wrong {
     background: #f8d7da;
     border-color: #f5c6cb;
+}
+
+.option.wrong::after {
+    content: '✗';
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+/* 選項文字樣式 */
+.option span {
+    font-size: 1.1rem;
+    flex: 1;
 }
 
 .submit-btn {
@@ -191,10 +268,12 @@
 
 .explanation {
     margin-top: 2rem;
-    padding: 1rem;
+    padding: 1.5rem;
     background: #f8f9fa;
+    border-left: 4px solid #2c3e50;
     border-radius: 4px;
     line-height: 1.6;
+    font-size: 1.1rem;
 }
 
 .error-message {
@@ -222,4 +301,81 @@ details > summary::before {
 
 details[open] > summary::before {
     transform: rotate(90deg);
+}
+
+/* 禁用狀態的樣式 */
+.option input[disabled] {
+    cursor: not-allowed;
+}
+
+.option input[disabled] + span {
+    opacity: 0.7;
+}
+
+.next-question-container {
+    margin-top: 2rem;
+    text-align: right;
+}
+
+.next-btn {
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.next-btn:hover {
+    background: #34495e;
+    transform: translateX(5px);
+}
+
+.next-btn .arrow {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.next-btn:hover .arrow {
+    transform: translateX(3px);
+}
+
+/* 添加動畫效果 */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.next-question-container {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* 滾動條美化 */
+.question-area::-webkit-scrollbar {
+    width: 8px;
+}
+
+.question-area::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.question-area::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.question-area::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 } 
