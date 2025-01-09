@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>練習選擇 - 數學測驗平台</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/practice.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">數學測驗平台</div>
+            <ul>
+                <li><a href="/">首頁</a></li>
+                <li><a href="/practice" class="active">練習</a></li>
+                <li><a href="/quiz">測驗</a></li>
+                <li><a href="/profile">個人資料</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="practice-layout">
+        <!-- 左側導航欄 -->
+        <aside class="sidebar">
+            <div class="search-box">
+                <input type="text" placeholder="搜尋題目...">
+            </div>
+            <nav class="topic-nav">
+                <!-- 章節內容會通過 JavaScript 動態生成 -->
+            </nav>
+        </aside>
+
+        <!-- 主要內容區 -->
+        <main class="practice-content">
+            <div class="content-header">
+                <h1>練習題目</h1>
+                <div class="difficulty-filter">
+                    <span>難度：</span>
+                    <button class="diff-btn active" data-difficulty="1">1</button>
+                    <button class="diff-btn" data-difficulty="2">2</button>
+                    <button class="diff-btn" data-difficulty="3">3</button>
+                    <button class="diff-btn" data-difficulty="4">4</button>
+                    <button class="diff-btn" data-difficulty="5">5</button>
+                </div>
+            </div>
+            <div class="question-area">
+                <div class="placeholder-message">
+                    請從左側選擇練習題目
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/practice.js"></script>
+</body>
+</html> 
