@@ -112,6 +112,11 @@ function getDirectoryStructure(basePath: string) {
                                     name: 'Q3: 指數除法',
                                     type: 'generator',
                                     topic: 'F1L12.1_3'
+                                },
+                                {
+                                    name: 'Q4: 指數除法填空',
+                                    type: 'generator',
+                                    topic: 'F1L12.1_4'
                                 }
                             ]
                         }
