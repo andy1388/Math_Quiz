@@ -144,39 +144,81 @@ export class F1L12_1_Generator_Q1 extends QuestionGenerator {
 
     private generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
         const wrongAnswers: string[] = [];
-        const match = correctAnswer.match(/^(\d*)([a-z])(\d+)$/);
         
-        if (!match) {
+        // 解析多變量表達式
+        const terms = new Map<string, number>();
+        const regex = /([a-z])(\d+)/g;
+        let match;
+        
+        // 收集所有變量和指數
+        while ((match = regex.exec(correctAnswer)) !== null) {
+            const [, variable, exponent] = match;
+            terms.set(variable, parseInt(exponent));
+        }
+
+        if (terms.size === 0) {
             console.error('無法解析正確答案:', correctAnswer);
             return ['ERROR', 'ERROR', 'ERROR'];
         }
 
-        const [, coefficient, variable, exponent] = match;
-        const coef = coefficient ? parseInt(coefficient) : 1;
-        const exp = parseInt(exponent);
+        // 生成錯誤答案的策略
+        const generateWrongAnswer = () => {
+            const newTerms = new Map(terms);
+            const strategy = Math.floor(Math.random() * 3);
+            
+            switch (strategy) {
+                case 0: // 改變一個變量的指數
+                    const randomVar = Array.from(newTerms.keys())[Math.floor(Math.random() * newTerms.size)];
+                    const currentExp = newTerms.get(randomVar)!;
+                    newTerms.set(randomVar, currentExp + (Math.random() < 0.5 ? 1 : -1));
+                    break;
+                    
+                case 1: // 交換兩個變量的指數
+                    if (newTerms.size >= 2) {
+                        const vars = Array.from(newTerms.entries());
+                        const exp1 = vars[0][1];
+                        vars[0][1] = vars[1][1];
+                        vars[1][1] = exp1;
+                        newTerms.clear();
+                        vars.forEach(([v, e]) => newTerms.set(v, e));
+                    }
+                    break;
+                    
+                case 2: // 所有指數加1或減1
+                    const change = Math.random() < 0.5 ? 1 : -1;
+                    newTerms.forEach((exp, v) => {
+                        newTerms.set(v, exp + change);
+                    });
+                    break;
+            }
+
+            // 構建錯誤答案字符串
+            return Array.from(newTerms.entries())
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([v, e]) => `${v}${e}`)
+                .join('');
+        };
 
         // 生成三個不同的錯誤答案
-        const wrongOptions = [
-            // 指數相乘而不是相加
-            `${variable}${exp + 1}`,
-            // 係數相加而不是相乘
-            `${coef + 1}${variable}${exp}`,
-            // 指數少加了1
-            `${variable}${exp - 1}`,
-            // 指數多加了1
-            `${variable}${exp + 2}`,
-            // 係數錯誤
-            `2${variable}${exp}`
-        ];
-
-        // 隨機選擇三個不同的錯誤答案
-        while (wrongAnswers.length < 3 && wrongOptions.length > 0) {
-            const index = Math.floor(Math.random() * wrongOptions.length);
-            const wrongAnswer = wrongOptions[index];
-            if (!wrongAnswers.includes(wrongAnswer) && wrongAnswer !== correctAnswer) {
-                wrongAnswers.push(wrongAnswer);
+        const maxAttempts = 10;
+        let attempts = 0;
+        
+        while (wrongAnswers.length < 3 && attempts < maxAttempts) {
+            const wrong = generateWrongAnswer();
+            if (!wrongAnswers.includes(wrong) && wrong !== correctAnswer) {
+                wrongAnswers.push(wrong);
             }
-            wrongOptions.splice(index, 1);
+            attempts++;
+        }
+
+        // 如果無法生成足夠的錯誤答案，填充剩餘的位置
+        while (wrongAnswers.length < 3) {
+            const defaultWrong = Array.from(terms.entries())
+                .map(([v, e]) => `${v}${e + wrongAnswers.length + 1}`)
+                .join('');
+            if (!wrongAnswers.includes(defaultWrong)) {
+                wrongAnswers.push(defaultWrong);
+            }
         }
 
         return wrongAnswers;
