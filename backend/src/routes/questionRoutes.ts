@@ -95,7 +95,22 @@ function getDirectoryStructure(dir: string): DirectoryStructure[] {
         const items = fs.readdirSync(dir);
         const structure: DirectoryStructure[] = [];
 
-        items.sort().forEach(item => {
+        // 添加排序函數
+        function sortByLessonNumber(a: string, b: string): number {
+            // 提取課程編號
+            const getNumber = (str: string) => {
+                const match = str.match(/L(\d+)/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            
+            const numA = getNumber(a);
+            const numB = getNumber(b);
+            
+            return numA - numB;
+        }
+
+        // 排序目錄項目
+        items.sort(sortByLessonNumber).forEach(item => {
             const fullPath = path.join(dir, item);
             const stat = fs.statSync(fullPath);
 
