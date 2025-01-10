@@ -180,7 +180,7 @@ export class F1L12_1_Generator_Q3 extends QuestionGenerator {
         // 計算結果
         const result: Term = {
             coefficient: terms.reduce((acc, term, index) => 
-                index === 0 ? term.coefficient : acc / term.coefficient, 0),
+                index === 0 ? term.coefficient : acc / term.coefficient, terms[0].coefficient),
             variables: new Map()
         };
 
@@ -194,6 +194,7 @@ export class F1L12_1_Generator_Q3 extends QuestionGenerator {
                 const exp = term.variables.get(variable) || 0;
                 finalExp = index === 0 ? exp : finalExp - exp;
             });
+            // 只有當最終指數不為 0 時才加入結果
             if (finalExp !== 0) {
                 result.variables.set(variable, finalExp);
             }
@@ -201,29 +202,29 @@ export class F1L12_1_Generator_Q3 extends QuestionGenerator {
 
         // 格式化題目
         const questionParts = terms.map(term => {
-            let termStr = '';
-            if (term.coefficient !== 1) termStr += term.coefficient;
-            
-            // 按字母順序排列變量
             const sortedVars = Array.from(term.variables.entries())
                 .sort(([a], [b]) => a.localeCompare(b));
             
-            sortedVars.forEach(([variable, exp]) => {
-                termStr += variable + '^{' + exp + '}';
-            });
-            return termStr;
+            const varPart = sortedVars.map(([variable, exp]) => {
+                // 當指數為 1 時不顯示指數
+                return exp === 1 ? variable : variable + '^{' + exp + '}';
+            }).join('');
+
+            // 當係數為 1 時不顯示係數
+            return term.coefficient === 1 ? varPart : term.coefficient + varPart;
         });
 
         // 格式化答案
-        let answer = '';
-        if (result.coefficient !== 1) answer += result.coefficient;
-        
         const sortedResultVars = Array.from(result.variables.entries())
             .sort(([a], [b]) => a.localeCompare(b));
         
-        sortedResultVars.forEach(([variable, exp]) => {
-            answer += variable + '^{' + exp + '}';
-        });
+        const varPart = sortedResultVars.map(([variable, exp]) => {
+            // 當指數為 1 時不顯示指數
+            return exp === 1 ? variable : variable + '^{' + exp + '}';
+        }).join('');
+
+        // 當係數為 1 時不顯示係數
+        const answer = result.coefficient === 1 ? varPart : result.coefficient + varPart;
 
         // 生成解題步驟，使用 LaTeX 格式
         const steps = `解題步驟：
@@ -244,45 +245,31 @@ ${Array.from(allVars).sort().map(v => {
     private generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
         const wrongAnswers = new Set<string>();
         
-        // 解析正確答案
-        const match = correctAnswer.match(/^(\d*)(.*)/);
-        if (!match) return ['ERROR1', 'ERROR2', 'ERROR3'];
-        
-        const [, coeffStr, varPart] = match;
-        const coef = coeffStr ? parseInt(coeffStr) : 1;
-        
-        // 解析變量和指數
-        const varExps = new Map<string, number>();
-        const varRegex = /([a-z])\^{(\d+)}/g;
-        let varMatch;
-        while ((varMatch = varRegex.exec(varPart)) !== null) {
-            varExps.set(varMatch[1], parseInt(varMatch[2]));
+        // 解析正確答案，處理單一變量無指數的情況
+        const match = correctAnswer.match(/^(\d*)([a-z])(?:\^{(\d+)})?$/);
+        if (!match) {
+            // 如果無法解析，生成一些基本的錯誤答案
+            return [
+                correctAnswer + '^2',
+                '2' + correctAnswer,
+                correctAnswer + '^3'
+            ];
         }
-
+        
+        const [, coeffStr, variable, expStr] = match;
+        const coef = coeffStr ? parseInt(coeffStr) : 1;
+        const exp = expStr ? parseInt(expStr) : 1;
+        
         // 生成錯誤答案的策略
         const strategies = [
-            // 係數錯誤
-            () => {
-                const newCoef = coef * 2;
-                return this.formatTerm(newCoef, varExps);
-            },
-            // 指數相加而不是相減
-            () => {
-                const newVarExps = new Map(varExps);
-                newVarExps.forEach((exp, v) => newVarExps.set(v, exp + 2));
-                return this.formatTerm(coef, newVarExps);
-            },
-            // 忘記約分係數
-            () => {
-                const newCoef = coef * 3;
-                return this.formatTerm(newCoef, varExps);
-            },
-            // 指數計算錯誤
-            () => {
-                const newVarExps = new Map(varExps);
-                newVarExps.forEach((exp, v) => newVarExps.set(v, Math.max(1, exp - 1)));
-                return this.formatTerm(coef, newVarExps);
-            }
+            // 指數加1
+            () => this.formatTerm(coef, new Map([[variable, exp + 1]])),
+            // 指數減1（如果可能）
+            () => exp > 1 ? this.formatTerm(coef, new Map([[variable, exp - 1]])) : variable + '^2',
+            // 係數變為2
+            () => this.formatTerm(2, new Map([[variable, exp]])),
+            // 係數變為3
+            () => this.formatTerm(3, new Map([[variable, exp]]))
         ];
 
         // 生成三個不同的錯誤答案
@@ -298,14 +285,15 @@ ${Array.from(allVars).sort().map(v => {
     }
 
     private formatTerm(coefficient: number, variables: Map<string, number>): string {
-        let term = coefficient === 1 ? '' : coefficient.toString();
+        if (variables.size === 0) return coefficient.toString();
         
-        Array.from(variables.entries())
+        const sortedVars = Array.from(variables.entries())
             .sort(([a], [b]) => a.localeCompare(b))
-            .forEach(([variable, exp]) => {
-                term += variable + '^{' + exp + '}';
-            });
-            
-        return term || '1';
+            .map(([variable, exp]) => {
+                return exp === 1 ? variable : variable + '^{' + exp + '}';
+            })
+            .join('');
+        
+        return coefficient === 1 ? sortedVars : coefficient + sortedVars;
     }
 } 
