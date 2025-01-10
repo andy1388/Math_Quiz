@@ -212,15 +212,16 @@ export class F1L12_1_Generator_Q2 extends QuestionGenerator {
     }
 
     private formatQuestion(terms: Term[], result: Term): [string, string, string] {
-        // 格式化題目，將缺失的指數用 □ 替代
+        // 格式化題目，將缺失的指數用 LaTeX 的方框符號替代
         const questionParts = terms.map(term => {
             let termStr = '';
             if (term.coefficient !== 1) termStr += term.coefficient;
             term.variables.forEach((exp, variable) => {
                 if (term.hasMissing && variable === term.missingVar) {
-                    termStr += variable + '□';
+                    // 使用 LaTeX 的 \Box 符號作為空格，放在指數位置
+                    termStr += variable + '^{\\Box}';
                 } else {
-                    termStr += variable + (exp !== 1 ? exp : '');
+                    termStr += variable + '^{' + exp + '}';
                 }
             });
             return termStr;
@@ -230,23 +231,23 @@ export class F1L12_1_Generator_Q2 extends QuestionGenerator {
         let answer = '';
         if (result.coefficient !== 1) answer += result.coefficient;
         result.variables.forEach((exp, variable) => {
-            answer += variable + (exp !== 1 ? exp : '');
+            answer += variable + '^{' + exp + '}';
         });
 
         // 生成解題步驟
         const steps = `解題步驟：
 1. 找出已知的指數：
 ${Array.from(terms[0].variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${e}\\)`)
+    .map(([v, e]) => `   \\(${v}^{${e}}\\)`)
     .join('\n')}
 2. 觀察最終答案中的指數：
 ${Array.from(result.variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${e}\\)`)
+    .map(([v, e]) => `   \\(${v}^{${e}}\\)`)
     .join('\n')}
 3. 利用指數加法原理，求出缺少的指數：
-   \\(${terms[1].missingVar}: ${this.missingExponent}\\)`;
+   \\(${terms[1].missingVar}^{\\Box} = ${this.missingExponent}\\)`;
 
-        return [questionParts.join(' × ') + ' = ' + answer, this.missingExponent.toString(), steps];
+        return [questionParts.join(' \\times ') + ' = ' + answer, this.missingExponent.toString(), steps];
     }
 
     private shuffleArray<T>(array: T[]): T[] {
