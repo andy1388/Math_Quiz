@@ -82,9 +82,10 @@ function renderDirectoryStructure(items) {
     `;
 }
 
-// 更新 CSS
+// 更新 CSS - 合併所有樣式
 const style = document.createElement('style');
 style.textContent = `
+    /* 導航相關樣式 */
     .topic-nav {
         padding: 0;
         background: #2c3e50;
@@ -156,6 +157,42 @@ style.textContent = `
         background: #3498db;
         color: white;
     }
+
+    /* 答案輸入相關樣式 */
+    .answer-input {
+        padding: 8px 12px;
+        font-size: 16px;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        margin-right: 10px;
+        width: 200px;
+    }
+
+    .check-btn {
+        padding: 8px 16px;
+        background-color: #2196F3;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .check-btn:hover {
+        background-color: #1976D2;
+    }
+
+    .check-btn:disabled {
+        background-color: #BDBDBD;
+        cursor: not-allowed;
+    }
+
+    .explanation {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #F5F5F5;
+        border-radius: 4px;
+    }
 `;
 document.head.appendChild(style);
 
@@ -176,22 +213,19 @@ async function startPractice(topic, difficulty) {
 function displayQuestion(question) {
     const questionArea = document.querySelector('.question-area');
     
-    questionArea.innerHTML = `
+    // 修改顯示邏輯，不再假設有選項
+    let html = `
         <div class="question-content">
             <h3>題目：</h3>
             <p>${question.content}</p>
             
-            <div class="options">
-                ${question.options.map((option, index) => `
-                    <label class="option">
-                        <input type="radio" name="answer" value="${index}" 
-                            onchange="checkAnswer(${question.correctIndex}, this)">
-                        <span>${String.fromCharCode(65 + index)}. ${option}</span>
-                    </label>
-                `).join('')}
+            <div class="answer-section">
+                <input type="text" id="userAnswer" placeholder="請輸入答案" class="answer-input">
+                <button onclick="checkAnswer('${question.answer}')" class="check-btn">檢查答案</button>
             </div>
             
             <div class="explanation" style="display: none;">
+                <h4>答案：${question.answer}</h4>
                 ${question.explanation.replace(/\n/g, '<br>')}
                 <div class="next-question-container">
                     <button onclick="nextQuestion()" class="next-btn">
@@ -201,34 +235,35 @@ function displayQuestion(question) {
             </div>
         </div>
     `;
+    
+    questionArea.innerHTML = html;
 }
 
-function checkAnswer(correctIndex, selectedInput) {
+// 添加新的檢查答案函數
+function checkAnswer(correctAnswer) {
+    const userAnswer = document.getElementById('userAnswer').value.trim();
     const explanation = document.querySelector('.explanation');
-    const options = document.querySelectorAll('.option');
-    const selectedIndex = parseInt(selectedInput.value);
+    const answerInput = document.getElementById('userAnswer');
+    const checkButton = document.querySelector('.check-btn');
     
-    // 移除之前的正確/錯誤樣式
-    options.forEach(option => {
-        option.classList.remove('correct', 'wrong');
-    });
+    // 移除空格和空白字符進行比較
+    const normalizedUserAnswer = userAnswer.replace(/\s+/g, '');
+    const normalizedCorrectAnswer = correctAnswer.replace(/\s+/g, '');
     
-    // 添加新的正確/錯誤樣式
-    options.forEach((option, index) => {
-        if (index === correctIndex) {
-            option.classList.add('correct');
-        } else if (index === selectedIndex) {
-            option.classList.add('wrong');
-        }
-    });
+    if (normalizedUserAnswer === normalizedCorrectAnswer) {
+        answerInput.style.borderColor = '#4CAF50';
+        answerInput.style.backgroundColor = '#E8F5E9';
+    } else {
+        answerInput.style.borderColor = '#F44336';
+        answerInput.style.backgroundColor = '#FFEBEE';
+    }
     
     // 顯示解釋
     explanation.style.display = 'block';
     
-    // 禁用所有選項
-    document.querySelectorAll('input[name="answer"]').forEach(input => {
-        input.disabled = true;
-    });
+    // 禁用輸入和檢查按鈕
+    answerInput.disabled = true;
+    checkButton.disabled = true;
 }
 
 function nextQuestion() {
