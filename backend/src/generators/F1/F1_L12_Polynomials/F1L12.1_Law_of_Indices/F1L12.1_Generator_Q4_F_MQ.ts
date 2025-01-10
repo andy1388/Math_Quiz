@@ -3,10 +3,14 @@ import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator'
 interface Term {
     coefficient: number;
     variables: Map<string, number>;
+    hasMissing?: boolean;
+    missingVar?: string;
 }
 
 export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
     protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
+    protected readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
+    protected missingExponent: number = 0;
 
     constructor(difficulty: number = 1) {
         super(difficulty, 'F1L12.1');
@@ -48,7 +52,7 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel1(): [Term[], Term] {
+    protected generateLevel1(): [Term[], Term] {
         const variable = this.VARIABLES[Math.floor(Math.random() * 3)];
         // 先決定結果的指數，確保至少為 1
         const resultExp = Math.floor(Math.random() * 3) + 1; // 1-3
@@ -72,7 +76,7 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel2(): [Term[], Term] {
+    protected generateLevel2(): [Term[], Term] {
         const variable = this.VARIABLES[Math.floor(Math.random() * 3)];
         // 先決定結果的指數，確保至少為 2
         const resultExp = Math.floor(Math.random() * 3) + 2; // 2-4
@@ -96,7 +100,7 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel3(): [Term[], Term] {
+    protected generateLevel3(): [Term[], Term] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
         const [var1, var2] = vars;
         
@@ -141,7 +145,7 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel4(): [Term[], Term] {
+    protected generateLevel4(): [Term[], Term] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
         const [var1, var2] = vars;
 
@@ -191,7 +195,7 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel5(): [Term[], Term] {
+    protected generateLevel5(): [Term[], Term] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3));
         const [var1, var2, var3] = vars;
         
@@ -330,12 +334,11 @@ ${Array.from(result.variables.entries())
         return Array.from(wrongAnswers);
     }
 
-    private shuffleArray<T>(array: T[]): T[] {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
+    protected shuffleArray<T>(array: T[]): T[] {
+        for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            [array[i], array[j]] = [array[j], array[i]];
         }
-        return shuffled;
+        return array;
     }
 } 
