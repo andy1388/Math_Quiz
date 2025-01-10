@@ -14,11 +14,8 @@ let generatorCache: Map<string, any> = new Map();
 
 // 初始化时扫描所有生成器
 async function initializeGenerators() {
-    console.log('开始初始化生成器缓存...');
     try {
         generatorCache = await scanner.scanGenerators();
-        console.log('生成器缓存初始化完成，缓存大小:', generatorCache.size);
-        console.log('缓存的生成器:', Array.from(generatorCache.keys()));
     } catch (error) {
         console.error('初始化生成器缓存失败:', error);
         throw error;
@@ -29,19 +26,7 @@ async function initializeGenerators() {
 router.get('/available-generators', async (req, res) => {
     try {
         const generators = Array.from(generatorCache.values());
-        console.log('扫描到的生成器列表:', JSON.stringify(generators, null, 2));
-        
-        if (generators.length === 0) {
-            console.warn('没有找到任何生成器');
-        }
-        
         const structure = organizeGenerators(generators);
-        console.log('组织后的目录结构:', JSON.stringify(structure, null, 2));
-        
-        if (Object.keys(structure).length === 0) {
-            console.warn('生成的目录结构为空');
-        }
-        
         res.json(structure);
     } catch (error) {
         console.error('获取生成器列表失败:', error);
