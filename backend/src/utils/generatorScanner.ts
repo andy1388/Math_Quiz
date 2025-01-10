@@ -138,11 +138,12 @@ export class GeneratorScanner {
             const fileName = path.basename(filePath, '.ts');
             const descPath = filePath.replace('.ts', '.desc.txt');
             
-            // 读取描述文件，只取第一行作为标题
+            // 读取描述文件，取第二行（英文标题）
             let title = '';
             if (fs.existsSync(descPath)) {
                 const content = await fs.promises.readFile(descPath, 'utf-8');
-                title = content.split('\n')[0].trim(); // 只取第一行
+                const lines = content.split('\n');
+                title = lines[1].trim(); // 取第二行（英文标题）
             } else {
                 title = fileName;
             }
