@@ -39,9 +39,10 @@ export class F1L12_1_Generator_Q1 extends QuestionGenerator {
         const wrongAnswers = this.generateWrongAnswers(answer, this.difficulty);
         
         return {
-            question: question,
+            content: question,
             correctAnswer: answer,
-            wrongAnswers: wrongAnswers,
+            options: [answer, ...wrongAnswers],
+            correctIndex: 0,
             explanation: steps
         };
     }
@@ -263,14 +264,16 @@ export class F1L12_1_Generator_Q1 extends QuestionGenerator {
             answer += variable + (exp !== 1 ? exp : '');
         });
 
-        // 生成解題步驟，更詳細的說明
+        // 生成解題步驟，全部使用 LaTeX 格式
         const steps = `解題步驟：
-1. 係數相乘：${terms.map(t => t.coefficient).join(' × ')} = ${result.coefficient}
+1. 係數相乘：\\(${terms.map(t => t.coefficient).join(' \\times ')} = ${result.coefficient}\\)
 2. 同類項指數相加：
 ${Array.from(result.variables.entries())
-    .map(([v, e]) => `   ${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}`)
+    .map(([v, e]) => `   \\(${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\)`)
     .join('\n')}
-3. 最終答案：${answer}`;
+3. 最終答案：\\(${result.coefficient}${
+    sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')
+}\\)`;
 
         return [questionParts.join(' × '), answer, steps];
     }

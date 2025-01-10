@@ -313,6 +313,13 @@ async function startPractice(topic, difficulty) {
         if (!response.ok) {
             throw new Error(data.userMessage || '獲取題目失敗');
         }
+
+        // 檢查返回的數據格式
+        if (!data || typeof data.content !== 'string' || !Array.isArray(data.options) || 
+            typeof data.correctIndex !== 'number' || !data.explanation) {
+            console.error('數據格式:', data);
+            throw new Error('題目數據格式錯誤');
+        }
         
         displayQuestion(data);
     } catch (error) {
@@ -337,6 +344,16 @@ function displayQuestion(question) {
     const latexContent = convertToLatex(question.content);
     const latexOptions = question.options.map(opt => convertToLatex(opt));
     
+    // 處理解題步驟中的 LaTeX
+    const explanation = question.explanation.split('\n').map(line => {
+        if (line.includes('\\(') && line.includes('\\)')) {
+            // 如果行已經包含 LaTeX 標記，保持原樣
+            return line;
+        }
+        // 對其他行中的數學表達式進行 LaTeX 轉換
+        return line.replace(/([a-z])(\d+)/g, '$1^{$2}');
+    }).join('<br>');
+    
     let html = `
         <div class="question-content">
             <h3>題目：</h3>
@@ -352,8 +369,8 @@ function displayQuestion(question) {
             </div>
             
             <div class="explanation" style="display: none;">
-                <h4>正確答案：\\(${latexOptions[question.correctIndex]}\\)</h4>
-                ${question.explanation.replace(/\n/g, '<br>')}
+                <h4>正確答案：\\(${convertToLatex(question.correctAnswer)}\\)</h4>
+                ${explanation}
                 <div class="next-question-container">
                     <button onclick="nextQuestion()" class="next-btn">
                         下一題 <span class="arrow">→</span>

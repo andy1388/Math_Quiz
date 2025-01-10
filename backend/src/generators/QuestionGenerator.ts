@@ -1,8 +1,9 @@
 export interface IGeneratorOutput {
-    question: string;
-    correctAnswer: string;
-    wrongAnswers: string[];
-    explanation: string;
+    content: string;          // 題目內容
+    correctAnswer: string;    // 正確答案
+    options: string[];        // 選項列表（包括正確答案）
+    correctIndex: number;     // 正確答案的索引
+    explanation: string;      // 解題步驟
 }
 
 export abstract class QuestionGenerator {
