@@ -1,4 +1,5 @@
 import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { FractionUtils } from '../../../../utils/FractionUtils';
 
 interface Term {
     coefficient: number;
@@ -177,13 +178,27 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
     }
 
     protected formatQuestion(terms: Term[]): [string, string, string] {
-        // 计算结果
+        // 计算结果，使用分数运算
+        let resultCoefficient: [number, number] = [terms[0].coefficient, 1];
+        
+        // 从第二项开始计算
+        for (let i = 1; i < terms.length; i++) {
+            const term = terms[i];
+            if (term.operation === 'divide') {
+                resultCoefficient = FractionUtils.divide(
+                    resultCoefficient, 
+                    [term.coefficient, 1]
+                );
+            } else {
+                resultCoefficient = FractionUtils.multiply(
+                    resultCoefficient, 
+                    [term.coefficient, 1]
+                );
+            }
+        }
+
         const result: Term = {
-            coefficient: terms.reduce((acc, term) => {
-                return term.operation === 'divide' ? 
-                    acc / term.coefficient : 
-                    acc * term.coefficient;
-            }, 1),
+            coefficient: resultCoefficient[0] / resultCoefficient[1],
             variables: new Map()
         };
 
@@ -248,49 +263,107 @@ ${Array.from(allVars).sort().map(v => {
     protected generateWrongAnswers(correctAnswer: string, terms: Term[]): string[] {
         const wrongAnswers = new Set<string>();
         
-        // 解析正确答案
-        const coeffMatch = correctAnswer.match(/^(\d+)?/);
-        const coefficient = coeffMatch && coeffMatch[1] ? parseInt(coeffMatch[1]) : 1;
+        // 收集题目中出现的所有变量
+        const questionVars = new Set<string>();
+        terms.forEach(term => {
+            term.variables.forEach((_, v) => questionVars.add(v));
+        });
         
+        // 解析正确答案
+        const coeffMatch = correctAnswer.match(/^(\\frac{\\d+}{\\d+}|\\d+)?/);
+        const coefficient = coeffMatch && coeffMatch[1] ? 
+            (coeffMatch[1].startsWith('\\frac') ? 
+                eval(coeffMatch[1].replace(/\\frac{(\d+)}{(\d+)}/, '$1/$2')) : 
+                parseInt(coeffMatch[1])) : 1;
+
+        // 只使用题目中出现的变量
         const varExps = new Map<string, number>();
-        const varRegex = /([a-z])(?:\^{(\d+)})?/g;
-        let match;
-        while ((match = varRegex.exec(correctAnswer)) !== null) {
-            const [, variable, expStr] = match;
-            const exp = expStr ? parseInt(expStr) : 1;
-            varExps.set(variable, exp);
-        }
+        Array.from(questionVars).forEach(v => {
+            const regex = new RegExp(`${v}(?:\\^{(\\d+)})?`, 'g');
+            const match = regex.exec(correctAnswer);
+            if (match) {
+                const exp = match[1] ? parseInt(match[1]) : 1;
+                varExps.set(v, exp);
+            }
+        });
 
         // 生成错误答案的策略
-        while (wrongAnswers.size < 3) {
+        const generateWrongAnswer = () => {
             const strategy = Math.floor(Math.random() * 4);
             const newVars = new Map(varExps);
             let newCoef = coefficient;
 
             switch (strategy) {
-                case 0: // 所有指数加1
-                    newVars.forEach((exp, v) => newVars.set(v, exp + 1));
+                case 0: // 部分指数加1或减1（确保结果为正）
+                    newVars.forEach((exp, v) => {
+                        const change = Math.random() < 0.5 ? 1 : -1;
+                        const newExp = exp + change;
+                        if (newExp > 0) {
+                            newVars.set(v, newExp);
+                        }
+                    });
                     break;
-                case 1: // 系数计算错误
-                    newCoef = coefficient * 2;
+                case 1: // 系数计算错误（保持在合理范围内）
+                    if (coefficient !== 1) {
+                        const changes = [2, 0.5, 1.5, 3];
+                        const newCoefTemp = coefficient * changes[Math.floor(Math.random() * changes.length)];
+                        if (newCoefTemp > 0 && newCoefTemp <= 20) {
+                            newCoef = newCoefTemp;
+                        }
+                    }
                     break;
-                case 2: // 某个指数计算错误
+                case 2: // 交换两个变量的指数
+                    const vars = Array.from(newVars.entries());
+                    if (vars.length >= 2) {
+                        const i = Math.floor(Math.random() * (vars.length - 1));
+                        [vars[i][1], vars[i + 1][1]] = [vars[i + 1][1], vars[i][1]];
+                        newVars.clear();
+                        vars.forEach(([v, e]) => newVars.set(v, e));
+                    }
+                    break;
+                case 3: // 某个指数加倍或减半（确保为正）
                     if (newVars.size > 0) {
                         const randomVar = Array.from(newVars.keys())[
                             Math.floor(Math.random() * newVars.size)
                         ];
-                        newVars.set(randomVar, newVars.get(randomVar)! + 2);
+                        const currentExp = newVars.get(randomVar)!;
+                        const newExp = Math.random() < 0.5 ? 
+                            currentExp * 2 : 
+                            Math.max(1, Math.floor(currentExp / 2));
+                        newVars.set(randomVar, newExp);
                     }
-                    break;
-                case 3: // 混合错误
-                    newCoef = Math.floor(coefficient * 1.5);
-                    newVars.forEach((exp, v) => newVars.set(v, exp - 1));
                     break;
             }
 
-            const wrongAnswer = this.formatTerm({ coefficient: newCoef, variables: newVars });
-            if (wrongAnswer !== correctAnswer) {
-                wrongAnswers.add(wrongAnswer);
+            return this.formatTerm({ coefficient: newCoef, variables: newVars });
+        };
+
+        // 生成三个不同的错误答案
+        const maxAttempts = 20;
+        let attempts = 0;
+        
+        while (wrongAnswers.size < 3 && attempts < maxAttempts) {
+            const wrongAnswer = generateWrongAnswer();
+            if (wrongAnswer !== correctAnswer && !wrongAnswers.has(wrongAnswer)) {
+                // 验证答案中只包含题目中出现的变量
+                const containsOnlyQuestionVars = Array.from(wrongAnswer.matchAll(/[a-z]/g))
+                    .every(match => questionVars.has(match[0]));
+                
+                if (containsOnlyQuestionVars) {
+                    wrongAnswers.add(wrongAnswer);
+                }
+            }
+            attempts++;
+        }
+
+        // 如果无法生成足够的错误答案，使用备用策略
+        while (wrongAnswers.size < 3) {
+            const backupAnswer = this.formatTerm({
+                coefficient: coefficient * (wrongAnswers.size + 2),
+                variables: new Map(varExps)
+            });
+            if (!wrongAnswers.has(backupAnswer)) {
+                wrongAnswers.add(backupAnswer);
             }
         }
 
@@ -298,7 +371,23 @@ ${Array.from(allVars).sort().map(v => {
     }
 
     private formatTerm(term: Term): string {
-        if (term.variables.size === 0) return term.coefficient.toString();
+        let coefficientStr = '';
+        if (term.coefficient !== 1) {
+            if (term.coefficient % 1 !== 0) {
+                // 将小数转换为分数形式
+                const [num, den] = term.coefficient.toString().split('.');
+                if (den) {
+                    const denominator = Math.pow(10, den.length);
+                    const numerator = parseInt(num + den);
+                    const [simplifiedNum, simplifiedDen] = FractionUtils.simplify(numerator, denominator);
+                    coefficientStr = FractionUtils.toLatex(simplifiedNum, simplifiedDen);
+                }
+            } else {
+                coefficientStr = term.coefficient.toString();
+            }
+        }
+        
+        if (term.variables.size === 0) return coefficientStr || '1';
         
         const sortedVars = Array.from(term.variables.entries())
             .sort(([a], [b]) => a.localeCompare(b))
@@ -307,6 +396,6 @@ ${Array.from(allVars).sort().map(v => {
             })
             .join('');
         
-        return term.coefficient === 1 ? sortedVars : term.coefficient + sortedVars;
+        return coefficientStr ? coefficientStr + sortedVars : sortedVars;
     }
 } 
