@@ -1,11 +1,7 @@
-export interface IQuestion {
-    id: string;
-    type: string;
-    difficulty: number;
-    content: string;
-    options?: string[];
-    correctIndex?: number;
-    answer: string;
+export interface IGeneratorOutput {
+    question: string;
+    correctAnswer: string;
+    wrongAnswers: string[];
     explanation: string;
 }
 
@@ -18,9 +14,5 @@ export abstract class QuestionGenerator {
         this.chapter = chapter;
     }
 
-    abstract generate(): IQuestion;
-    
-    protected generateId(): string {
-        return `${this.chapter}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
+    abstract generate(): IGeneratorOutput;
 } 

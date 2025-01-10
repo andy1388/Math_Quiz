@@ -193,16 +193,97 @@ style.textContent = `
         background-color: #F5F5F5;
         border-radius: 4px;
     }
+
+    /* 選項相關樣式 */
+    .options {
+        margin: 20px 0;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+
+    .option {
+        display: flex;
+        align-items: center;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .option:hover {
+        background: #f5f5f5;
+        border-color: #bbb;
+    }
+
+    .option input[type="radio"] {
+        margin-right: 10px;
+    }
+
+    .option span {
+        font-size: 16px;
+    }
+
+    .option.correct {
+        background: #E8F5E9;
+        border-color: #4CAF50;
+    }
+
+    .option.wrong {
+        background: #FFEBEE;
+        border-color: #F44336;
+    }
+
+    /* 下一題按鈕樣式 */
+    .next-btn {
+        background: #2196F3;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        margin-top: 20px;
+    }
+
+    .next-btn:hover {
+        background: #1976D2;
+    }
+
+    .next-btn .arrow {
+        margin-left: 8px;
+    }
+
+    /* 解釋區域樣式 */
+    .explanation {
+        margin-top: 20px;
+        padding: 20px;
+        background: #F5F5F5;
+        border-radius: 8px;
+        border-left: 4px solid #2196F3;
+    }
+
+    .explanation h4 {
+        margin-bottom: 10px;
+        color: #333;
+    }
 `;
 document.head.appendChild(style);
 
 async function startPractice(topic, difficulty) {
     try {
+        console.log('開始練習:', topic, difficulty); // 添加調試日誌
         const response = await fetch(`/api/questions/generate/${topic}?difficulty=${difficulty}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const question = await response.json();
-        
-        if (!response.ok) throw new Error(question.error);
-        
         displayQuestion(question);
     } catch (error) {
         console.error('獲取題目失敗:', error);
@@ -215,20 +296,24 @@ function displayQuestion(question) {
     
     // 將內容轉換為 LaTeX 格式
     const latexContent = convertToLatex(question.content);
-    const latexAnswer = convertToLatex(question.answer);
+    const latexOptions = question.options.map(opt => convertToLatex(opt));
     
     let html = `
         <div class="question-content">
             <h3>題目：</h3>
             <p>\\[${latexContent}\\]</p>
             
-            <div class="answer-section">
-                <input type="text" id="userAnswer" placeholder="請輸入答案" class="answer-input">
-                <button onclick="checkAnswer('${question.answer}')" class="check-btn">檢查答案</button>
+            <div class="options">
+                ${latexOptions.map((option, index) => `
+                    <label class="option">
+                        <input type="radio" name="answer" value="${index}">
+                        <span>${String.fromCharCode(65 + index)}. \\(${option}\\)</span>
+                    </label>
+                `).join('')}
             </div>
             
             <div class="explanation" style="display: none;">
-                <h4>答案：\\[${latexAnswer}\\]</h4>
+                <h4>正確答案：\\(${latexOptions[question.correctIndex]}\\)</h4>
                 ${question.explanation.replace(/\n/g, '<br>')}
                 <div class="next-question-container">
                     <button onclick="nextQuestion()" class="next-btn">
@@ -240,6 +325,13 @@ function displayQuestion(question) {
     `;
     
     questionArea.innerHTML = html;
+    
+    // 添加選項點擊事件
+    document.querySelectorAll('input[name="answer"]').forEach(input => {
+        input.addEventListener('change', () => {
+            checkAnswer(question.correctIndex, parseInt(input.value));
+        });
+    });
     
     // 重新渲染數學公式
     MathJax.typesetPromise();
@@ -260,27 +352,26 @@ function convertToLatex(text) {
 }
 
 // 修改檢查答案函數以支持 LaTeX
-function checkAnswer(correctAnswer) {
-    const userAnswer = document.getElementById('userAnswer').value.trim();
+function checkAnswer(correctIndex, selectedIndex) {
     const explanation = document.querySelector('.explanation');
-    const answerInput = document.getElementById('userAnswer');
-    const checkButton = document.querySelector('.check-btn');
+    const options = document.querySelectorAll('.option');
     
-    // 標準化答案格式
-    const normalizedUserAnswer = normalizeAnswer(userAnswer);
-    const normalizedCorrectAnswer = normalizeAnswer(correctAnswer);
+    // 添加正確/錯誤樣式
+    options.forEach((option, index) => {
+        if (index === correctIndex) {
+            option.classList.add('correct');
+        } else if (index === selectedIndex) {
+            option.classList.add('wrong');
+        }
+    });
     
-    if (normalizedUserAnswer === normalizedCorrectAnswer) {
-        answerInput.style.borderColor = '#4CAF50';
-        answerInput.style.backgroundColor = '#E8F5E9';
-    } else {
-        answerInput.style.borderColor = '#F44336';
-        answerInput.style.backgroundColor = '#FFEBEE';
-    }
-    
+    // 顯示解釋
     explanation.style.display = 'block';
-    answerInput.disabled = true;
-    checkButton.disabled = true;
+    
+    // 禁用所有選項
+    document.querySelectorAll('input[name="answer"]').forEach(input => {
+        input.disabled = true;
+    });
     
     // 重新渲染數學公式
     MathJax.typesetPromise();
@@ -295,10 +386,14 @@ function normalizeAnswer(answer) {
 }
 
 function nextQuestion() {
-    const activeTopic = document.querySelector('.topic-link.active');
+    // 獲取當前活動的生成器項目
+    const activeGenerator = document.querySelector('.generator-item.active');
     const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
-    if (activeTopic) {
-        startPractice(activeTopic.dataset.topic, difficulty);
+    
+    if (activeGenerator) {
+        startPractice(activeGenerator.dataset.topic, difficulty);
+    } else {
+        console.error('找不到活動的生成器');
     }
 }
 

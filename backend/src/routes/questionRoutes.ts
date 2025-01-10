@@ -1,7 +1,8 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { IQuestion } from '../generators/QuestionGenerator';
+import { IQuestion } from '../generators/MC_Maker';
+import { MC_Maker } from '../generators/MC_Maker';
 
 const router = express.Router();
 
@@ -60,7 +61,9 @@ router.get('/generate/:topic', async (req, res) => {
         }
 
         const generator = new GeneratorClass(difficulty);
-        const question: IQuestion = generator.generate();
+        const output = generator.generate();
+        const question = MC_Maker.createQuestion(output, difficulty);
+        
         res.json(question);
     } catch (error) {
         console.error('生成題目錯誤:', error);
