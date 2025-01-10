@@ -5,7 +5,7 @@ interface Term {
     variables: Map<string, number>;
 }
 
-export class F1L12_1_Generator_Q1 extends QuestionGenerator {
+export class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
     private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
 
     constructor(difficulty: number = 1) {

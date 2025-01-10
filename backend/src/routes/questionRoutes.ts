@@ -99,24 +99,24 @@ function getDirectoryStructure(basePath: string) {
                             type: 'directory',
                             children: [
                                 {
-                                    name: 'Q1: 指數運算',
+                                    name: 'Q1: 指數運算 (基礎)',
                                     type: 'generator',
-                                    topic: 'F1L12.1_1'
+                                    topic: 'F1L12.1_Q1_F_MQ'
                                 },
                                 {
-                                    name: 'Q2: 指數填空',
+                                    name: 'Q2: 指數填空 (普通)',
                                     type: 'generator',
-                                    topic: 'F1L12.1_2'
+                                    topic: 'F1L12.1_Q2_N_SQ'
                                 },
                                 {
-                                    name: 'Q3: 指數除法',
+                                    name: 'Q3: 指數除法 (較難)',
                                     type: 'generator',
-                                    topic: 'F1L12.1_3'
+                                    topic: 'F1L12.1_Q3_H_MQ'
                                 },
                                 {
-                                    name: 'Q4: 指數除法填空',
+                                    name: 'Q4: 指數除法填空 (精英)',
                                     type: 'generator',
-                                    topic: 'F1L12.1_4'
+                                    topic: 'F1L12.1_Q4_E_SQ'
                                 }
                             ]
                         }

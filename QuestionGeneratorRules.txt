@@ -6,28 +6,52 @@
 1.1 文件結構 (按課程大綱)
     /generators
     ├── F1/                     # 中一課程
-    │   ├── L0/                # Basic Mathematics
-    │   │   ├── L0.1/         # Revision on Fundamental Arithmetic
-    │   │   │   ├── L0.1.1/   # Arithmetic Operations
-    │   │   │   ├── L0.1.2/   # L.C.M. and H.C.F.
-    │   │   │   └── L0.1.3/   # Fractions and Decimals
-    │   │   └── L0.2/         # Divisibility and Classification
-    │   ├── L1/                # Directed Number
-    │   └── L2/                # Introduction to Algebra
+    │   ├── F1_L0_Basic Mathematics/                # Basic Mathematics
+    │   │   ├── F1L0.1_Arithmetic Operations/         # Revision on Fundamental Arithmetic
+    │   │   │   ├── F1L0.1.1_AdditionGenerator.ts   # Arithmetic Operations
+    │   │   │   ├── F1L0.1.2_SubtractionGenerator.ts # L.C.M. and H.C.F.
+    │   │   │   └── F1L0.1.3_MultiplicationGenerator.ts # Fractions and Decimals
+    │   │   └── F1L0.2_Divisibility and Classification/         # Divisibility and Classification
+    │   │   │   ├── F1L0.2.1_Index Notation/         # Divisibility and Classification
+    │   │   │   ├── F1L0.2.2_Short Division/         # Divisibility and Classification
+    │   │   │   └── F1L0.2.3_Tests of Divisibility/         # Divisibility and Classification
+    │   │   └── F1L0.2.4_Classification of Numbers/         # Divisibility and Classification
+    │   ├── F1L1_Directed Number/                # Directed Number
+    │   │   ├── F1L1.1_Concept/         # Concept
+    │   │   │   ├── F1L1.1.1_AdditionGenerator.ts   # Arithmetic Operations
+    │   │   │   ├── F1L1.1.2_SubtractionGenerator.ts # L.C.M. and H.C.F.
+    │   │   │   └── F1L1.1.3_MultiplicationGenerator.ts # Fractions and Decimals
+    │   │   └── F1L1.2_Application/         # Divisibility and Classification
+    │   └── L2_Introduction to Algebra  /                # Introduction to Algebra
     ├── F2/                     # 中二課程
     ├── F3/                     # 中三課程
     ├── F4/                     # 中四課程
     └── F5/                     # 中五課程
 
 1.2 命名規範
-    生成器文件: {章節代碼}_{題型}Generator.ts
-    說明文件: {章節代碼}_{題型}Generator.desc.txt
+    生成器文件: {章節代碼}_Generator_{題號}_{難度}_{題型}.ts
+    說明文件: {章節代碼}_Generator_{題號}_{難度}_{題型}.desc.txt
+    
+    難度分類：
+    F = Foundation (基礎)
+    N = Normal (普通)
+    H = Hard (較難)
+    E = Elite (精英)
+
+    題型分類：
+    MQ = Multiple Choice Question (多項選擇題)
+    SQ = Short Question (填空題)
+    LQ = Long Question (長題目)
+
+    題號說明：
+    Q1, Q2, Q3... = 由開發者設定的題目編號，用於區分同一章節中的不同題目
+
     例如:
     /generators/F1/L0/L0.1/L0.1.1/
-    ├── F1L0.1.1_AdditionGenerator.ts
-    ├── F1L0.1.1_AdditionGenerator.desc.txt
-    ├── F1L0.1.1_SubtractionGenerator.ts
-    └── F1L0.1.1_SubtractionGenerator.desc.txt
+    ├── F1L0.1.1_Generator_Q1_F_MQ.ts      # 第一題基礎難度多項選擇題
+    ├── F1L0.1.1_Generator_Q1_F_MQ.desc.txt
+    ├── F1L0.1.1_Generator_Q2_N_SQ.ts      # 第二題普通難度填空題
+    └── F1L0.1.1_Generator_Q2_N_SQ.desc.txt
 
 2. 題型分類與難度
 ---------------

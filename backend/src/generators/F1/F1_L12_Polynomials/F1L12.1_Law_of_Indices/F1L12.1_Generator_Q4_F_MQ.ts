@@ -7,7 +7,7 @@ interface Term {
     missingVar?: string;   // 記錄哪個變量的指數缺失
 }
 
-export class F1L12_1_Generator_Q4 extends QuestionGenerator {
+export class F1L12_1_Generator_Q4_E_MQ extends QuestionGenerator {
     private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
     private readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
     private missingExponent: number = 0;  // 記錄缺失的指數值
@@ -104,14 +104,17 @@ export class F1L12_1_Generator_Q4 extends QuestionGenerator {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
         const [var1, var2] = vars;
         
-        // 確保所有指數運算結果為正
-        const exp1_1 = Math.floor(Math.random() * 3) + 4; // 4-6
-        const exp1_2 = Math.floor(Math.random() * 3) + 4; // 4-6
-        const exp2_2 = Math.floor(Math.random() * 2) + 2; // 2-3
-        const resultExp1 = Math.floor(Math.random() * 3) + 2; // 2-4
+        // 先決定結果的指數
+        const resultExp1 = Math.floor(Math.random() * 2) + 2; // 2-3
+        const resultExp2 = Math.floor(Math.random() * 2) + 2; // 2-3
 
-        this.missingExponent = exp1_1 - resultExp1; // 計算缺失的指數
-        const exp2_1 = this.missingExponent;
+        // 確保第一個項的指數比結果大
+        const exp1_1 = resultExp1 + Math.floor(Math.random() * 2) + 2; // resultExp1 + (2-3)
+        const exp1_2 = resultExp2 + Math.floor(Math.random() * 2) + 2; // resultExp2 + (2-3)
+
+        // 計算第二個項的指數
+        this.missingExponent = exp1_1 - resultExp1; // 一定會是正數
+        const exp2_2 = exp1_2 - resultExp2; // 一定會是正數
 
         return [
             [
@@ -125,7 +128,7 @@ export class F1L12_1_Generator_Q4 extends QuestionGenerator {
                 { 
                     coefficient: 1, 
                     variables: new Map([
-                        [var1, exp2_1],
+                        [var1, this.missingExponent],
                         [var2, exp2_2]
                     ]),
                     hasMissing: true,
@@ -136,7 +139,7 @@ export class F1L12_1_Generator_Q4 extends QuestionGenerator {
                 coefficient: 1, 
                 variables: new Map([
                     [var1, resultExp1],
-                    [var2, exp1_2 - exp2_2]
+                    [var2, resultExp2]
                 ]) 
             }
         ];
@@ -146,19 +149,22 @@ export class F1L12_1_Generator_Q4 extends QuestionGenerator {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
         const [var1, var2] = vars;
 
-        // 選擇容易整除的係數
-        const coef2 = this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)];
-        const resultCoef = Math.floor(Math.random() * 3) + 2; // 2-4
-        const coef1 = coef2 * resultCoef;
-
-        // 確保指數差為正
-        const exp1_1 = Math.floor(Math.random() * 2) + 4; // 4-5
-        const exp1_2 = Math.floor(Math.random() * 2) + 4; // 4-5
-        const exp2_2 = Math.floor(Math.random() * 2) + 1; // 1-2
+        // 先決定結果的係數和指數
+        const resultCoef = Math.floor(Math.random() * 2) + 2; // 2-3
         const resultExp1 = Math.floor(Math.random() * 2) + 2; // 2-3
+        const resultExp2 = Math.floor(Math.random() * 2) + 2; // 2-3
 
-        this.missingExponent = exp1_1 - resultExp1;
-        const exp2_1 = this.missingExponent;
+        // 選擇第二個項的係數
+        const coef2 = this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)];
+        const coef1 = coef2 * resultCoef; // 確保能整除
+
+        // 確保第一個項的指數比結果大
+        const exp1_1 = resultExp1 + Math.floor(Math.random() * 2) + 2; // resultExp1 + (2-3)
+        const exp1_2 = resultExp2 + Math.floor(Math.random() * 2) + 2; // resultExp2 + (2-3)
+
+        // 計算第二個項的指數
+        this.missingExponent = exp1_1 - resultExp1; // 一定會是正數
+        const exp2_2 = exp1_2 - resultExp2; // 一定會是正數
 
         return [
             [
@@ -172,7 +178,7 @@ export class F1L12_1_Generator_Q4 extends QuestionGenerator {
                 { 
                     coefficient: coef2, 
                     variables: new Map([
-                        [var1, exp2_1],
+                        [var1, this.missingExponent],
                         [var2, exp2_2]
                     ]),
                     hasMissing: true,
@@ -183,7 +189,7 @@ export class F1L12_1_Generator_Q4 extends QuestionGenerator {
                 coefficient: resultCoef, 
                 variables: new Map([
                     [var1, resultExp1],
-                    [var2, exp1_2 - exp2_2]
+                    [var2, resultExp2]
                 ]) 
             }
         ];
@@ -193,19 +199,21 @@ export class F1L12_1_Generator_Q4 extends QuestionGenerator {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3));
         const [var1, var2, var3] = vars;
         
-        // 生成係數
+        // 先決定結果的係數和指數
+        const resultCoef = Math.floor(Math.random() * 2) + 2; // 2-3
+        const resultExp = Math.floor(Math.random() * 2) + 3; // 3-4
+
+        // 生成係數，確保能整除
         const coef3 = this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)];
         const coef2 = this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)];
-        const resultCoef = Math.floor(Math.random() * 3) + 2; // 2-4
         const coef1 = coef2 * coef3 * resultCoef;
 
-        // 生成指數
-        const exp1 = Math.floor(Math.random() * 3) + 8; // 8-10
-        const exp2 = Math.floor(Math.random() * 2) + 4; // 4-5
-        const exp3 = Math.floor(Math.random() * 2) + 2; // 2-3
-        const resultExp = Math.floor(Math.random() * 3) + 2; // 2-4
+        // 生成遞減的指數，確保每步都是正數
+        const exp1 = resultExp + 6; // resultExp + 6
+        const exp2 = Math.floor((exp1 - resultExp) / 2) + resultExp; // 確保中間值
+        const exp3 = Math.floor((exp2 - resultExp) / 2) + resultExp; // 確保最後值
 
-        this.missingExponent = exp2;
+        this.missingExponent = exp2; // 缺失的指數
 
         return [
             [
