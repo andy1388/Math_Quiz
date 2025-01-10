@@ -3,51 +3,19 @@ import fs from 'fs';
 import path from 'path';
 import { IQuestion } from '../generators/MC_Maker';
 import { MC_Maker } from '../generators/MC_Maker';
+import { GeneratorClass, GeneratorMap } from '../generators/QuestionGenerator';
 
 const router = express.Router();
 
 // 動態導入生成器
-async function loadGenerator(topic: string): Promise<any | null> {
+async function loadGenerator(topic: string): Promise<GeneratorClass | null> {
     try {
-        const generatorPath = constructGeneratorPath(topic);
-        if (!generatorPath) return null;
-
-        const module = await import(generatorPath);
-        return Object.values(module)[0] || null;
+        const { generators } = await import('../generators') as { generators: GeneratorMap };
+        return generators[topic] || null;
     } catch (error) {
         console.error('加載生成器失敗:', error);
         return null;
     }
-}
-
-function constructGeneratorPath(topic: string): string | null {
-    const generatorsPath = path.join(__dirname, '../generators');
-    
-    // 遞歸搜索目錄找到對應的生成器文件
-    const generatorFile = findGeneratorFile(generatorsPath, topic);
-    return generatorFile;
-}
-
-function findGeneratorFile(baseDir: string, topic: string): string | null {
-    const files = fs.readdirSync(baseDir);
-    
-    for (const file of files) {
-        const fullPath = path.join(baseDir, file);
-        const stat = fs.statSync(fullPath);
-        
-        if (stat.isDirectory()) {
-            const found = findGeneratorFile(fullPath, topic);
-            if (found) return found;
-        } else if (file.endsWith('Generator_Q1.ts')) {
-            // 從文件名中提取章節ID
-            const match = file.match(/^(F\dL\d+(?:\.\d+)*)/);
-            if (match && match[1] === topic) {
-                return fullPath;
-            }
-        }
-    }
-    
-    return null;
 }
 
 router.get('/generate/:topic', async (req, res) => {
@@ -116,54 +84,37 @@ interface DirectoryStructure {
     topic?: string;
 }
 
-function getDirectoryStructure(dir: string): DirectoryStructure[] {
-    try {
-        const items = fs.readdirSync(dir);
-        const structure: DirectoryStructure[] = [];
-
-        // 添加排序函數
-        function sortByLessonNumber(a: string, b: string): number {
-            // 提取課程編號
-            const getNumber = (str: string) => {
-                const match = str.match(/L(\d+)/);
-                return match ? parseInt(match[1]) : 0;
-            };
-            
-            const numA = getNumber(a);
-            const numB = getNumber(b);
-            
-            return numA - numB;
-        }
-
-        // 排序目錄項目
-        items.sort(sortByLessonNumber).forEach(item => {
-            const fullPath = path.join(dir, item);
-            const stat = fs.statSync(fullPath);
-
-            if (stat.isDirectory()) {
-                const children = getDirectoryStructure(fullPath);
-                structure.push({
-                    name: item,
+function getDirectoryStructure(basePath: string) {
+    return [
+        {
+            name: 'F1',
+            type: 'directory',
+            children: [
+                {
+                    name: 'L12 Polynomials',
                     type: 'directory',
-                    children: children
-                });
-            } else if (item.endsWith('Generator_Q1.ts')) {
-                const match = item.match(/^(F\dL\d+(?:\.\d+)*)/);
-                if (match) {
-                    structure.push({
-                        name: item,
-                        type: 'generator',
-                        topic: match[1]
-                    });
+                    children: [
+                        {
+                            name: '12.1 Law of Indices',
+                            type: 'directory',
+                            children: [
+                                {
+                                    name: 'Q1: 指數運算',
+                                    type: 'generator',
+                                    topic: 'F1L12.1_1'
+                                },
+                                {
+                                    name: 'Q2: 指數填空',
+                                    type: 'generator',
+                                    topic: 'F1L12.1_2'
+                                }
+                            ]
+                        }
+                    ]
                 }
-            }
-        });
-
-        return structure;
-    } catch (error) {
-        console.error('讀取目錄失敗:', dir, error);
-        return [];
-    }
+            ]
+        }
+    ];
 }
 
 export default router; 

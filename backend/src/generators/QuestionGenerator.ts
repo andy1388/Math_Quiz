@@ -1,3 +1,6 @@
+export type GeneratorClass = new (difficulty: number) => QuestionGenerator;
+export type GeneratorMap = { [key: string]: GeneratorClass };
+
 export interface IGeneratorOutput {
     content: string;          // 題目內容
     correctAnswer: string;    // 正確答案
