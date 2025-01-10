@@ -213,11 +213,14 @@ async function startPractice(topic, difficulty) {
 function displayQuestion(question) {
     const questionArea = document.querySelector('.question-area');
     
-    // 修改顯示邏輯，不再假設有選項
+    // 將內容轉換為 LaTeX 格式
+    const latexContent = convertToLatex(question.content);
+    const latexAnswer = convertToLatex(question.answer);
+    
     let html = `
         <div class="question-content">
             <h3>題目：</h3>
-            <p>${question.content}</p>
+            <p>\\[${latexContent}\\]</p>
             
             <div class="answer-section">
                 <input type="text" id="userAnswer" placeholder="請輸入答案" class="answer-input">
@@ -225,7 +228,7 @@ function displayQuestion(question) {
             </div>
             
             <div class="explanation" style="display: none;">
-                <h4>答案：${question.answer}</h4>
+                <h4>答案：\\[${latexAnswer}\\]</h4>
                 ${question.explanation.replace(/\n/g, '<br>')}
                 <div class="next-question-container">
                     <button onclick="nextQuestion()" class="next-btn">
@@ -237,18 +240,35 @@ function displayQuestion(question) {
     `;
     
     questionArea.innerHTML = html;
+    
+    // 重新渲染數學公式
+    MathJax.typesetPromise();
 }
 
-// 添加新的檢查答案函數
+// 添加轉換為 LaTeX 格式的函數
+function convertToLatex(text) {
+    // 替換指數
+    text = text.replace(/(\w+)(\d+)/g, '$1^{$2}');
+    
+    // 替換乘號
+    text = text.replace(/×/g, '\\times');
+    
+    // 替換其他數學符號
+    text = text.replace(/\*/g, '\\cdot');
+    
+    return text;
+}
+
+// 修改檢查答案函數以支持 LaTeX
 function checkAnswer(correctAnswer) {
     const userAnswer = document.getElementById('userAnswer').value.trim();
     const explanation = document.querySelector('.explanation');
     const answerInput = document.getElementById('userAnswer');
     const checkButton = document.querySelector('.check-btn');
     
-    // 移除空格和空白字符進行比較
-    const normalizedUserAnswer = userAnswer.replace(/\s+/g, '');
-    const normalizedCorrectAnswer = correctAnswer.replace(/\s+/g, '');
+    // 標準化答案格式
+    const normalizedUserAnswer = normalizeAnswer(userAnswer);
+    const normalizedCorrectAnswer = normalizeAnswer(correctAnswer);
     
     if (normalizedUserAnswer === normalizedCorrectAnswer) {
         answerInput.style.borderColor = '#4CAF50';
@@ -258,12 +278,20 @@ function checkAnswer(correctAnswer) {
         answerInput.style.backgroundColor = '#FFEBEE';
     }
     
-    // 顯示解釋
     explanation.style.display = 'block';
-    
-    // 禁用輸入和檢查按鈕
     answerInput.disabled = true;
     checkButton.disabled = true;
+    
+    // 重新渲染數學公式
+    MathJax.typesetPromise();
+}
+
+// 標準化答案格式
+function normalizeAnswer(answer) {
+    return answer.replace(/\s+/g, '')  // 移除空格
+                 .replace(/\^/g, '')   // 移除 ^ 符號
+                 .replace(/\{|\}/g, '') // 移除大括號
+                 .toLowerCase();        // 轉為小寫
 }
 
 function nextQuestion() {
