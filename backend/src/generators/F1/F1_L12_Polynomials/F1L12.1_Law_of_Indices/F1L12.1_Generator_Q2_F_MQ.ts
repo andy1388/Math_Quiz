@@ -7,9 +7,9 @@ interface Term {
     missingVar?: string;   // 記錄哪個變量的指數缺失
 }
 
-export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
-    private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
-    private missingExponent: number = 0;  // 記錄缺失的指數值
+export default class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
+    protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
+    protected missingExponent: number = 0;  // 記錄缺失的指數值
 
     constructor(difficulty: number = 1) {
         super(difficulty, 'F1L12.1');
@@ -51,7 +51,7 @@ export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel1(): [Term[], Term] {
+    protected generateLevel1(): [Term[], Term] {
         const variable = this.VARIABLES[Math.floor(Math.random() * 3)]; // 只使用 x, y, z
         const exp1 = Math.floor(Math.random() * 3) + 2; // 2-4
         const exp2 = Math.floor(Math.random() * 3) + 2; // 2-4
@@ -71,7 +71,7 @@ export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel2(): [Term[], Term] {
+    protected generateLevel2(): [Term[], Term] {
         const variable = this.VARIABLES[Math.floor(Math.random() * 3)];
         const exp1 = Math.floor(Math.random() * 4) + 5; // 5-8
         const exp2 = Math.floor(Math.random() * 4) + 5; // 5-8
@@ -91,7 +91,7 @@ export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel3(): [Term[], Term] {
+    protected generateLevel3(): [Term[], Term] {
         const variable = this.VARIABLES[Math.floor(Math.random() * 5)];
         const coef1 = Math.floor(Math.random() * 4) + 2; // 2-5
         const exp1 = Math.floor(Math.random() * 3) + 2; // 2-4
@@ -112,7 +112,7 @@ export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel4(): [Term[], Term] {
+    protected generateLevel4(): [Term[], Term] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
         const [var1, var2] = vars;
         const exp1 = Math.floor(Math.random() * 3) + 2; // 2-4
@@ -152,7 +152,7 @@ export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel5(): [Term[], Term] {
+    protected generateLevel5(): [Term[], Term] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3));
         const coef1 = Math.floor(Math.random() * 3) + 2; // 2-4
         const coef2 = Math.floor(Math.random() * 3) + 2; // 2-4
@@ -187,7 +187,7 @@ export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateWrongAnswers(correctAnswer: number, difficulty: number): string[] {
+    protected generateWrongAnswers(correctAnswer: number, difficulty: number): string[] {
         const wrongAnswers = new Set<number>();
         
         // 生成錯誤答案的策略
@@ -211,7 +211,7 @@ export class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         return Array.from(wrongAnswers).map(String);
     }
 
-    private formatQuestion(terms: Term[], result: Term): [string, string, string] {
+    protected formatQuestion(terms: Term[], result: Term): [string, string, string] {
         // 格式化題目，將缺失的指數用 LaTeX 的方框符號替代
         const questionParts = terms.map(term => {
             let termStr = '';
@@ -250,7 +250,7 @@ ${Array.from(result.variables.entries())
         return [questionParts.join(' \\times ') + ' = ' + answer, this.missingExponent.toString(), steps];
     }
 
-    private shuffleArray<T>(array: T[]): T[] {
+    protected shuffleArray<T>(array: T[]): T[] {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];

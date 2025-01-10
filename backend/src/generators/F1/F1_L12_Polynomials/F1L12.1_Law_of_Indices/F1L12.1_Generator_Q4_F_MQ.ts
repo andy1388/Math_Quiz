@@ -3,14 +3,10 @@ import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator'
 interface Term {
     coefficient: number;
     variables: Map<string, number>;
-    hasMissing?: boolean;  // 標記是否包含缺失的指數
-    missingVar?: string;   // 記錄哪個變量的指數缺失
 }
 
-export class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
-    private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
-    private readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
-    private missingExponent: number = 0;  // 記錄缺失的指數值
+export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
+    protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
 
     constructor(difficulty: number = 1) {
         super(difficulty, 'F1L12.1');

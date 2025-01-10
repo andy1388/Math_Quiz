@@ -5,8 +5,8 @@ interface Term {
     variables: Map<string, number>;
 }
 
-export class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
-    private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
+export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
+    protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
     private readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
 
     constructor(difficulty: number = 1) {
