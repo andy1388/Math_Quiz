@@ -61,7 +61,8 @@ export class GeneratorScanner {
             const stat = await fs.promises.stat(sectionPath);
             
             if (stat.isDirectory()) {
-                if (section.includes('Law_of_Indices')) {  // 或其他相关条件
+                if (section.includes('Law_of_Indices') || 
+                    section.includes('Cross_Method')) {  // 添加新的条件
                     await this.scanSection(sectionPath, form, chapter, section);
                 } else {
                     // 如果不是目标目录，继续递归扫描
