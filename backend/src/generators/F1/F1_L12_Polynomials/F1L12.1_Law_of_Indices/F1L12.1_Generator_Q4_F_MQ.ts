@@ -7,7 +7,7 @@ interface Term {
     missingVar?: string;   // 記錄哪個變量的指數缺失
 }
 
-export class F1L12_1_Generator_Q4_E_MQ extends QuestionGenerator {
+export class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
     private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
     private readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
     private missingExponent: number = 0;  // 記錄缺失的指數值

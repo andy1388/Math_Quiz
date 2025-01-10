@@ -57,9 +57,12 @@ function renderSidebar(structure) {
             e.preventDefault();
             document.querySelectorAll('.generator-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
+            
+            // 从 data-topic 中提取问题编号（只取最后的数字）
             const topic = item.dataset.topic;
+            const questionNumber = topic.match(/Q(\d+)/)[1];  // 只提取数字部分
             const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
-            startPractice(topic, difficulty);
+            startPractice(questionNumber, difficulty);
         });
     });
 }
@@ -304,34 +307,27 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-async function startPractice(topic, difficulty) {
+async function startPractice(questionNumber, difficulty) {
+    const questionType = `F1L12.1_Q${questionNumber}_F_MQ`;
+    
     try {
-        console.log('開始練習:', topic, difficulty);
-        const response = await fetch(`/api/questions/generate/${topic}?difficulty=${difficulty}`);
-        const data = await response.json();
+        console.log('開始練習:', questionType, difficulty);
+        const response = await fetch(`/api/questions/generate/${questionType}?difficulty=${difficulty}`);
         
         if (!response.ok) {
-            throw new Error(data.userMessage || '獲取題目失敗');
-        }
-
-        // 檢查返回的數據格式
-        if (!data || typeof data.content !== 'string' || !Array.isArray(data.options) || 
-            typeof data.correctIndex !== 'number' || !data.explanation) {
-            console.error('數據格式:', data);
-            throw new Error('題目數據格式錯誤');
+            throw new Error('此題目類型暫時不可用');
         }
         
+        const data = await response.json();
         displayQuestion(data);
+        
     } catch (error) {
         console.error('獲取題目失敗:', error);
         const questionArea = document.querySelector('.question-area');
         questionArea.innerHTML = `
             <div class="error-message">
-                <p>${error.message}</p>
-                <div class="error-actions">
-                    <button onclick="location.reload()" class="retry-btn">重試</button>
-                    <button onclick="history.back()" class="back-btn">返回</button>
-                </div>
+                <p>此題目類型暫時不可用</p>
+                <button onclick="location.reload()" class="retry-btn">重試</button>
             </div>
         `;
     }
