@@ -12,7 +12,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 渲染側邊欄
         renderSidebar(structure);
         
-        // 難度選擇
+        // 修改事件监听器
+        document.querySelectorAll('.generator-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.generator-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // 从 data-topic 中提取问题编号（只取数字部分）
+                const match = item.dataset.topic.match(/Q(\d+)/);
+                if (!match) {
+                    console.error('无效的题目编号格式');
+                    return;
+                }
+                const questionNumber = match[1];  // 获取匹配的数字
+                const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
+                startPractice(questionNumber, difficulty);
+            });
+        });
+
+        // 修改难度按钮的事件监听器
         document.querySelectorAll('.diff-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 // 移除其他按鈕的 active 狀態
@@ -23,16 +42,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 添加當前按鈕的 active 狀態
                 btn.classList.add('active');
                 
-                // 獲取當前選中的題目類型
                 const activeGenerator = document.querySelector('.generator-item.active');
                 if (activeGenerator) {
-                    // 立即使用新的難度重新生成題目
-                    startPractice(activeGenerator.dataset.topic, btn.dataset.difficulty);
+                    const match = activeGenerator.dataset.topic.match(/Q(\d+)/);
+                    if (match) {
+                        const questionNumber = match[1];
+                        startPractice(questionNumber, btn.dataset.difficulty);
+                    }
                 }
             });
         });
     } catch (error) {
-        console.error('初始化失敗:', error);
+        console.error('初始化失败:', error);
     }
 });
 
@@ -58,9 +79,13 @@ function renderSidebar(structure) {
             document.querySelectorAll('.generator-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
             
-            // 从 data-topic 中提取问题编号（只取最后的数字）
-            const topic = item.dataset.topic;
-            const questionNumber = topic.match(/Q(\d+)/)[1];  // 只提取数字部分
+            // 从 data-topic 中提取问题编号（只取数字部分）
+            const match = item.dataset.topic.match(/Q(\d+)/);
+            if (!match) {
+                console.error('无效的题目编号格式');
+                return;
+            }
+            const questionNumber = match[1];  // 获取匹配的数字
             const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
             startPractice(questionNumber, difficulty);
         });
@@ -438,14 +463,15 @@ function normalizeAnswer(answer) {
 }
 
 function nextQuestion() {
-    // 獲取當前活動的生成器項目
     const activeGenerator = document.querySelector('.generator-item.active');
     const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
     
     if (activeGenerator) {
-        startPractice(activeGenerator.dataset.topic, difficulty);
-    } else {
-        console.error('找不到活動的生成器');
+        const match = activeGenerator.dataset.topic.match(/Q(\d+)/);
+        if (match) {
+            const questionNumber = match[1];
+            startPractice(questionNumber, difficulty);
+        }
     }
 }
 
