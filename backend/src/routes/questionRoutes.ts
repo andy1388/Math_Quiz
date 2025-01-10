@@ -40,19 +40,40 @@ router.get('/generate/:generatorId', async (req, res) => {
         const { generatorId } = req.params;
         const { difficulty = 1 } = req.query;
         
+        console.log('Attempting to generate question:', { generatorId, difficulty });
+        
         const generatorInfo = generatorCache.get(generatorId);
         if (!generatorInfo) {
+            console.error('Generator not found:', generatorId);
             return res.status(404).json({ error: '生成器不存在' });
         }
 
-        // 动态导入生成器
-        const GeneratorClass = (await import(generatorInfo.path)).default;
-        const generator = new GeneratorClass(Number(difficulty));
-        const question = generator.generate();
-        
-        res.json(question);
-    } catch (error) {
-        res.status(500).json({ error: '生成题目失败' });
+        try {
+            console.log('Generator path:', generatorInfo.path);
+            const GeneratorClass = (await import(generatorInfo.path)).default;
+            console.log('Generator class loaded:', !!GeneratorClass);
+            
+            const generator = new GeneratorClass(Number(difficulty));
+            console.log('Generator instance created');
+            
+            const question = generator.generate();
+            console.log('Question generated');
+            
+            res.json(question);
+        } catch (importError: any) {
+            console.error('Error details:', {
+                message: importError.message || 'Unknown import error',
+                stack: importError.stack,
+                path: generatorInfo.path
+            });
+            throw importError;
+        }
+    } catch (error: any) {
+        console.error('Failed to generate question:', error);
+        res.status(500).json({ 
+            error: '生成题目失败',
+            details: error.message || 'Unknown error'
+        });
     }
 });
 

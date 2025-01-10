@@ -5,8 +5,8 @@ interface Term {
     variables: Map<string, number>;
 }
 
-export class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
-    private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
+export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
+    protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
 
     constructor(difficulty: number = 1) {
         super(difficulty, 'F1L12.1');
@@ -135,7 +135,7 @@ export class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private shuffleArray<T>(array: T[]): T[] {
+    protected shuffleArray<T>(array: T[]): T[] {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
@@ -143,7 +143,7 @@ export class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
         return array;
     }
 
-    private generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
+    protected generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
         const wrongAnswers: string[] = [];
         
         // 解析正確答案中的係數和變量
@@ -252,7 +252,7 @@ export class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
         return wrongAnswers;
     }
 
-    private formatQuestion(terms: Term[]): [string, string, string] {
+    protected formatQuestion(terms: Term[]): [string, string, string] {
         // 格式化題目
         const questionParts = terms.map(term => {
             let termStr = '';

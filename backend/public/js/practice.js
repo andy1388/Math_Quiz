@@ -134,14 +134,10 @@ function addEventListeners() {
             );
             item.classList.add('active');
             
-            const match = item.dataset.topic.match(/Q(\d+)/);
-            if (!match) {
-                console.error('无效的题目编号格式');
-                return;
-            }
-            const questionNumber = match[1];
+            // 直接使用完整的生成器ID
+            const generatorId = item.dataset.topic;
             const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
-            startPractice(questionNumber, difficulty);
+            startPractice(generatorId, difficulty);
         });
     });
 
@@ -155,11 +151,8 @@ function addEventListeners() {
             
             const activeGenerator = document.querySelector('.generator-item.active');
             if (activeGenerator) {
-                const match = activeGenerator.dataset.topic.match(/Q(\d+)/);
-                if (match) {
-                    const questionNumber = match[1];
-                    startPractice(questionNumber, btn.dataset.difficulty);
-                }
+                const generatorId = activeGenerator.dataset.topic;
+                startPractice(generatorId, btn.dataset.difficulty);
             }
         });
     });
@@ -380,20 +373,16 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-async function startPractice(questionNumber, difficulty) {
-    const questionType = `F1L12.1_Q${questionNumber}_F_MQ`;
-    
+async function startPractice(generatorId, difficulty) {
     try {
-        console.log('開始練習:', questionType, difficulty);
-        const response = await fetch(`/api/questions/generate/${questionType}?difficulty=${difficulty}`);
-        
+        // 使用完整的生成器ID
+        const response = await fetch(`/api/questions/generate/${generatorId}?difficulty=${difficulty}`);
         if (!response.ok) {
             throw new Error('此題目類型暫時不可用');
         }
         
-        const data = await response.json();
-        displayQuestion(data);
-        
+        const question = await response.json();
+        displayQuestion(question);
     } catch (error) {
         console.error('獲取題目失敗:', error);
         const questionArea = document.querySelector('.question-area');
@@ -515,11 +504,8 @@ function nextQuestion() {
     const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
     
     if (activeGenerator) {
-        const match = activeGenerator.dataset.topic.match(/Q(\d+)/);
-        if (match) {
-            const questionNumber = match[1];
-            startPractice(questionNumber, difficulty);
-        }
+        const generatorId = activeGenerator.dataset.topic;
+        startPractice(generatorId, difficulty);
     }
 }
 
