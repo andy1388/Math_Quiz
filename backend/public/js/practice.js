@@ -12,14 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 渲染側邊欄
         renderSidebar(structure);
         
-        // 初始展開所有目錄
-        document.querySelectorAll('.directory-content').forEach(content => {
-            content.style.display = 'block';
-        });
-        document.querySelectorAll('.directory-name').forEach(name => {
-            name.classList.add('expanded');
-        });
-        
         // 難度選擇
         document.querySelectorAll('.diff-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -46,8 +38,8 @@ function renderSidebar(structure) {
         dirName.addEventListener('click', () => {
             const content = dirName.nextElementSibling;
             if (content) {
-                content.style.display = content.style.display === 'none' ? 'block' : 'none';
                 dirName.classList.toggle('expanded');
+                content.classList.toggle('expanded');
             }
         });
     });
@@ -94,46 +86,65 @@ function renderDirectoryStructure(items) {
 const style = document.createElement('style');
 style.textContent = `
     .topic-nav {
-        padding: 1rem;
+        padding: 0;
         background: #2c3e50;
         height: 100%;
         overflow-y: auto;
     }
 
     .directory {
-        padding-left: 1rem;
+        padding: 0;
+        margin: 0;
     }
     
     .directory-item {
-        margin: 0.5rem 0;
+        margin: 0;
+        padding: 0;
+        background: #2c3e50;
     }
     
     .directory-name {
         cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 4px;
+        padding: 0.75rem 1rem;
         color: white;
         background: rgba(255,255,255,0.1);
-        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+        margin: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
     }
     
-    .directory-name:hover {
-        background: rgba(255,255,255,0.2);
+    .directory-name:before {
+        content: '▶';
+        display: inline-block;
+        margin-right: 0.5rem;
+        transition: transform 0.2s;
+        font-size: 0.8em;
+    }
+    
+    .directory-name.expanded:before {
+        transform: rotate(90deg);
     }
     
     .directory-content {
-        margin-left: 1rem;
-        border-left: 1px solid rgba(255,255,255,0.1);
-        padding-left: 1rem;
+        display: none;
+        background: #2c3e50;
+    }
+    
+    .directory-content.expanded {
+        display: block;
     }
     
     .generator-item {
         cursor: pointer;
-        padding: 0.5rem;
-        border-radius: 4px;
+        padding: 0.75rem 1rem;
         color: rgba(255,255,255,0.8);
-        margin-bottom: 0.25rem;
-        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        font-size: 0.9rem;
+        background: #2c3e50;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
     }
     
     .generator-item:hover {

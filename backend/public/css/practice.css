@@ -1,49 +1,108 @@
 /* 練習頁面布局 */
 .practice-layout {
     display: flex;
-    height: calc(100vh - 60px);
+    min-height: calc(100vh - 60px);
+    position: relative;
+    margin: 0;
+    padding: 0;
 }
 
 /* 左側導航欄 */
 .sidebar {
+    position: fixed;
+    top: 60px;
+    left: 0;
     width: 300px;
+    height: calc(100vh - 60px);
     background: #2c3e50;
     color: white;
+    z-index: 100;
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
+    padding: 0;
 }
 
+/* 移除搜索框的樣式 */
 .search-box {
-    padding: 1rem;
-    background: #fff;
-    border-bottom: 1px solid #dee2e6;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-.search-box input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    display: none; /* 暫時隱藏搜索框 */
 }
 
 .topic-nav {
-    padding: 1rem 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* 確保導航欄寬度 100% */
+}
+
+.directory {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+.directory-item {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.directory-name {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    color: white;
+    background: rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    margin: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.directory-content {
+    display: none;
+    margin: 0;
+    padding-left: 1.5rem;
+    width: calc(100% - 1.5rem);
+    background: rgba(0,0,0,0.1);
+}
+
+.directory-content.expanded {
+    display: block;
+}
+
+.generator-item {
+    cursor: pointer;
+    padding: 0.75rem 1rem;
+    color: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+}
+
+/* 添加左側垂直線 */
+.directory-content {
+    border-left: 1px solid rgba(255,255,255,0.1);
+    margin-left: 1rem;
 }
 
 /* 章節樣式 */
 .chapter-section {
     margin: 0;
+    padding: 0;
 }
 
 .chapter-title {
-    padding: 0.75rem 1rem;
-    background: #34495e;
-    cursor: pointer;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 0.5rem 1rem;
+    margin: 0;
 }
 
 .section-title {
@@ -77,12 +136,11 @@
 
 /* 主要內容區 */
 .practice-content {
+    margin-left: 300px;
     flex: 1;
     padding: 2rem;
     background: #fff;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
+    min-height: calc(100vh - 60px);
 }
 
 .content-header {
@@ -427,4 +485,5 @@ details[open] > summary::before {
 .chapter-title:before, .section-title:before {
     font-size: 1.2em;
     line-height: 1;
+} 
 } 
