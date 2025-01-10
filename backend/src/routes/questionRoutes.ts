@@ -1,130 +1,112 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { IQuestion } from '../generators/MC_Maker';
-import { MC_Maker } from '../generators/MC_Maker';
-import { GeneratorClass, GeneratorMap } from '../generators/QuestionGenerator';
+import { GeneratorScanner } from '../utils/generatorScanner';
+import { 
+    GeneratorInfo, 
+    GeneratorStructure, 
+    SectionStructure, 
+    ChapterStructure, 
+    DirectoryStructure 
+} from '../types/GeneratorTypes';
 
 const router = express.Router();
+const scanner = new GeneratorScanner();
+let generatorCache: Map<string, any> = new Map();
 
-// 動態導入生成器
-async function loadGenerator(topic: string): Promise<GeneratorClass | null> {
+// 初始化时扫描所有生成器
+async function initializeGenerators() {
+    console.log('开始初始化生成器缓存...');
     try {
-        const { generators } = await import('../generators') as { generators: GeneratorMap };
-        return generators[topic] || null;
+        generatorCache = await scanner.scanGenerators();
+        console.log('生成器缓存初始化完成，缓存大小:', generatorCache.size);
+        console.log('缓存的生成器:', Array.from(generatorCache.keys()));
     } catch (error) {
-        console.error('加載生成器失敗:', error);
-        return null;
+        console.error('初始化生成器缓存失败:', error);
+        throw error;
     }
 }
 
-router.get('/generate/:topic', async (req, res) => {
-    const { topic } = req.params;
-    const difficulty = parseInt(req.query.difficulty as string) || 1;
-
+// 获取可用生成器列表
+router.get('/available-generators', async (req, res) => {
     try {
-        const GeneratorClass = await loadGenerator(topic);
-        if (!GeneratorClass) {
-            return res.status(404).json({ 
-                error: '題目類型不存在',
-                userMessage: '此題目類型暫時不可用'
-            });
+        const generators = Array.from(generatorCache.values());
+        console.log('扫描到的生成器列表:', JSON.stringify(generators, null, 2));
+        
+        if (generators.length === 0) {
+            console.warn('没有找到任何生成器');
         }
-
-        const generator = new GeneratorClass(difficulty);
-        const output = generator.generate();
-        const question = MC_Maker.createQuestion(output, difficulty);
         
-        res.json(question);
-    } catch (error: any) {
-        console.error('生成題目錯誤:', error);
+        const structure = organizeGenerators(generators);
+        console.log('组织后的目录结构:', JSON.stringify(structure, null, 2));
         
-        // 檢查 error 是否為 Error 實例
-        const errorMessage = error instanceof Error ? error.message : '未知錯誤';
-        
-        // 根據錯誤類型返回適當的消息
-        if (errorMessage.includes('正在開發中')) {
-            res.status(400).json({
-                error: errorMessage,
-                userMessage: '此難度等級正在開發中，請稍後再試或選擇其他難度'
-            });
-        } else if (errorMessage.includes('不可用')) {
-            res.status(400).json({
-                error: errorMessage,
-                userMessage: '此難度等級暫時不可用，請選擇其他難度'
-            });
-        } else {
-            res.status(500).json({
-                error: '生成題目時發生錯誤',
-                userMessage: '系統發生錯誤，請稍後再試'
-            });
+        if (Object.keys(structure).length === 0) {
+            console.warn('生成的目录结构为空');
         }
-    }
-});
-
-router.get('/available-generators', (req, res) => {
-    try {
-        const generatorsPath = path.join(__dirname, '../generators');
-        console.log('掃描目錄:', generatorsPath);
-        
-        const structure = getDirectoryStructure(generatorsPath);
-        console.log('目錄結構:', JSON.stringify(structure, null, 2));
         
         res.json(structure);
     } catch (error) {
-        console.error('獲取生成器列表失敗:', error);
-        res.status(500).json({ error: '無法獲取生成器列表' });
+        console.error('获取生成器列表失败:', error);
+        res.status(500).json({ error: '获取生成器列表失败' });
     }
 });
 
-interface DirectoryStructure {
-    name: string;
-    type: 'directory' | 'generator';
-    children?: DirectoryStructure[];
-    topic?: string;
+// 生成题目
+router.get('/generate/:generatorId', async (req, res) => {
+    try {
+        const { generatorId } = req.params;
+        const { difficulty = 1 } = req.query;
+        
+        const generatorInfo = generatorCache.get(generatorId);
+        if (!generatorInfo) {
+            return res.status(404).json({ error: '生成器不存在' });
+        }
+
+        // 动态导入生成器
+        const GeneratorClass = (await import(generatorInfo.path)).default;
+        const generator = new GeneratorClass(Number(difficulty));
+        const question = generator.generate();
+        
+        res.json(question);
+    } catch (error) {
+        res.status(500).json({ error: '生成题目失败' });
+    }
+});
+
+// 组织生成器结构
+function organizeGenerators(generators: GeneratorInfo[]): DirectoryStructure {
+    const structure: DirectoryStructure = {};
+    
+    generators.forEach(gen => {
+        const chapterId = gen.chapter.id;
+        const sectionId = gen.section.id;
+        
+        // 如果章节不存在，创建它
+        if (!structure[chapterId]) {
+            structure[chapterId] = {
+                title: gen.chapter.title,
+                sections: {}
+            };
+        }
+        
+        // 如果小节不存在，创建它
+        if (!structure[chapterId].sections[sectionId]) {
+            structure[chapterId].sections[sectionId] = {
+                title: gen.section.title,
+                generators: []
+            };
+        }
+        
+        // 添加生成器信息
+        structure[chapterId].sections[sectionId].generators.push({
+            id: gen.id,
+            title: gen.title,
+            difficulty: gen.difficulty
+        });
+    });
+    
+    return structure;
 }
 
-function getDirectoryStructure(basePath: string) {
-    return [
-        {
-            name: 'F1',
-            type: 'directory',
-            children: [
-                {
-                    name: 'L12 Polynomials',
-                    type: 'directory',
-                    children: [
-                        {
-                            name: '12.1 Law of Indices',
-                            type: 'directory',
-                            children: [
-                                {
-                                    name: 'Q1: 指數運算 (基礎)',
-                                    type: 'generator',
-                                    topic: 'F1L12.1_Q1_F_MQ'
-                                },
-                                {
-                                    name: 'Q2: 指數填空 (普通)',
-                                    type: 'generator',
-                                    topic: 'F1L12.1_Q2_N_SQ'
-                                },
-                                {
-                                    name: 'Q3: 指數除法 (較難)',
-                                    type: 'generator',
-                                    topic: 'F1L12.1_Q3_H_MQ'
-                                },
-                                {
-                                    name: 'Q4: 指數除法填空 (精英)',
-                                    type: 'generator',
-                                    topic: 'F1L12.1_Q4_E_SQ'
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        }
-    ];
-}
+// 启动时初始化
+initializeGenerators().catch(console.error);
 
 export default router; 

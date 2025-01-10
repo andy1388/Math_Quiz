@@ -4,117 +4,165 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         // 獲取目錄結構
         const response = await fetch('/api/questions/available-generators');
-        if (!response.ok) throw new Error('無法獲取生成器列表');
+        if (!response.ok) {
+            console.error('获取生成器列表失败:', response.status);
+            throw new Error('無法獲取生成器列表');
+        }
         const structure = await response.json();
         
-        console.log('目錄結構:', structure); // 添加調試日誌
+        console.log('API返回的目录结构:', structure);
         
         // 渲染側邊欄
-        renderSidebar(structure);
+        const sidebarContent = document.querySelector('.topic-nav');
+        if (!sidebarContent) {
+            console.error('找不到側邊欄容器 .topic-nav');
+            return;
+        }
         
-        // 修改事件监听器
-        document.querySelectorAll('.generator-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                e.preventDefault();
-                document.querySelectorAll('.generator-item').forEach(i => i.classList.remove('active'));
-                item.classList.add('active');
-                
-                // 从 data-topic 中提取问题编号（只取数字部分）
-                const match = item.dataset.topic.match(/Q(\d+)/);
-                if (!match) {
-                    console.error('无效的题目编号格式');
-                    return;
-                }
-                const questionNumber = match[1];  // 获取匹配的数字
-                const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
-                startPractice(questionNumber, difficulty);
-            });
-        });
-
-        // 修改难度按钮的事件监听器
-        document.querySelectorAll('.diff-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                // 移除其他按鈕的 active 狀態
-                document.querySelectorAll('.diff-btn').forEach(b => {
-                    b.classList.remove('active');
-                });
-                
-                // 添加當前按鈕的 active 狀態
-                btn.classList.add('active');
-                
-                const activeGenerator = document.querySelector('.generator-item.active');
-                if (activeGenerator) {
-                    const match = activeGenerator.dataset.topic.match(/Q(\d+)/);
-                    if (match) {
-                        const questionNumber = match[1];
-                        startPractice(questionNumber, btn.dataset.difficulty);
-                    }
-                }
-            });
-        });
+        const html = renderDirectoryStructure(structure);
+        console.log('生成的HTML结构:', html);
+        
+        sidebarContent.innerHTML = html;
+        
+        // 检查DOM是否正确更新
+        console.log('更新后的侧边栏DOM:', sidebarContent.innerHTML);
+        
+        addEventListeners();
+        
     } catch (error) {
         console.error('初始化失败:', error);
     }
 });
 
 function renderSidebar(structure) {
-    const topicNav = document.querySelector('.topic-nav');
-    topicNav.innerHTML = renderDirectoryStructure(structure);
+    const sidebarContent = document.querySelector('.topic-nav');
+    if (!sidebarContent) {
+        console.error('Sidebar container not found');
+        return;
+    }
+    
+    try {
+        const html = renderDirectoryStructure(structure);
+        sidebarContent.innerHTML = html;
+        addEventListeners();
+    } catch (error) {
+        console.error('渲染侧边栏失败:', error);
+        sidebarContent.innerHTML = '<div class="error">加載失敗，請重試</div>';
+    }
+}
 
-    // 添加展開/收起功能
-    document.querySelectorAll('.directory-item > .directory-name').forEach(dirName => {
-        dirName.addEventListener('click', () => {
-            const content = dirName.nextElementSibling;
-            if (content) {
-                dirName.classList.toggle('expanded');
-                content.classList.toggle('expanded');
-            }
+function renderDirectoryStructure(structure) {
+    // 检查结构是否为空
+    if (!structure || Object.keys(structure).length === 0) {
+        console.error('目录结构为空:', structure);
+        return '<div class="directory-structure"><p>暫無可用的練習題目</p></div>';
+    }
+
+    let html = '<div class="directory-structure">';
+    
+    // 遍历每个章节
+    Object.entries(structure).forEach(([chapterId, chapter]) => {
+        console.log('处理章节:', chapterId, chapter); // 添加调试日志
+        
+        html += `
+            <div class="folder chapter">
+                <div class="folder-title">
+                    <span class="icon folder-icon">📁</span>
+                    <span class="folder-name">${chapter.title}</span>
+                </div>
+                <div class="folder-content">
+        `;
+        
+        // 遍历章节下的小节
+        Object.entries(chapter.sections).forEach(([sectionId, section]) => {
+            console.log('处理小节:', sectionId, section); // 添加调试日志
+            
+            html += `
+                <div class="folder section">
+                    <div class="folder-title">
+                        <span class="icon folder-icon">📁</span>
+                        <span class="folder-name">${section.title}</span>
+                    </div>
+                    <div class="folder-content">
+            `;
+            
+            // 遍历小节下的生成器
+            section.generators.forEach(generator => {
+                console.log('处理生成器:', generator); // 添加调试日志
+                
+                html += `
+                    <div class="generator-item" data-topic="${generator.id}">
+                        <span class="icon file-icon">📄</span>
+                        <span class="generator-title">${generator.title}</span>
+                        <span class="difficulty-badge">${generator.difficulty}</span>
+                    </div>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    return html;
+}
+
+function addEventListeners() {
+    // 添加文件夹点击事件（展开/折叠）
+    document.querySelectorAll('.folder-title').forEach(title => {
+        title.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const folder = title.parentElement;
+            folder.classList.toggle('expanded');
         });
     });
 
-    // 添加生成器點擊事件
+    // 添加生成器点击事件
     document.querySelectorAll('.generator-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
-            document.querySelectorAll('.generator-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.generator-item').forEach(i => 
+                i.classList.remove('active')
+            );
             item.classList.add('active');
             
-            // 从 data-topic 中提取问题编号（只取数字部分）
             const match = item.dataset.topic.match(/Q(\d+)/);
             if (!match) {
                 console.error('无效的题目编号格式');
                 return;
             }
-            const questionNumber = match[1];  // 获取匹配的数字
+            const questionNumber = match[1];
             const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
             startPractice(questionNumber, difficulty);
         });
     });
-}
 
-function renderDirectoryStructure(items) {
-    return `
-        <div class="directory">
-            ${items.map(item => {
-                if (item.type === 'directory') {
-                    return `
-                        <div class="directory-item">
-                            <div class="directory-name">📁 ${item.name}</div>
-                            <div class="directory-content">
-                                ${item.children ? renderDirectoryStructure(item.children) : ''}
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    return `
-                        <div class="generator-item" data-topic="${item.topic}">
-                            📄 ${item.name.replace('_Generator_Q1.ts', '')}
-                        </div>
-                    `;
+    // 添加难度按钮点击事件
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.diff-btn').forEach(b => 
+                b.classList.remove('active')
+            );
+            btn.classList.add('active');
+            
+            const activeGenerator = document.querySelector('.generator-item.active');
+            if (activeGenerator) {
+                const match = activeGenerator.dataset.topic.match(/Q(\d+)/);
+                if (match) {
+                    const questionNumber = match[1];
+                    startPractice(questionNumber, btn.dataset.difficulty);
                 }
-            }).join('')}
-        </div>
-    `;
+            }
+        });
+    });
 }
 
 // 更新 CSS - 合併所有樣式

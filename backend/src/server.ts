@@ -59,8 +59,15 @@ async function startServer(initialPort: number) {
                 server = createServer(app);
                 server
                     .listen(port)
-                    .once('listening', () => {
+                    .once('listening', async () => {
                         console.log(`服務器運行在 http://localhost:${port}`);
+                        console.log('正在初始化生成器...');
+                        try {
+                            await import('./routes/questionRoutes');
+                            console.log('生成器初始化完成');
+                        } catch (error) {
+                            console.error('生成器初始化失败:', error);
+                        }
                         resolve();
                     })
                     .once('error', (err: NodeJS.ErrnoException) => {

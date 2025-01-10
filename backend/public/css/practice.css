@@ -2,24 +2,20 @@
 .practice-layout {
     display: flex;
     min-height: calc(100vh - 60px);
+    margin-top: 60px;
     position: relative;
-    margin: 0;
-    padding: 0;
 }
 
 /* 左側導航欄 */
 .sidebar {
-    position: fixed;
-    top: 60px;
-    left: 0;
     width: 300px;
     height: calc(100vh - 60px);
-    background: #2c3e50;
-    color: white;
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
+    background-color: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    overflow-y: auto;
+    position: fixed;
+    left: 0;
+    top: 60px;
 }
 
 /* 移除搜索框的樣式 */
@@ -28,13 +24,7 @@
 }
 
 .topic-nav {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    width: 100%; /* 確保導航欄寬度 100% */
+    padding: 15px;
 }
 
 .directory {
@@ -485,5 +475,97 @@ details[open] > summary::before {
 .chapter-title:before, .section-title:before {
     font-size: 1.2em;
     line-height: 1;
-} 
+}
+
+/* 目录结构样式 */
+.directory-structure {
+    padding: 10px;
+    font-family: Arial, sans-serif;
+}
+
+/* 文件夹样式 */
+.folder {
+    margin: 5px 0;
+}
+
+.folder-content {
+    display: none;
+    margin-left: 20px;
+    border-left: 1px solid #ddd;
+    padding-left: 10px;
+}
+
+.folder.expanded > .folder-content {
+    display: block;
+}
+
+/* 文件夹标题样式 */
+.folder-title {
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.folder-title:hover {
+    background-color: #f0f0f0;
+}
+
+/* 生成器项目样式 */
+.generator-item {
+    padding: 8px;
+    margin: 5px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.generator-item:hover {
+    background-color: #e9ecef;
+}
+
+.generator-item.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* 图标样式 */
+.icon {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.folder-icon {
+    color: #ffd700;
+}
+
+.file-icon {
+    color: #75bfff;
+}
+
+/* 难度标签样式 */
+.difficulty-badge {
+    font-size: 0.8em;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background-color: #e9ecef;
+    color: #666;
+}
+
+.generator-item.active .difficulty-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* 确保主内容区域不被侧边栏遮挡 */
+.main-content {
+    margin-left: 300px;
+    flex: 1;
+    padding: 20px;
+    min-height: calc(100vh - 60px);
 } 
