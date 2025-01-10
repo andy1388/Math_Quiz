@@ -244,7 +244,7 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
    \\[${terms.reduce((str, term, index) => {
        if (index === 0) return term.coefficient.toString();
        return str + (term.operation === 'divide' ? ' \\div ' : ' \\times ') + term.coefficient;
-   }, '')} = ${result.coefficient}\\]
+   }, '')} = ${FractionUtils.toLatex(resultCoefficient[0], resultCoefficient[1])}\\]
 
 2. 指數運算：
 ${Array.from(allVars).sort().map(v => {
