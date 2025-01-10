@@ -245,38 +245,63 @@ ${Array.from(allVars).sort().map(v => {
     private generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
         const wrongAnswers = new Set<string>();
         
-        // 解析正確答案，處理單一變量無指數的情況
-        const match = correctAnswer.match(/^(\d*)([a-z])(?:\^{(\d+)})?$/);
-        if (!match) {
-            // 如果無法解析，生成一些基本的錯誤答案
-            return [
-                correctAnswer + '^2',
-                '2' + correctAnswer,
-                correctAnswer + '^3'
-            ];
+        // 解析正確答案中的所有變量和指數
+        const varExps = new Map<string, number>();
+        const varRegex = /([a-z])(?:\^{(\d+)})?/g;
+        let match;
+        
+        // 提取係數
+        const coeffMatch = correctAnswer.match(/^(\d+)?/);
+        const coefficient = coeffMatch && coeffMatch[1] ? parseInt(coeffMatch[1]) : 1;
+        
+        // 提取所有變量和指數
+        while ((match = varRegex.exec(correctAnswer)) !== null) {
+            const [, variable, expStr] = match;
+            const exp = expStr ? parseInt(expStr) : 1;
+            varExps.set(variable, exp);
         }
-        
-        const [, coeffStr, variable, expStr] = match;
-        const coef = coeffStr ? parseInt(coeffStr) : 1;
-        const exp = expStr ? parseInt(expStr) : 1;
-        
+
         // 生成錯誤答案的策略
         const strategies = [
-            // 指數加1
-            () => this.formatTerm(coef, new Map([[variable, exp + 1]])),
-            // 指數減1（如果可能）
-            () => exp > 1 ? this.formatTerm(coef, new Map([[variable, exp - 1]])) : variable + '^2',
-            // 係數變為2
-            () => this.formatTerm(2, new Map([[variable, exp]])),
-            // 係數變為3
-            () => this.formatTerm(3, new Map([[variable, exp]]))
+            // 所有指數加1
+            () => {
+                const newVars = new Map(varExps);
+                newVars.forEach((exp, v) => newVars.set(v, exp + 1));
+                return this.formatTerm(coefficient, newVars);
+            },
+            // 所有指數減1（如果可能）
+            () => {
+                const newVars = new Map(varExps);
+                let possible = true;
+                newVars.forEach((exp, v) => {
+                    if (exp <= 1) possible = false;
+                    else newVars.set(v, exp - 1);
+                });
+                return possible ? this.formatTerm(coefficient, newVars) : null;
+            },
+            // 係數變為2倍
+            () => this.formatTerm(2 * coefficient, varExps),
+            // 係數變為3倍
+            () => this.formatTerm(3 * coefficient, varExps),
+            // 交換變量的指數（如果有多個變量）
+            () => {
+                if (varExps.size >= 2) {
+                    const vars = Array.from(varExps.entries());
+                    const newVars = new Map(varExps);
+                    const [exp1, exp2] = [vars[0][1], vars[1][1]];
+                    newVars.set(vars[0][0], exp2);
+                    newVars.set(vars[1][0], exp1);
+                    return this.formatTerm(coefficient, newVars);
+                }
+                return null;
+            }
         ];
 
         // 生成三個不同的錯誤答案
         while (wrongAnswers.size < 3) {
             const strategy = strategies[Math.floor(Math.random() * strategies.length)];
             const wrong = strategy();
-            if (wrong !== correctAnswer && !wrongAnswers.has(wrong)) {
+            if (wrong && wrong !== correctAnswer && !wrongAnswers.has(wrong)) {
                 wrongAnswers.add(wrong);
             }
         }
