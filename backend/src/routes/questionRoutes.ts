@@ -57,7 +57,10 @@ router.get('/generate/:topic', async (req, res) => {
     try {
         const GeneratorClass = await loadGenerator(topic);
         if (!GeneratorClass) {
-            return res.status(404).json({ error: '題目類型不存在' });
+            return res.status(404).json({ 
+                error: '題目類型不存在',
+                userMessage: '此題目類型暫時不可用'
+            });
         }
 
         const generator = new GeneratorClass(difficulty);
@@ -65,9 +68,29 @@ router.get('/generate/:topic', async (req, res) => {
         const question = MC_Maker.createQuestion(output, difficulty);
         
         res.json(question);
-    } catch (error) {
+    } catch (error: any) {
         console.error('生成題目錯誤:', error);
-        res.status(500).json({ error: '生成題目時發生錯誤' });
+        
+        // 檢查 error 是否為 Error 實例
+        const errorMessage = error instanceof Error ? error.message : '未知錯誤';
+        
+        // 根據錯誤類型返回適當的消息
+        if (errorMessage.includes('正在開發中')) {
+            res.status(400).json({
+                error: errorMessage,
+                userMessage: '此難度等級正在開發中，請稍後再試或選擇其他難度'
+            });
+        } else if (errorMessage.includes('不可用')) {
+            res.status(400).json({
+                error: errorMessage,
+                userMessage: '此難度等級暫時不可用，請選擇其他難度'
+            });
+        } else {
+            res.status(500).json({
+                error: '生成題目時發生錯誤',
+                userMessage: '系統發生錯誤，請稍後再試'
+            });
+        }
     }
 });
 

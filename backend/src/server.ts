@@ -3,8 +3,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import path from 'path';
 import questionRoutes from './routes/questionRoutes';
+import { createServer, Server } from 'http';
 
 const app: Express = express();
+let server: Server | null = null;
 
 // 中間件配置
 app.use(cors());
@@ -39,15 +41,24 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// 嘗試啟動服務器的函數
 async function startServer(initialPort: number) {
     let port = initialPort;
-    const maxAttempts = 10; // 最多嘗試10個端口
+    const maxAttempts = 10;
+    
+    // 如果有之前的服務器實例，先關閉它
+    if (server) {
+        await new Promise<void>((resolve) => {
+            server?.close(() => resolve());
+        });
+        server = null;
+    }
     
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
             await new Promise<void>((resolve, reject) => {
-                const server = app.listen(port)
+                server = createServer(app);
+                server
+                    .listen(port)
                     .once('listening', () => {
                         console.log(`服務器運行在 http://localhost:${port}`);
                         resolve();
@@ -56,7 +67,7 @@ async function startServer(initialPort: number) {
                         if (err.code === 'EADDRINUSE') {
                             console.log(`端口 ${port} 已被占用，嘗試下一個端口...`);
                             port++;
-                            server.close();
+                            server?.close();
                             reject(err);
                         } else {
                             console.error('服務器啟動失敗:', err);
@@ -64,18 +75,57 @@ async function startServer(initialPort: number) {
                         }
                     });
             });
-            // 如果成功啟動，跳出循環
             break;
         } catch (err) {
             if (attempt === maxAttempts - 1) {
                 console.error(`無法找到可用的端口（嘗試了 ${maxAttempts} 次）`);
                 process.exit(1);
             }
-            // 如果是 EADDRINUSE 錯誤，繼續循環嘗試下一個端口
             if ((err as NodeJS.ErrnoException).code !== 'EADDRINUSE') {
                 throw err;
             }
         }
+    }
+}
+
+// Windows 特定的進程處理
+if (process.platform === 'win32') {
+    const rl = require('readline').createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    rl.on('SIGINT', () => {
+        process.emit('SIGINT' as any);
+    });
+}
+
+// 進程終止處理
+process.on('SIGINT', () => {
+    console.log('\n正在關閉服務器...');
+    gracefulShutdown();
+});
+
+process.on('SIGTERM', () => {
+    console.log('\n收到終止信號，正在關閉服務器...');
+    gracefulShutdown();
+});
+
+// 優雅關閉
+function gracefulShutdown() {
+    if (server) {
+        server.close(() => {
+            console.log('服務器已關閉');
+            process.exit(0);
+        });
+
+        // 設置超時強制關閉
+        setTimeout(() => {
+            console.error('強制關閉服務器');
+            process.exit(1);
+        }, 5000);
+    } else {
+        process.exit(0);
     }
 }
 

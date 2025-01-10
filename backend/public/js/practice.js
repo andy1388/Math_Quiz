@@ -15,12 +15,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 難度選擇
         document.querySelectorAll('.diff-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const difficulty = btn.dataset.difficulty;
-                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                // 移除其他按鈕的 active 狀態
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                
+                // 添加當前按鈕的 active 狀態
                 btn.classList.add('active');
-                const activeTopic = document.querySelector('.topic-link.active');
-                if (activeTopic) {
-                    startPractice(activeTopic.dataset.topic, difficulty);
+                
+                // 獲取當前選中的題目類型
+                const activeGenerator = document.querySelector('.generator-item.active');
+                if (activeGenerator) {
+                    // 立即使用新的難度重新生成題目
+                    startPractice(activeGenerator.dataset.topic, btn.dataset.difficulty);
                 }
             });
         });
@@ -271,23 +278,55 @@ style.textContent = `
         margin-bottom: 10px;
         color: #333;
     }
+
+    .error-message {
+        text-align: center;
+        padding: 20px;
+        background: #fff3f3;
+        border: 1px solid #ffcdd2;
+        border-radius: 4px;
+        margin: 20px 0;
+    }
+
+    .retry-btn {
+        background: #f44336;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin-top: 10px;
+        cursor: pointer;
+    }
+
+    .retry-btn:hover {
+        background: #d32f2f;
+    }
 `;
 document.head.appendChild(style);
 
 async function startPractice(topic, difficulty) {
     try {
-        console.log('開始練習:', topic, difficulty); // 添加調試日誌
+        console.log('開始練習:', topic, difficulty);
         const response = await fetch(`/api/questions/generate/${topic}?difficulty=${difficulty}`);
+        const data = await response.json();
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(data.userMessage || '獲取題目失敗');
         }
         
-        const question = await response.json();
-        displayQuestion(question);
+        displayQuestion(data);
     } catch (error) {
         console.error('獲取題目失敗:', error);
-        alert('獲取題目失敗，請稍後再試');
+        const questionArea = document.querySelector('.question-area');
+        questionArea.innerHTML = `
+            <div class="error-message">
+                <p>${error.message}</p>
+                <div class="error-actions">
+                    <button onclick="location.reload()" class="retry-btn">重試</button>
+                    <button onclick="history.back()" class="back-btn">返回</button>
+                </div>
+            </div>
+        `;
     }
 }
 
