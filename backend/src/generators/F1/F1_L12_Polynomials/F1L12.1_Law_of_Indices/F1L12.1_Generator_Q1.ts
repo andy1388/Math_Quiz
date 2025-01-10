@@ -146,12 +146,14 @@ export class F1L12_1_Generator_Q1 extends QuestionGenerator {
     private generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
         const wrongAnswers: string[] = [];
         
-        // 解析多變量表達式
+        // 解析正確答案中的係數和變量
+        const coefficientMatch = correctAnswer.match(/^(\d+)?/);
+        const coefficient = coefficientMatch && coefficientMatch[1] ? parseInt(coefficientMatch[1]) : 1;
+        
+        // 解析變量和指數
         const terms = new Map<string, number>();
         const regex = /([a-z])(\d+)/g;
         let match;
-        
-        // 收集所有變量和指數
         while ((match = regex.exec(correctAnswer)) !== null) {
             const [, variable, exponent] = match;
             terms.set(variable, parseInt(exponent));
@@ -165,7 +167,8 @@ export class F1L12_1_Generator_Q1 extends QuestionGenerator {
         // 生成錯誤答案的策略
         const generateWrongAnswer = () => {
             const newTerms = new Map(terms);
-            const strategy = Math.floor(Math.random() * 3);
+            const newCoefficient = coefficient;  // 預設保持係數不變
+            const strategy = Math.floor(Math.random() * 4);  // 增加策略數量
             
             switch (strategy) {
                 case 0: // 改變一個變量的指數
@@ -191,17 +194,36 @@ export class F1L12_1_Generator_Q1 extends QuestionGenerator {
                         newTerms.set(v, exp + change);
                     });
                     break;
+
+                case 3: // 改變係數
+                    if (difficulty >= 3) {  // 只在難度3以上改變係數
+                        const coefficientChanges = [
+                            coefficient + 1,
+                            coefficient - 1,
+                            coefficient * 2,
+                            Math.floor(coefficient / 2)
+                        ].filter(c => c > 0 && c !== coefficient);
+                        
+                        const newCoef = coefficientChanges[Math.floor(Math.random() * coefficientChanges.length)];
+                        return `${newCoef}${Array.from(newTerms.entries())
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([v, e]) => `${v}${e}`)
+                            .join('')}`;
+                    }
+                    break;
             }
 
             // 構建錯誤答案字符串
-            return Array.from(newTerms.entries())
+            const wrongAnswer = Array.from(newTerms.entries())
                 .sort(([a], [b]) => a.localeCompare(b))
                 .map(([v, e]) => `${v}${e}`)
                 .join('');
+                
+            return coefficient !== 1 ? `${coefficient}${wrongAnswer}` : wrongAnswer;
         };
 
         // 生成三個不同的錯誤答案
-        const maxAttempts = 10;
+        const maxAttempts = 15;  // 增加嘗試次數
         let attempts = 0;
         
         while (wrongAnswers.length < 3 && attempts < maxAttempts) {
@@ -212,13 +234,18 @@ export class F1L12_1_Generator_Q1 extends QuestionGenerator {
             attempts++;
         }
 
-        // 如果無法生成足夠的錯誤答案，填充剩餘的位置
+        // 如果無法生成足夠的錯誤答案，使用備用策略
         while (wrongAnswers.length < 3) {
-            const defaultWrong = Array.from(terms.entries())
-                .map(([v, e]) => `${v}${e + wrongAnswers.length + 1}`)
-                .join('');
-            if (!wrongAnswers.includes(defaultWrong)) {
-                wrongAnswers.push(defaultWrong);
+            const backupWrong = coefficient !== 1 
+                ? `${coefficient + wrongAnswers.length + 1}${Array.from(terms.entries())
+                    .map(([v, e]) => `${v}${e}`)
+                    .join('')}`
+                : Array.from(terms.entries())
+                    .map(([v, e]) => `${v}${e + wrongAnswers.length + 1}`)
+                    .join('');
+                    
+            if (!wrongAnswers.includes(backupWrong)) {
+                wrongAnswers.push(backupWrong);
             }
         }
 
