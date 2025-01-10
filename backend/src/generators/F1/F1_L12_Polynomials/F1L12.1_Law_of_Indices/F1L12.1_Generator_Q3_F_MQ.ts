@@ -7,7 +7,7 @@ interface Term {
 
 export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
     protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
-    private readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
+    protected readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
 
     constructor(difficulty: number = 1) {
         super(difficulty, 'F1L12.1');
@@ -48,7 +48,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel1(): Term[] {
+    protected generateLevel1(): Term[] {
         const variable = this.VARIABLES[Math.floor(Math.random() * 3)]; // 只使用 x, y, z
         const exp2 = Math.floor(Math.random() * 3) + 2; // 2-4
         const exp1 = exp2 + Math.floor(Math.random() * 3) + 1; // 確保被除數指數大於除數
@@ -59,7 +59,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel2(): Term[] {
+    protected generateLevel2(): Term[] {
         const variable = this.VARIABLES[Math.floor(Math.random() * 3)];
         const exp2 = Math.floor(Math.random() * 4) + 3; // 3-6
         const exp1 = exp2 + Math.floor(Math.random() * 3) + 2; // 確保差值至少為2
@@ -70,7 +70,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel3(): Term[] {
+    protected generateLevel3(): Term[] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
         const [var1, var2] = vars;
         
@@ -98,7 +98,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel4(): Term[] {
+    protected generateLevel4(): Term[] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
         const [var1, var2] = vars;
 
@@ -130,7 +130,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private generateLevel5(): Term[] {
+    protected generateLevel5(): Term[] {
         const vars = this.shuffleArray(this.VARIABLES.slice(0, 3));
         
         // 生成三個容易整除的係數
@@ -167,7 +167,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         ];
     }
 
-    private shuffleArray<T>(array: T[]): T[] {
+    protected shuffleArray<T>(array: T[]): T[] {
         const shuffled = [...array];
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -176,7 +176,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         return shuffled;
     }
 
-    private formatQuestion(terms: Term[]): [string, string, string] {
+    protected formatQuestion(terms: Term[]): [string, string, string] {
         // 計算結果
         const result: Term = {
             coefficient: terms.reduce((acc, term, index) => 
@@ -242,7 +242,7 @@ ${Array.from(allVars).sort().map(v => {
         return [questionParts.join(' \\div '), answer, steps];
     }
 
-    private generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
+    protected generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
         const wrongAnswers = new Set<string>();
         
         // 解析正確答案中的所有變量和指數
