@@ -225,18 +225,18 @@ export class F1L12_1_Generator_Q3 extends QuestionGenerator {
             answer += variable + '^{' + exp + '}';
         });
 
-        // 生成解題步驟
+        // 生成解題步驟，使用 LaTeX 格式
         const steps = `解題步驟：
 1. 係數相除：
-   ${terms.map(t => t.coefficient).join(' \\div ')} = ${result.coefficient}
+   \\(${terms.map(t => t.coefficient).join(' \\div ')} = ${result.coefficient}\\)
 
 2. 同類項指數相減：
 ${Array.from(allVars).sort().map(v => {
     const exps = terms.map(t => t.variables.get(v) || 0);
-    return `   ${v}: ${exps.join(' - ')} = ${result.variables.get(v) || 0}`;
+    return `   \\(${v}: ${exps.join(' - ')} = ${result.variables.get(v) || 0}\\)`;
 }).join('\n')}
 
-3. 最終答案：${answer}`;
+3. 最終答案：\\(${answer}\\)`;
 
         return [questionParts.join(' \\div '), answer, steps];
     }
