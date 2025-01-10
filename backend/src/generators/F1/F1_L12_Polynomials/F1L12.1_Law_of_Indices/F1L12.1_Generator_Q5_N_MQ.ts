@@ -181,23 +181,24 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
         // 计算结果，使用分数运算
         let resultCoefficient: [number, number] = [terms[0].coefficient, 1];
         
-        // 从第二项开始计算
+        // 从第二项开始计算，每个数都作为分数处理
         for (let i = 1; i < terms.length; i++) {
             const term = terms[i];
             if (term.operation === 'divide') {
                 resultCoefficient = FractionUtils.divide(
-                    resultCoefficient, 
+                    resultCoefficient,
                     [term.coefficient, 1]
                 );
             } else {
                 resultCoefficient = FractionUtils.multiply(
-                    resultCoefficient, 
+                    resultCoefficient,
                     [term.coefficient, 1]
                 );
             }
         }
 
         const result: Term = {
+            // 保持分数形式，不要转换为小数
             coefficient: resultCoefficient[0] / resultCoefficient[1],
             variables: new Map()
         };
@@ -234,8 +235,8 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
             return index === 0 ? termStr : (term.operation === 'divide' ? ' \\div ' + termStr : ' \\times ' + termStr);
         });
 
-        // 格式化答案
-        const answer = this.formatTerm(result);
+        // 格式化答案时使用分数形式
+        const answer = this.formatTermWithFraction(result, resultCoefficient);
 
         // 生成解题步骤，使用 LaTeX 格式
         const steps = `解題步驟：
@@ -373,18 +374,37 @@ ${Array.from(allVars).sort().map(v => {
     private formatTerm(term: Term): string {
         let coefficientStr = '';
         if (term.coefficient !== 1) {
+            // 如果系数不是整数，直接转换为分数
             if (term.coefficient % 1 !== 0) {
-                // 将小数转换为分数形式
+                // 将小数转换为分数
                 const [num, den] = term.coefficient.toString().split('.');
-                if (den) {
-                    const denominator = Math.pow(10, den.length);
-                    const numerator = parseInt(num + den);
-                    const [simplifiedNum, simplifiedDen] = FractionUtils.simplify(numerator, denominator);
-                    coefficientStr = FractionUtils.toLatex(simplifiedNum, simplifiedDen);
-                }
+                const denominator = Math.pow(10, den.length);
+                const numerator = parseInt(num + den);
+                const [simplifiedNum, simplifiedDen] = FractionUtils.simplify(numerator, denominator);
+                coefficientStr = FractionUtils.toLatex(simplifiedNum, simplifiedDen);
             } else {
                 coefficientStr = term.coefficient.toString();
             }
+        }
+        
+        if (term.variables.size === 0) return coefficientStr || '1';
+        
+        const sortedVars = Array.from(term.variables.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([variable, exp]) => {
+                return exp === 1 ? variable : variable + '^{' + exp + '}';
+            })
+            .join('');
+        
+        return coefficientStr ? coefficientStr + sortedVars : sortedVars;
+    }
+
+    // 新增方法：使用分数形式格式化项
+    private formatTermWithFraction(term: Term, coefficient: [number, number]): string {
+        let coefficientStr = '';
+        if (term.coefficient !== 1) {
+            // 直接使用分数形式
+            coefficientStr = FractionUtils.toLatex(coefficient[0], coefficient[1]);
         }
         
         if (term.variables.size === 0) return coefficientStr || '1';
