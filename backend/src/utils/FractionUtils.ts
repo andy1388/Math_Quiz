@@ -24,7 +24,7 @@ export class FractionUtils {
     /**
      * 计算最大公因数（使用辗转相除法）
      */
-    private static findGCD(a: number, b: number): number {
+    static findGCD(a: number, b: number): number {
         // 确保输入为正整数
         a = Math.abs(Math.round(a));
         b = Math.abs(Math.round(b));

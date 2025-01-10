@@ -270,101 +270,76 @@ ${Array.from(allVars).sort().map(v => {
             term.variables.forEach((_, v) => questionVars.add(v));
         });
         
-        // 解析正确答案
-        const coeffMatch = correctAnswer.match(/^(\\frac{\\d+}{\\d+}|\\d+)?/);
-        const coefficient = coeffMatch && coeffMatch[1] ? 
-            (coeffMatch[1].startsWith('\\frac') ? 
-                eval(coeffMatch[1].replace(/\\frac{(\d+)}{(\d+)}/, '$1/$2')) : 
-                parseInt(coeffMatch[1])) : 1;
+        // 解析正确答案中的分数和变量
+        const fractionMatch = correctAnswer.match(/\\frac{(\d+)}{(\d+)}/);
+        const isCorrectAnswerFraction = fractionMatch !== null;
+        
+        let [correctNum, correctDen] = fractionMatch ? 
+            [parseInt(fractionMatch[1]), parseInt(fractionMatch[2])] : 
+            [parseInt(correctAnswer) || 1, 1];
 
-        // 只使用题目中出现的变量
+        // 解析变量和指数
         const varExps = new Map<string, number>();
-        Array.from(questionVars).forEach(v => {
-            const regex = new RegExp(`${v}(?:\\^{(\\d+)})?`, 'g');
-            const match = regex.exec(correctAnswer);
-            if (match) {
-                const exp = match[1] ? parseInt(match[1]) : 1;
-                varExps.set(v, exp);
+        Array.from(correctAnswer.matchAll(/([a-z])(?:\^{(\d+)})?/g)).forEach(match => {
+            const [, variable, exp] = match;
+            if (questionVars.has(variable)) {  // 只使用题目中的变量
+                varExps.set(variable, exp ? parseInt(exp) : 1);
             }
         });
 
-        // 生成错误答案的策略
-        const generateWrongAnswer = () => {
-            const strategy = Math.floor(Math.random() * 4);
-            const newVars = new Map(varExps);
-            let newCoef = coefficient;
+        // 1. 生成一个使用相同系数但不同指数的错误答案
+        const newVars1 = new Map(varExps);
+        const randomVar = Array.from(newVars1.keys())[
+            Math.floor(Math.random() * newVars1.size)
+        ];
+        const currentExp = newVars1.get(randomVar)!;
+        newVars1.set(randomVar, currentExp + 1);  // 增加指数
 
-            switch (strategy) {
-                case 0: // 部分指数加1或减1（确保结果为正）
-                    newVars.forEach((exp, v) => {
-                        const change = Math.random() < 0.5 ? 1 : -1;
-                        const newExp = exp + change;
-                        if (newExp > 0) {
-                            newVars.set(v, newExp);
-                        }
-                    });
-                    break;
-                case 1: // 系数计算错误（保持在合理范围内）
-                    if (coefficient !== 1) {
-                        const changes = [2, 0.5, 1.5, 3];
-                        const newCoefTemp = coefficient * changes[Math.floor(Math.random() * changes.length)];
-                        if (newCoefTemp > 0 && newCoefTemp <= 20) {
-                            newCoef = newCoefTemp;
-                        }
-                    }
-                    break;
-                case 2: // 交换两个变量的指数
-                    const vars = Array.from(newVars.entries());
-                    if (vars.length >= 2) {
-                        const i = Math.floor(Math.random() * (vars.length - 1));
-                        [vars[i][1], vars[i + 1][1]] = [vars[i + 1][1], vars[i][1]];
-                        newVars.clear();
-                        vars.forEach(([v, e]) => newVars.set(v, e));
-                    }
-                    break;
-                case 3: // 某个指数加倍或减半（确保为正）
-                    if (newVars.size > 0) {
-                        const randomVar = Array.from(newVars.keys())[
-                            Math.floor(Math.random() * newVars.size)
-                        ];
-                        const currentExp = newVars.get(randomVar)!;
-                        const newExp = Math.random() < 0.5 ? 
-                            currentExp * 2 : 
-                            Math.max(1, Math.floor(currentExp / 2));
-                        newVars.set(randomVar, newExp);
-                    }
-                    break;
-            }
+        const sameCoeffAnswer = (isCorrectAnswerFraction ? 
+            FractionUtils.toLatex(correctNum, correctDen) : 
+            correctNum.toString()) + 
+            Array.from(newVars1.entries())
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([v, e]) => e === 1 ? v : `${v}^{${e}}`)
+                .join('');
+        wrongAnswers.add(sameCoeffAnswer);
 
-            return this.formatTerm({ coefficient: newCoef, variables: newVars });
-        };
-
-        // 生成三个不同的错误答案
-        const maxAttempts = 20;
-        let attempts = 0;
-        
-        while (wrongAnswers.size < 3 && attempts < maxAttempts) {
-            const wrongAnswer = generateWrongAnswer();
-            if (wrongAnswer !== correctAnswer && !wrongAnswers.has(wrongAnswer)) {
-                // 验证答案中只包含题目中出现的变量
-                const containsOnlyQuestionVars = Array.from(wrongAnswer.matchAll(/[a-z]/g))
-                    .every(match => questionVars.has(match[0]));
-                
-                if (containsOnlyQuestionVars) {
-                    wrongAnswers.add(wrongAnswer);
-                }
-            }
-            attempts++;
+        // 2. 生成一个不同的系数（确保和正确答案形式一致）
+        let differentNum, differentDen;
+        if (isCorrectAnswerFraction) {
+            [differentNum, differentDen] = FractionUtils.simplify(
+                correctNum * 3, 
+                correctDen * 2
+            );
+        } else {
+            differentNum = correctNum + 2;
+            differentDen = 1;
         }
 
-        // 如果无法生成足够的错误答案，使用备用策略
-        while (wrongAnswers.size < 3) {
-            const backupAnswer = this.formatTerm({
-                coefficient: coefficient * (wrongAnswers.size + 2),
-                variables: new Map(varExps)
+        // 3. 生成两个使用相同系数但不同变量组合的错误答案
+        const differentCoeffStr = isCorrectAnswerFraction ? 
+            FractionUtils.toLatex(differentNum, differentDen) : 
+            differentNum.toString();
+
+        // 从题目中的变量生成两个不同的组合
+        for (let i = 0; i < 2; i++) {
+            const newVars = new Map(varExps);
+            // 修改变量指数，确保不为0
+            Array.from(questionVars).forEach(v => {
+                const baseExp = Math.floor(Math.random() * 3) + 1;  // 1-3
+                if (Math.random() < 0.5) {  // 50%概率添加变量
+                    newVars.set(v, baseExp);
+                }
             });
-            if (!wrongAnswers.has(backupAnswer)) {
-                wrongAnswers.add(backupAnswer);
+
+            const varsStr = Array.from(newVars.entries())
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([v, e]) => e === 1 ? v : `${v}^{${e}}`)
+                .join('');
+
+            const wrongAnswer = differentCoeffStr + varsStr;
+            if (!wrongAnswers.has(wrongAnswer) && wrongAnswer !== correctAnswer) {
+                wrongAnswers.add(wrongAnswer);
             }
         }
 
