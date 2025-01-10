@@ -378,8 +378,8 @@ function displayQuestion(question) {
 
 // 添加轉換為 LaTeX 格式的函數
 function convertToLatex(text) {
-    // 替換指數
-    text = text.replace(/(\w+)(\d+)/g, '$1^{$2}');
+    // 處理所有字母變量的指數
+    text = text.replace(/([a-z])(\d+)/g, '$1^{$2}');
     
     // 替換乘號
     text = text.replace(/×/g, '\\times');
