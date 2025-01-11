@@ -3,8 +3,6 @@ import { GeneratorScanner } from '../utils/generatorScanner';
 import { 
     GeneratorInfo, 
     GeneratorStructure, 
-    SectionStructure, 
-    ChapterStructure, 
     DirectoryStructure 
 } from '../types/GeneratorTypes';
 
@@ -25,8 +23,8 @@ async function initializeGenerators() {
 // 获取可用生成器列表
 router.get('/available-generators', async (req, res) => {
     try {
-        const generators = Array.from(generatorCache.values());
-        const structure = organizeGenerators(generators);
+        const generators = await scanner.scanGenerators();
+        const structure = organizeGenerators(Array.from(generators.values()));
         res.json(structure);
     } catch (error) {
         console.error('获取生成器列表失败:', error);
@@ -38,41 +36,28 @@ router.get('/available-generators', async (req, res) => {
 router.get('/generate/:generatorId', async (req, res) => {
     try {
         const { generatorId } = req.params;
-        const { difficulty = 1 } = req.query;
-        
-        console.log('Attempting to generate question:', { generatorId, difficulty });
+        const { difficulty = '1' } = req.query;
         
         const generatorInfo = generatorCache.get(generatorId);
         if (!generatorInfo) {
-            console.error('Generator not found:', generatorId);
             return res.status(404).json({ error: '生成器不存在' });
         }
 
-        try {
-            console.log('Generator path:', generatorInfo.path);
-            const GeneratorClass = (await import(generatorInfo.path)).default;
-            console.log('Generator class loaded:', !!GeneratorClass);
-            
-            const generator = new GeneratorClass(Number(difficulty));
-            console.log('Generator instance created');
-            
-            const question = generator.generate();
-            console.log('Question generated');
-            
-            res.json(question);
-        } catch (importError: any) {
-            console.error('Error details:', {
-                message: importError.message || 'Unknown import error',
-                stack: importError.stack,
-                path: generatorInfo.path
-            });
-            throw importError;
-        }
-    } catch (error: any) {
-        console.error('Failed to generate question:', error);
+        const GeneratorClass = (await import(generatorInfo.path)).default;
+        console.log('Max difficulty:', GeneratorClass.MAX_DIFFICULTY);
+        
+        const maxDiff = GeneratorClass.MAX_DIFFICULTY || 5;
+        const actualDifficulty = Math.min(Number(difficulty), maxDiff);
+        
+        const generator = new GeneratorClass(actualDifficulty);
+        const question = generator.generate();
+        
+        res.json(question);
+    } catch (error: unknown) {
+        console.error('生成题目失败:', error);
         res.status(500).json({ 
             error: '生成题目失败',
-            details: error.message || 'Unknown error'
+            details: error instanceof Error ? error.message : '未知错误'
         });
     }
 });
@@ -101,11 +86,17 @@ function organizeGenerators(generators: GeneratorInfo[]): DirectoryStructure {
             };
         }
         
-        // 添加生成器信息
+        // 添加生成器信息，包括最大难度
         structure[chapterId].sections[sectionId].generators.push({
             id: gen.id,
             title: gen.title,
-            difficulty: gen.difficulty
+            difficulty: gen.difficulty,
+            maxDifficulty: gen.generatorClass?.MAX_DIFFICULTY || 5  // 确保从类中获取 MAX_DIFFICULTY
+        });
+
+        console.log('Generator info:', {  // 添加调试日志
+            id: gen.id,
+            maxDifficulty: gen.generatorClass?.MAX_DIFFICULTY
         });
     });
     

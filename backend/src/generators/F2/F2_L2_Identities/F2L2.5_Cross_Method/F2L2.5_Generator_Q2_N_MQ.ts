@@ -9,10 +9,12 @@ interface Factor {
 }
 
 export default class F2L2_5_Generator_Q2_N_MQ extends QuestionGenerator {
+    static readonly MAX_DIFFICULTY = 5;  // 设置最大难度为5
+
     private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'p', 'q', 'r', 's', 't'];
 
-    constructor(difficulty: number = 1) {
-        super(difficulty, 'F2L2.5');
+    constructor() {
+        super(1, 'F2L2.5');
     }
 
     generate(): IGeneratorOutput {

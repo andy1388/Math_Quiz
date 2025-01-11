@@ -6,6 +6,8 @@ interface LogarithmExpression {
 }
 
 export default class F4L7_1_1_Generator_Q1_F_MQ extends QuestionGenerator {
+    static readonly MAX_DIFFICULTY = 1;  // 修改为只有1级难度
+
     constructor() {
         super(1, 'F4L7.1.1');
     }

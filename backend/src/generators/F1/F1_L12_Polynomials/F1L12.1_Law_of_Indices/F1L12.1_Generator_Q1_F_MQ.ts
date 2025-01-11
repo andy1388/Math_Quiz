@@ -6,10 +6,12 @@ interface Term {
 }
 
 export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
+    static readonly MAX_DIFFICULTY = 5;  // 设置最大难度为5
+
     protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
 
-    constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+    constructor() {
+        super(1, 'F1L12.1');
     }
 
     generate(): IGeneratorOutput {

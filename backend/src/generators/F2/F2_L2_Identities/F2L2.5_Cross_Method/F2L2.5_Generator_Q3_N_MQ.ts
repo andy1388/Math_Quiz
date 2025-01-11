@@ -10,8 +10,10 @@ interface Factor {
 }
 
 export default class F2L2_5_Generator_Q3_N_MQ extends QuestionGenerator {
-    constructor(difficulty: number = 1) {
-        super(difficulty, 'F2L2.5');
+    static readonly MAX_DIFFICULTY = 5;  // 设置最大难度为5
+
+    constructor() {
+        super(1, 'F2L2.5');
     }
 
     private gcd(a: number, b: number): number {

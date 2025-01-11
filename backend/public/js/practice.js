@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         addEventListeners();
         
+        // 初始化时默认显示难度1
+        renderDifficultyButtons(1);
+        
     } catch (error) {
         console.error('初始化失败:', error);
     }
@@ -62,7 +65,7 @@ function renderDirectoryStructure(structure) {
     
     // 遍历每个章节
     Object.entries(structure).forEach(([chapterId, chapter]) => {
-        console.log('处理章节:', chapterId, chapter); // 添加调试日志
+        console.log('处理章节:', chapterId, chapter);
         
         html += `
             <div class="folder chapter">
@@ -75,7 +78,7 @@ function renderDirectoryStructure(structure) {
         
         // 遍历章节下的小节
         Object.entries(chapter.sections).forEach(([sectionId, section]) => {
-            console.log('处理小节:', sectionId, section); // 添加调试日志
+            console.log('处理小节:', sectionId, section);
             
             html += `
                 <div class="folder section">
@@ -88,10 +91,12 @@ function renderDirectoryStructure(structure) {
             
             // 遍历小节下的生成器
             section.generators.forEach(generator => {
-                console.log('处理生成器:', generator); // 添加调试日志
+                console.log('处理生成器:', generator);
                 
                 html += `
-                    <div class="generator-item" data-topic="${generator.id}">
+                    <div class="generator-item" 
+                        data-id="${generator.id}"
+                        data-max-difficulty="${generator.maxDifficulty || 5}">
                         <span class="icon file-icon">📄</span>
                         <span class="generator-title">${generator.title}</span>
                         <span class="difficulty-badge">${generator.difficulty}</span>
@@ -129,31 +134,25 @@ function addEventListeners() {
     document.querySelectorAll('.generator-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
+            
+            // 移除其他生成器的活动状态
             document.querySelectorAll('.generator-item').forEach(i => 
-                i.classList.remove('active')
-            );
+                i.classList.remove('active'));
+            
+            // 设置当前生成器为活动状态
             item.classList.add('active');
             
-            // 直接使用完整的生成器ID
-            const generatorId = item.dataset.topic;
-            const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
-            startPractice(generatorId, difficulty);
-        });
-    });
-
-    // 添加难度按钮点击事件
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.diff-btn').forEach(b => 
-                b.classList.remove('active')
-            );
-            btn.classList.add('active');
+            // 获取最大难度并更新按钮
+            const maxDifficulty = parseInt(item.dataset.maxDifficulty) || 5;
+            console.log('Generator clicked:', {
+                id: item.dataset.id,
+                maxDifficulty: maxDifficulty
+            });
             
-            const activeGenerator = document.querySelector('.generator-item.active');
-            if (activeGenerator) {
-                const generatorId = activeGenerator.dataset.topic;
-                startPractice(generatorId, btn.dataset.difficulty);
-            }
+            // 先更新难度按钮，再开始练习
+            renderDifficultyButtons(maxDifficulty);
+            setTimeout(() => startPractice(item.dataset.id), 0);
         });
     });
 }
@@ -373,14 +372,17 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-async function startPractice(generatorId, difficulty) {
+async function startPractice(generatorId) {
     try {
-        // 使用完整的生成器ID
+        // 获取当前选中的难度
+        const activeDiffBtn = document.querySelector('.diff-btn.active');
+        const difficulty = activeDiffBtn ? activeDiffBtn.dataset.difficulty : '1';
+
         const response = await fetch(`/api/questions/generate/${generatorId}?difficulty=${difficulty}`);
         if (!response.ok) {
             throw new Error('此題目類型暫時不可用');
         }
-        
+
         const question = await response.json();
         displayQuestion(question);
     } catch (error) {
@@ -397,57 +399,49 @@ async function startPractice(generatorId, difficulty) {
 
 function displayQuestion(question) {
     const questionArea = document.querySelector('.question-area');
-    
-    // 將內容轉換為 LaTeX 格式
-    const latexContent = convertToLatex(question.content);
-    const latexOptions = question.options.map(opt => convertToLatex(opt));
-    
-    // 處理解題步驟中的 LaTeX
-    const explanation = question.explanation.split('\n').map(line => {
-        if (line.includes('\\(') && line.includes('\\)')) {
-            // 如果行已經包含 LaTeX 標記，保持原樣
-            return line;
-        }
-        // 對其他行中的數學表達式進行 LaTeX 轉換
-        return line.replace(/([a-z])(\d+)/g, '$1^{$2}');
-    }).join('<br>');
-    
+    if (!questionArea) return;
+
+    // 构建题目 HTML
     let html = `
-        <div class="question-content">
-            <h3>題目：</h3>
-            <p>\\[${latexContent}\\]</p>
-            
-            <div class="options">
-                ${latexOptions.map((option, index) => `
-                    <label class="option">
-                        <input type="radio" name="answer" value="${index}">
-                        <span>${String.fromCharCode(65 + index)}. \\(${option}\\)</span>
-                    </label>
-                `).join('')}
+        <div class="question">
+            <div class="question-content">
+                <p>題目：</p>
+                <div class="math">\\[${question.content}\\]</div>
             </div>
-            
+            <div class="options">
+    `;
+
+    // 添加选项
+    question.options.forEach((option, index) => {
+        const letter = String.fromCharCode(65 + index); // A, B, C, D...
+        html += `
+            <div class="option">
+                <input type="radio" name="answer" id="option${letter}" value="${index}">
+                <label for="option${letter}" class="math">
+                    ${letter}. \\[${option}\\]
+                </label>
+            </div>
+        `;
+    });
+
+    html += `
+            </div>
             <div class="explanation" style="display: none;">
-                <h4>正確答案：\\(${convertToLatex(question.correctAnswer)}\\)</h4>
-                ${explanation}
-                <div class="next-question-container">
-                    <button onclick="nextQuestion()" class="next-btn">
-                        下一題 <span class="arrow">→</span>
-                    </button>
-                </div>
+                ${question.explanation}
             </div>
         </div>
     `;
-    
+
     questionArea.innerHTML = html;
-    
-    // 添加選項點擊事件
+
+    // 添加选项点击事件
     document.querySelectorAll('input[name="answer"]').forEach(input => {
         input.addEventListener('change', () => {
             checkAnswer(question.correctIndex, parseInt(input.value));
         });
     });
-    
-    // 重新渲染數學公式
+
+    // 重新渲染数学公式
     MathJax.typesetPromise();
 }
 
@@ -519,4 +513,86 @@ function checkGeneratorExists(topicId) {
     return AVAILABLE_GENERATORS.some(generator => 
         generator.startsWith(topicId + '.')
     );
+}
+
+function renderDifficultyButtons(maxDifficulty = 5) {
+    console.log('Rendering difficulty buttons with max:', maxDifficulty);
+    const difficultyFilter = document.querySelector('.difficulty-filter');
+    if (!difficultyFilter) return;
+
+    // 清除现有按钮
+    difficultyFilter.innerHTML = '<span>難度：</span>';
+    
+    // 创建按钮容器
+    const buttonsContainer = document.createElement('div');
+    buttonsContainer.className = 'buttons-container';
+
+    // 确保 maxDifficulty 是有效数字
+    maxDifficulty = Math.max(1, parseInt(maxDifficulty) || 5);
+
+    // 生成难度按钮
+    for (let i = 1; i <= maxDifficulty; i++) {
+        const button = document.createElement('button');
+        button.className = 'diff-btn' + (i === 1 ? ' active' : '');
+        button.dataset.difficulty = i.toString();
+        button.textContent = i.toString();
+        button.onclick = () => {
+            document.querySelectorAll('.diff-btn').forEach(btn => 
+                btn.classList.remove('active'));
+            button.classList.add('active');
+            const activeGenerator = document.querySelector('.generator-item.active');
+            if (activeGenerator) {
+                startPractice(activeGenerator.dataset.id);
+            }
+        };
+        buttonsContainer.appendChild(button);
+    }
+
+    difficultyFilter.appendChild(buttonsContainer);
+}
+
+// 修改生成器点击处理函数
+function handleGeneratorClick(item) {
+    // 移除其他生成器的活动状态
+    document.querySelectorAll('.generator-item').forEach(i => 
+        i.classList.remove('active'));
+    
+    // 设置当前生成器为活动状态
+    item.classList.add('active');
+    
+    // 获取最大难度并更新按钮
+    const maxDifficulty = parseInt(item.dataset.maxDifficulty) || 5;
+    console.log('Generator clicked:', {
+        id: item.dataset.id,
+        maxDifficulty: maxDifficulty
+    });
+    
+    // 先更新难度按钮
+    renderDifficultyButtons(maxDifficulty);
+    
+    // 然后开始练习，确保使用新的难度设置
+    startPractice(item.dataset.id);
+}
+
+function createGeneratorItem(generator) {
+    console.log('Creating generator item:', generator); // 添加调试日志
+    
+    const item = document.createElement('div');
+    item.className = 'generator-item';
+    item.dataset.id = generator.id;
+    item.dataset.maxDifficulty = generator.maxDifficulty;
+    
+    console.log('Generator max difficulty:', generator.maxDifficulty); // 添加调试日志
+    
+    // 添加标题和其他内容
+    const title = document.createElement('span');
+    title.className = 'generator-title';
+    title.textContent = generator.title;
+    
+    item.appendChild(title);
+    
+    // 添加点击事件
+    item.addEventListener('click', () => handleGeneratorClick(item));
+    
+    return item;
 } 

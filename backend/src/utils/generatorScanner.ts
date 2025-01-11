@@ -101,17 +101,21 @@ export class GeneratorScanner {
             const fileName = path.basename(filePath, '.ts');
             const descPath = filePath.replace('.ts', '.desc.txt');
             
+            // 动态导入生成器类
+            const module = await import(filePath);
+            const GeneratorClass = module.default;
+            
+            console.log('Scanning generator:', fileName); // 添加调试日志
+            console.log('MAX_DIFFICULTY:', GeneratorClass.MAX_DIFFICULTY); // 添加调试日志
+
             let title = '';
             if (fs.existsSync(descPath)) {
                 const content = await fs.promises.readFile(descPath, 'utf-8');
                 const lines = content.split('\n');
-                title = lines[1].trim(); // 取第二行（英文标题）
+                title = lines[1].trim();
             } else {
                 title = fileName;
             }
-
-            const chapterTitle = chapter.split('_').slice(1).join(' ');
-            const sectionTitle = section.split('_').slice(1).join(' ');
 
             return {
                 id: fileName,
@@ -120,14 +124,15 @@ export class GeneratorScanner {
                 path: filePath,
                 chapter: {
                     id: chapter,
-                    title: `${form} ${chapterTitle}`,
+                    title: `${form} ${chapter.split('_').slice(1).join(' ')}`,
                     number: chapter.match(/L\d+/)?.[0] || ''
                 },
                 section: {
                     id: section,
-                    title: sectionTitle,
+                    title: section.split('_').slice(1).join(' '),
                     number: section.match(/\d+\.\d+/)?.[0] || ''
-                }
+                },
+                generatorClass: GeneratorClass // 直接传递整个类，而不是只传递 MAX_DIFFICULTY
             };
         } catch (error) {
             console.error(`解析生成器信息时出错 ${filePath}:`, error);

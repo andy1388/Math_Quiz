@@ -7,8 +7,112 @@ interface Factor {
 }
 
 export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
+    static readonly MAX_DIFFICULTY = 5;  // 设置最大难度为5
+
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F2L2.5');
+        super(difficulty, 'F2L2.5');  // 传递 difficulty 到父类
+        this.difficulty = difficulty;  // 确保在当前类中也设置 difficulty
+    }
+
+    private generateLevel1Factors(): Factor {
+        // 简单：全为负整数
+        let m: number, n: number;
+        // m 范围：-1 到 -4
+        m = -(Math.floor(Math.random() * 4) + 1);  // 确保 m ∈ {-1, -2, -3, -4}
+        do {
+            // n 范围：-1 到 -9，且 |n| > |m|
+            n = -(Math.floor(Math.random() * 9) + 1);  // 确保 n ∈ {-1, -2, ..., -9}
+        } while (n === m || Math.abs(n) <= Math.abs(m));
+        
+        return { m, n };
+    }
+
+    private generateLevel2Factors(): Factor {
+        // 中等：全为正整数
+        let m: number, n: number;
+        // m 范围：1 到 4
+        m = Math.floor(Math.random() * 4) + 1;  // 确保 m ∈ {1, 2, 3, 4}
+        do {
+            // n 范围：1 到 9，且 n > m
+            n = Math.floor(Math.random() * 9) + 1;  // 确保 n ∈ {1, 2, ..., 9}
+        } while (n === m || n <= m);
+        
+        return { m, n };
+    }
+
+    private generateLevel3Factors(): Factor {
+        // 较难：一正一负
+        let m: number, n: number;
+        // m 范围：-8 到 -2
+        m = -(Math.floor(Math.random() * 7) + 2);  // 确保 m ∈ {-2, -3, ..., -8}
+        do {
+            // n 范围：2 到 8
+            n = Math.floor(Math.random() * 7) + 2;  // 确保 n ∈ {2, 3, ..., 8}
+        } while (n === -m);  // 避免 n = -m
+        
+        return { m, n };
+    }
+
+    private generateLevel4Factors(): Factor {
+        // 进阶：混合范围
+        let m: number, n: number;
+        const generateNumber = () => {
+            const num = Math.floor(Math.random() * 25) - 7;  // -7 到 17
+            return num === 0 ? 1 : num;  // 如果是0，返回1
+        };
+        
+        do {
+            m = generateNumber();
+            n = generateNumber();
+        } while (m === n || m === -n);  // 避免相等和互为相反数的情况
+        
+        return { m, n };
+    }
+
+    private generateLevel5Factors(): Factor {
+        // 挑战：完全平方式
+        let m: number, n: number;
+        let type: 'difference' | 'plusSquare' | 'minusSquare';
+        
+        // m 范围：2 到 13
+        m = Math.floor(Math.random() * 12) + 2;  // 确保 m ∈ {2, 3, ..., 13}
+        
+        // 随机选择类型
+        const typeIndex = Math.floor(Math.random() * 3);
+        switch (typeIndex) {
+            case 0: // 完全平方差
+                type = 'difference';
+                n = -m;  // x² - m² = (x + m)(x - m)
+                break;
+            case 1: // 完全平方式 (x + m)²
+                type = 'plusSquare';
+                n = m;   // x² + 2mx + m² = (x + m)²
+                break;
+            default: // 完全平方式 (x - m)²
+                type = 'minusSquare';
+                n = m;   // x² - 2mx + m² = (x - m)²
+                break;
+        }
+        
+        return { m, n, type };
+    }
+
+    private generateFactors(): Factor {
+        // 根据难度生成不同的因子
+        switch (this.difficulty) {
+            case 1:
+                return this.generateLevel1Factors();
+            case 2:
+                return this.generateLevel2Factors();
+            case 3:
+                return this.generateLevel3Factors();
+            case 4:
+                return this.generateLevel4Factors();
+            case 5:
+                return this.generateLevel5Factors();
+            default:
+                return this.generateLevel1Factors();
+        }
     }
 
     generate(): IGeneratorOutput {
@@ -43,81 +147,6 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
             correctIndex: correctIndex,
             explanation: steps
         };
-    }
-
-    private generateFactors(): Factor {
-        let m: number = 0;  // 初始化为0
-        let n: number = 0;  // 初始化为0
-        let type: 'difference' | 'plusSquare' | 'minusSquare' | undefined;
-        
-        switch (this.difficulty) {
-            case 1: // 简单：全为负整数
-                // m 范围：-1 到 -4
-                m = -(Math.floor(Math.random() * 4) + 1);  // 确保 m ∈ {-1, -2, -3, -4}
-                do {
-                    // n 范围：-1 到 -9，且 |n| > |m|
-                    n = -(Math.floor(Math.random() * 9) + 1);  // 确保 n ∈ {-1, -2, ..., -9}
-                } while (n === m || Math.abs(n) <= Math.abs(m));
-                break;
-
-            case 2: // 中等：全为正整数
-                // m 范围：1 到 4
-                m = Math.floor(Math.random() * 4) + 1;  // 确保 m ∈ {1, 2, 3, 4}
-                do {
-                    // n 范围：1 到 9，且 n > m
-                    n = Math.floor(Math.random() * 9) + 1;  // 确保 n ∈ {1, 2, ..., 9}
-                } while (n === m || n <= m);
-                break;
-
-            case 3: // 较难：一正一负
-                // m 范围：-8 到 -2
-                m = -(Math.floor(Math.random() * 7) + 2);  // 确保 m ∈ {-2, -3, ..., -8}
-                do {
-                    // n 范围：2 到 8
-                    n = Math.floor(Math.random() * 7) + 2;  // 确保 n ∈ {2, 3, ..., 8}
-                } while (n === -m);  // 避免 n = -m
-                break;
-
-            case 4: // 进阶：混合范围
-                // m, n 范围：-7 到 17（不含0）
-                const generateNumber = () => {
-                    const num = Math.floor(Math.random() * 25) - 7;  // -7 到 17
-                    return num === 0 ? 1 : num;  // 如果是0，返回1
-                };
-                
-                do {
-                    m = generateNumber();
-                    n = generateNumber();
-                } while (m === n || m === -n);  // 避免相等和互为相反数的情况
-                break;
-
-            case 5: // 挑战：完全平方式
-                // m 范围：2 到 13
-                m = Math.floor(Math.random() * 12) + 2;  // 确保 m ∈ {2, 3, ..., 13}
-                
-                // 随机选择类型
-                const typeIndex = Math.floor(Math.random() * 3);
-                switch (typeIndex) {
-                    case 0: // 完全平方差
-                        type = 'difference';
-                        n = -m;  // x² - m² = (x + m)(x - m)
-                        break;
-                    case 1: // 完全平方式 (x + m)²
-                        type = 'plusSquare';
-                        n = m;   // x² + 2mx + m² = (x + m)²
-                        break;
-                    case 2: // 完全平方式 (x - m)²
-                        type = 'minusSquare';
-                        n = m;   // x² - 2mx + m² = (x - m)²
-                        break;
-                }
-                break;
-
-            default:
-                throw new Error(`难度等级 ${this.difficulty} 不可用`);
-        }
-        
-        return { m, n, type };
     }
 
     private formatExpression(b: number, c: number): string {

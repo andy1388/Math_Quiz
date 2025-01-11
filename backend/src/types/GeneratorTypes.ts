@@ -20,6 +20,9 @@ export interface GeneratorInfo {
     path: string;         // 文件路径
     chapter: ChapterInfo; // 章节信息
     section: SectionInfo; // 小节信息
+    generatorClass?: {    // 添加生成器类属性
+        MAX_DIFFICULTY?: number;
+    };
 }
 
 // 生成器结构
@@ -27,6 +30,7 @@ export interface GeneratorStructure {
     id: string;
     title: string;
     difficulty: string;
+    maxDifficulty: number;
 }
 
 // 小节结构

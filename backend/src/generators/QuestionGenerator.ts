@@ -10,12 +10,18 @@ export interface IGeneratorOutput {
 }
 
 export abstract class QuestionGenerator {
-    protected difficulty: number;  // 难度级别
-    protected topic: string;       // 题目主题
+    protected difficulty: number;
+    protected topic: string;
+    
+    static readonly MAX_DIFFICULTY: number = 5;  // 默认最大难度
 
     constructor(difficulty: number, topic: string) {
         this.difficulty = difficulty;
         this.topic = topic;
+    }
+
+    static getMaxDifficulty(): number {
+        return this.MAX_DIFFICULTY;
     }
 
     // 子类必须实现的生成题目方法
