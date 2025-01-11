@@ -237,69 +237,71 @@
 
 /* 選項區域的調整 */
 .options {
-    margin: 2rem 0;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
+    margin: 1.5rem 0;
 }
 
 .option {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1.5rem;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
-    background: white;
-    position: relative;
-    min-height: 80px;
 }
 
 .option:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    background-color: #f5f5f5;
 }
 
-/* 正確答案的樣式 */
-.option.correct {
-    background: #d4edda;
-    border-color: #c3e6cb;
+.option input[type="radio"] {
+    display: none;
 }
 
-.option.correct::after {
-    content: '✓';
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #28a745;
+.option-content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 2.5rem;
+}
+
+.option-label {
+    flex: 0 0 2rem;
     font-weight: bold;
-    font-size: 1.2rem;
+    color: #666;
 }
 
-/* 錯誤答案的樣式 */
-.option.wrong {
-    background: #f8d7da;
-    border-color: #f5c6cb;
-}
-
-.option.wrong::after {
-    content: '✗';
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #dc3545;
-    font-weight: bold;
-    font-size: 1.2rem;
-}
-
-/* 選項文字樣式 */
-.option span {
-    font-size: 1.1rem;
+.option-value {
     flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* 移除選中狀態的背景色 */
+.option input[type="radio"]:checked + .option-content {
+    background-color: transparent;
+}
+
+/* 正確答案 */
+.option.correct {
+    background-color: #c8e6c9;
+    border-color: #81c784;
+}
+
+/* 錯誤答案 */
+.option.wrong {
+    background-color: #ffcdd2;
+    border-color: #e57373;
+}
+
+/* 禁用狀態 */
+.option input[type="radio"]:disabled + .option-content {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .submit-btn {

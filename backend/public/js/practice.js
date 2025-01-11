@@ -564,7 +564,7 @@ function displayQuestion(question) {
     }
     
     // 將內容轉換為 LaTeX 格式
-    const latexContent = question.content;  // 已經是LaTeX格式
+    const latexContent = question.content;
     
     // 檢查是否有選項
     const options = question.wrongAnswers 
@@ -589,7 +589,10 @@ function displayQuestion(question) {
                     ${shuffledOptions.map((option, index) => `
                         <label class="option">
                             <input type="radio" name="answer" value="${index}">
-                            <span>${String.fromCharCode(65 + index)}. ${option}</span>
+                            <div class="option-content">
+                                <span class="option-label">${String.fromCharCode(65 + index)}.</span>
+                                <span class="option-value">\\[${option}\\]</span>
+                            </div>
                         </label>
                     `).join('')}
                 </div>
