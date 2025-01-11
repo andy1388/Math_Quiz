@@ -42,7 +42,19 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
             content: question,
             correctAnswer: answer,
             wrongAnswers: wrongAnswers,
-            explanation: steps
+            explanation: steps,
+            
+            // 新增字段
+            hasImage: false,     // 这题暂时不需要图片
+            type: 'text',
+            displayOptions: {
+                latex: true      // 使用 LaTeX 显示数学公式
+            },
+            metadata: {
+                topic: 'Law of Indices',
+                subtopic: 'Basic Operations',
+                skills: ['Multiplication of Indices']
+            }
         };
     }
 
@@ -290,16 +302,25 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
             answer += variable + (exp !== 1 ? exp : '');
         });
 
-        // 生成解題步驟，全部使用 LaTeX 格式
-        const steps = `解題步驟：
+        // 生成解題步驟
+        const steps = terms.every(t => t.coefficient === 1) 
+            ? `解題步驟：
+1. 同類項指數相加：
+${Array.from(result.variables.entries())
+    .map(([v, e]) => `   \\(${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\)`)
+    .join('\n')}
+最終答案：\\(${
+    result.coefficient !== 1 ? result.coefficient : ''
+}${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\)`
+            : `解題步驟：
 1. 係數相乘：\\(${terms.map(t => t.coefficient).join(' \\times ')} = ${result.coefficient}\\)
 2. 同類項指數相加：
 ${Array.from(result.variables.entries())
     .map(([v, e]) => `   \\(${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\)`)
     .join('\n')}
-3. 最終答案：\\(${result.coefficient}${
-    sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')
-}\\)`;
+3. 最終答案：\\(${
+    result.coefficient !== 1 ? result.coefficient : ''
+}${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\)`;
 
         return [questionParts.join(' × '), answer, steps];
     }

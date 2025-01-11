@@ -6,6 +6,23 @@ export interface IGeneratorOutput {
     correctAnswer: string;
     wrongAnswers: string[];
     explanation: string;
+
+    hasImage?: boolean;
+    imageUrl?: string;
+    
+    type?: 'text' | 'image' | 'mixed';
+    metadata?: {
+        topic?: string;
+        subtopic?: string;
+        skills?: string[];
+        prerequisites?: string[];
+    };
+    
+    displayOptions?: {
+        latex?: boolean;
+        graph?: boolean;
+        table?: boolean;
+    };
 }
 
 export abstract class QuestionGenerator {
