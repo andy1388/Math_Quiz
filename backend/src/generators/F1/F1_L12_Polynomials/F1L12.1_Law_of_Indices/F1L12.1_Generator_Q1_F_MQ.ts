@@ -41,8 +41,7 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
         return {
             content: question,
             correctAnswer: answer,
-            options: [answer, ...wrongAnswers],
-            correctIndex: 0,
+            wrongAnswers: wrongAnswers,
             explanation: steps
         };
     }

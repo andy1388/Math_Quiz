@@ -4,8 +4,8 @@
   "description": "數學測驗平台後端服務",
   "main": "src/server.ts",
   "scripts": {
-    "start": "ts-node src/server.ts",
-    "dev": "nodemon --exec ts-node src/server.ts",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
     "build": "tsc",
     "test": "jest",
     "generate-index": "ts-node src/utils/generateIndex.ts"
