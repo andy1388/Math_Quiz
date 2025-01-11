@@ -146,24 +146,69 @@ export default class F2L2_5_Generator_Q3_N_MQ extends QuestionGenerator {
     private formatExpression(p: number, q: number, factors: Factor): string {
         const { a, b, c, d } = factors;
         
-        // 计算展开式的系数，明确声明类型
+        // 计算展开式的系数
         const x2Coeff: number = (p * a * c) / q;
         const xCoeff: number = (p * (a * d + b * c)) / q;
         const constTerm: number = (p * b * d) / q;
-        
-        // 格式化各项，使用let声明并明确类型
-        let x2Term: string = x2Coeff === 1 ? 'x^2' : 
-                            x2Coeff === -1 ? '-x^2' :
-                            `${x2Coeff}x^2`;
-        
-        let xTerm: string = xCoeff === 0 ? '' :
-                           xCoeff === 1 ? '+ x' :
-                           xCoeff === -1 ? '- x' :
-                           xCoeff > 0 ? `+ ${xCoeff}x` : `${xCoeff}x`;
-        
-        let constantTerm: string = constTerm === 0 ? '' :
-                                  constTerm > 0 ? `+ ${constTerm}` : `${constTerm}`;
-        
+
+        // 辅助函数：检查是否需要使用分数表示（超过2位小数）
+        const needsFraction = (num: number): boolean => {
+            const decimalParts = num.toString().split('.');
+            if (decimalParts.length < 2) {
+                return false;  // 整数不需要转换为分数
+            }
+            const decimalPlaces = decimalParts[1].length;
+            const roundedNum = Number(num.toFixed(2));
+            const originalNum = Number(num.toFixed(10));
+            
+            return Math.abs(roundedNum - originalNum) > 1e-10;  // 比较是否有效差异
+        };
+
+        // 辅助函数：将数字转换为分数表示
+        const toFraction = (num: number): string => {
+            // 将数字乘以分母q，得到分子
+            const numerator = Math.round(num * q);
+            return `\\frac{${numerator}}{${q}}`;
+        };
+
+        // 格式化x²项
+        let x2Term: string;
+        if (x2Coeff === 1) {
+            x2Term = 'x^2';
+        } else if (x2Coeff === -1) {
+            x2Term = '-x^2';
+        } else {
+            x2Term = needsFraction(x2Coeff) ? 
+                `${toFraction(x2Coeff)}x^2` : 
+                `${x2Coeff}x^2`;
+        }
+
+        // 格式化x项
+        let xTerm: string;
+        if (xCoeff === 0) {
+            xTerm = '';
+        } else if (xCoeff === 1) {
+            xTerm = '+ x';
+        } else if (xCoeff === -1) {
+            xTerm = '- x';
+        } else {
+            const coeffStr = needsFraction(xCoeff) ? 
+                toFraction(xCoeff) : 
+                xCoeff.toString();
+            xTerm = xCoeff > 0 ? `+ ${coeffStr}x` : `${coeffStr}x`;
+        }
+
+        // 格式化常数项
+        let constantTerm: string;
+        if (constTerm === 0) {
+            constantTerm = '';
+        } else {
+            const termStr = needsFraction(constTerm) ? 
+                toFraction(constTerm) : 
+                constTerm.toString();
+            constantTerm = constTerm > 0 ? `+ ${termStr}` : termStr;
+        }
+
         // 移除多余的空格并返回结果
         return `${x2Term} ${xTerm} ${constantTerm}`.trim();
     }
