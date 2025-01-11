@@ -151,38 +151,50 @@ function addEventListeners() {
     console.log('Adding event listeners...'); // 调试信息
 
     // 添加文件夹点击事件（展开/折叠）
-    const folderTitles = document.querySelectorAll('.folder-title');
-    console.log('Found folder titles:', folderTitles.length); // 检查是否找到元素
-
-    folderTitles.forEach(title => {
-        title.addEventListener('click', (e) => {
+    document.querySelectorAll('.folder-title').forEach(title => {
+        title.addEventListener('click', async (e) => {
             e.stopPropagation();
             const folder = title.parentElement;
-            const folderName = title.querySelector('.folder-name')?.textContent || 'Unknown';
-            const folderType = folder.classList.contains('chapter') ? 'Chapter' : 'Section';
+            const folderPath = title.dataset.path;
             
-            // 添加详细日志
-            console.log('=== Folder Click Event ===');
-            console.log('Element clicked:', title);
-            console.log('Folder details:', {
-                type: folderType,
-                name: folderName,
-                path: title.closest('.directory-structure')?.dataset?.path || 'Unknown',
-                isExpanded: !folder.classList.contains('expanded'),
-                timestamp: new Date().toISOString(),
-                classList: folder.classList.toString()
-            });
-            console.log('==================');
-
+            // 检查是否是第三层文件夹
+            const pathParts = folderPath.split('/');
+            if (pathParts.length === 3 && !folder.dataset.loaded) {
+                try {
+                    // 加载该文件夹下的生成器
+                    const response = await fetch(`/api/questions/folder-content/${folderPath}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to load folder content');
+                    }
+                    const content = await response.json();
+                    
+                    // 渲染生成器列表
+                    const generatorList = content.generators.map(gen => `
+                        <div class="generator-item" data-topic="${gen.id}">
+                            <span class="icon file-icon">📄</span>
+                            <span class="generator-title">${gen.title}</span>
+                            <span class="difficulty-badge">${gen.difficulty}</span>
+                        </div>
+                    `).join('');
+                    
+                    // 更新文件夹内容
+                    folder.querySelector('.folder-content').innerHTML = generatorList;
+                    folder.dataset.loaded = 'true';
+                    
+                    // 为新添加的生成器添加点击事件
+                    addGeneratorEventListeners(folder);
+                } catch (error) {
+                    console.error('Error loading folder content:', error);
+                }
+            }
+            
             folder.classList.toggle('expanded');
         });
     });
+}
 
-    // 添加生成器点击事件
-    const generatorItems = document.querySelectorAll('.generator-item');
-    console.log('Found generator items:', generatorItems.length); // 检查生成器项目数量
-
-    generatorItems.forEach(item => {
+function addGeneratorEventListeners(container) {
+    container.querySelectorAll('.generator-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             document.querySelectorAll('.generator-item').forEach(i => 
@@ -190,26 +202,9 @@ function addEventListeners() {
             );
             item.classList.add('active');
             
-            // 直接使用完整的生成器ID
             const generatorId = item.dataset.topic;
             const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
             startPractice(generatorId, difficulty);
-        });
-    });
-
-    // 添加难度按钮点击事件
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.diff-btn').forEach(b => 
-                b.classList.remove('active')
-            );
-            btn.classList.add('active');
-            
-            const activeGenerator = document.querySelector('.generator-item.active');
-            if (activeGenerator) {
-                const generatorId = activeGenerator.dataset.topic;
-                startPractice(generatorId, btn.dataset.difficulty);
-            }
         });
     });
 }

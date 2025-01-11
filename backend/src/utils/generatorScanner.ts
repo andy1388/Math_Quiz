@@ -1,10 +1,15 @@
 import fs from 'fs';
 import path from 'path';
-import { GeneratorInfo } from '../types/GeneratorTypes';
+import { 
+    GeneratorInfo, 
+    DirectoryStructure, 
+    ChapterStructure, 
+    SectionStructure 
+} from '../types/GeneratorTypes';
 
 export class GeneratorScanner {
     private readonly GENERATORS_PATH: string;
-    private generators: Map<string, GeneratorInfo> = new Map();
+    private static structureCache: DirectoryStructure | null = null;
 
     constructor() {
         this.GENERATORS_PATH = path.resolve(__dirname, '..', 'generators');
@@ -18,130 +23,109 @@ export class GeneratorScanner {
         }
     }
 
-    async scanGenerators() {
+    // 只扫描基本结构
+    async scanBasicStructure() {
+        // 如果缓存存在，直接返回
+        if (GeneratorScanner.structureCache) {
+            return GeneratorScanner.structureCache;
+        }
+
         try {
             const forms = await fs.promises.readdir(this.GENERATORS_PATH);
+            const structure: DirectoryStructure = {};
+
             for (const form of forms) {
                 if (form.startsWith('F')) {
                     const formPath = path.join(this.GENERATORS_PATH, form);
-                    await this.scanForm(formPath, form);
+                    const formStat = await fs.promises.stat(formPath);
+                    
+                    if (formStat.isDirectory()) {
+                        structure[form] = {
+                            title: form,
+                            chapters: await this.scanChaptersBasic(formPath)
+                        };
+                    }
                 }
             }
-            return this.generators;
+
+            // 保存到缓存
+            GeneratorScanner.structureCache = structure;
+            return structure;
         } catch (error) {
             throw error;
         }
     }
 
-    private async scanForm(formPath: string, form: string) {
-        try {
-            const items = await fs.promises.readdir(formPath);
-            console.log(`Scanning form ${form}, found items:`, items);
+    private async scanChaptersBasic(formPath: string) {
+        const chapters: { [key: string]: ChapterStructure } = {};
+        const items = await fs.promises.readdir(formPath);
 
-            // 遍历所有目录
-            for (const item of items) {
-                const itemPath = path.join(formPath, item);
-                const stat = await fs.promises.stat(itemPath);
+        for (const item of items) {
+            if (item.includes('L')) {
+                const chapterPath = path.join(formPath, item);
+                const stat = await fs.promises.stat(chapterPath);
                 
                 if (stat.isDirectory()) {
-                    // 检查是否是章节目录（例如 L12_Polynomials）
-                    if (item.includes('L')) {
-                        console.log(`Found chapter: ${item}`);
-                        await this.scanChapter(itemPath, form, item);
-                    }
+                    chapters[item] = {
+                        title: item,
+                        sections: await this.scanSectionsBasic(chapterPath)
+                    };
                 }
             }
-        } catch (error) {
-            console.error(`Error scanning form ${form}:`, error);
         }
+        return chapters;
     }
 
-    private async scanChapter(chapterPath: string, form: string, chapter: string) {
-        try {
-            const sections = await fs.promises.readdir(chapterPath);
-            console.log(`Scanning chapter ${chapter}, found sections:`, sections);
+    private async scanSectionsBasic(chapterPath: string) {
+        const sections: { [key: string]: SectionStructure } = {};
+        const items = await fs.promises.readdir(chapterPath);
+
+        for (const item of items) {
+            const sectionPath = path.join(chapterPath, item);
+            const stat = await fs.promises.stat(sectionPath);
             
-            for (const section of sections) {
-                const sectionPath = path.join(chapterPath, section);
-                const stat = await fs.promises.stat(sectionPath);
+            if (stat.isDirectory()) {
+                sections[item] = {
+                    title: item,
+                    generators: []  // 初始为空数组，等点击时再加载
+                };
+            }
+        }
+        return sections;
+    }
+
+    // 扫描特定文件夹的生成器
+    async scanFolderGenerators(folderPath: string) {
+        const fullPath = path.join(this.GENERATORS_PATH, folderPath);
+        if (!fs.existsSync(fullPath)) {
+            throw new Error('Folder not found');
+        }
+
+        const files = await fs.promises.readdir(fullPath);
+        return files
+            .filter(f => f.endsWith('_MQ.ts'))
+            .map(file => {
+                const filePath = path.join(fullPath, file);
+                const descPath = filePath.replace('.ts', '.desc.txt');
                 
-                if (stat.isDirectory()) {
-                    // 扫描所有小节，不再限制特定名称
-                    console.log(`Found section: ${section}`);
-                    await this.scanSection(sectionPath, form, chapter, section);
+                let title = file;
+                let difficulty = '1';
+                if (fs.existsSync(descPath)) {
+                    const content = fs.readFileSync(descPath, 'utf-8');
+                    const lines = content.split('\n');
+                    title = lines[1].trim();
                 }
-            }
-        } catch (error) {
-            console.error(`Error scanning chapter ${chapter}:`, error);
-        }
+
+                return {
+                    id: path.basename(file, '.ts'),
+                    title,
+                    difficulty
+                };
+            });
     }
 
-    private async scanSection(sectionPath: string, form: string, chapter: string, section: string) {
-        try {
-            const files = await fs.promises.readdir(sectionPath);
-            console.log(`Scanning section ${section}, found files:`, files);
-            
-            // 查找生成器文件
-            const generators = files.filter(f => f.endsWith('_MQ.ts'));
-            console.log(`Found generators:`, generators);
-            
-            for (const file of generators) {
-                const filePath = path.join(sectionPath, file);
-                const info = await this.parseGeneratorInfo(filePath, form, chapter, section);
-                if (info) {
-                    this.generators.set(info.id, info);
-                    console.log(`Added generator: ${info.id}`);
-                }
-            }
-        } catch (error) {
-            console.error(`Error scanning section ${section}:`, error);
-        }
-    }
-
-    private async parseGeneratorInfo(
-        filePath: string, 
-        form: string, 
-        chapter: string, 
-        section: string
-    ): Promise<GeneratorInfo | null> {
-        try {
-            const fileName = path.basename(filePath, '.ts');
-            const descPath = filePath.replace('.ts', '.desc.txt');
-            
-            // 读取描述文件
-            let title = '';
-            if (fs.existsSync(descPath)) {
-                const content = await fs.promises.readFile(descPath, 'utf-8');
-                const lines = content.split('\n');
-                title = lines[1].trim();
-            } else {
-                title = fileName;
-            }
-
-            // 保持完整的文件夹名称
-            const formId = form;  // 例如: "F1"
-            const chapterId = chapter;  // 例如: "F1_L12_Polynomials"
-            const sectionId = section;  // 例如: "F1L12.1_Law_of_Indices"
-
-            return {
-                id: fileName,
-                title,
-                difficulty: '1',
-                path: filePath,
-                chapter: {
-                    id: formId,  // 使用 F1, F2 作为章节ID
-                    title: formId,  // 显示 F1, F2
-                    number: formId.substring(1)  // 提取数字部分
-                },
-                section: {
-                    id: sectionId,
-                    title: sectionId,  // 保持完整名称
-                    number: section.match(/\d+\.\d+/)?.[0] || ''
-                }
-            };
-        } catch (error) {
-            console.error('Error parsing generator info:', error);
-            return null;
-        }
+    // 清除缓存的方法（如果需要）
+    static clearCache() {
+        GeneratorScanner.structureCache = null;
     }
 } 

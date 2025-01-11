@@ -5,7 +5,7 @@
   "main": "src/server.ts",
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts",
+    "dev": "nodemon --watch src -e ts --exec ts-node src/server.ts",
     "build": "tsc",
     "test": "jest",
     "generate-index": "ts-node src/utils/generateIndex.ts"
