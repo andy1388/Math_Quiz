@@ -15,7 +15,7 @@ interface LinearEquation {
     solution: number;
 }
 
-export class F1L3_1_Q1_Generator extends QuestionGenerator {
+export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
     constructor(difficulty: number) {
         super(difficulty, 'F1L3.1_Q1_F_MQ');
     }
@@ -53,10 +53,10 @@ export class F1L3_1_Q1_Generator extends QuestionGenerator {
         const explanation = this.generateExplanation(equation);
 
         return {
-            content,
-            correctAnswer,
-            wrongAnswers,
-            explanation,
+            content: content,
+            correctAnswer: correctAnswer,
+            wrongAnswers: wrongAnswers,
+            explanation: explanation,
             type: 'text',
             displayOptions: {
                 latex: true

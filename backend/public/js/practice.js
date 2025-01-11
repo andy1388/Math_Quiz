@@ -431,13 +431,18 @@ document.head.appendChild(style);
 
 async function startPractice(generatorId, difficulty) {
     try {
+        console.log('Starting practice with generator:', generatorId, 'difficulty:', difficulty);
+        
         // 使用完整的生成器ID
         const response = await fetch(`/api/questions/generate/${generatorId}?difficulty=${difficulty}`);
+        
         if (!response.ok) {
-            throw new Error('此題目類型暫時不可用');
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const question = await response.json();
+        console.log('Generated question:', question);
+        
         displayQuestion(question);
     } catch (error) {
         console.error('獲取題目失敗:', error);
@@ -445,6 +450,7 @@ async function startPractice(generatorId, difficulty) {
         questionArea.innerHTML = `
             <div class="error-message">
                 <p>此題目類型暫時不可用</p>
+                <p>錯誤信息：${error.message}</p>
                 <button onclick="location.reload()" class="retry-btn">重試</button>
             </div>
         `;
@@ -453,38 +459,52 @@ async function startPractice(generatorId, difficulty) {
 
 function displayQuestion(question) {
     const questionArea = document.querySelector('.question-area');
+    if (!question || !question.content) {
+        console.error('Invalid question format:', question);
+        questionArea.innerHTML = `
+            <div class="error-message">
+                <p>題目格式錯誤</p>
+                <button onclick="location.reload()" class="retry-btn">重試</button>
+            </div>
+        `;
+        return;
+    }
     
     // 將內容轉換為 LaTeX 格式
-    const latexContent = convertToLatex(question.content);
-    const latexOptions = question.options.map(opt => convertToLatex(opt));
+    const latexContent = question.content;  // 已經是LaTeX格式
     
-    // 處理解題步驟中的 LaTeX
-    const explanation = question.explanation.split('\n').map(line => {
-        if (line.includes('\\(') && line.includes('\\)')) {
-            // 如果行已經包含 LaTeX 標記，保持原樣
-            return line;
-        }
-        // 對其他行中的數學表達式進行 LaTeX 轉換
-        return line.replace(/([a-z])(\d+)/g, '$1^{$2}');
-    }).join('<br>');
+    // 檢查是否有選項
+    const options = question.wrongAnswers 
+        ? [question.correctAnswer, ...question.wrongAnswers]
+        : [];
+        
+    // 隨機打亂選項順序
+    const shuffledOptions = options.length > 0 
+        ? shuffleArray([...options])
+        : [];
+        
+    // 找出正確答案的新位置
+    const correctIndex = shuffledOptions.indexOf(question.correctAnswer);
     
     let html = `
         <div class="question-content">
             <h3>題目：</h3>
-            <p>\\[${latexContent}\\]</p>
+            <p>${latexContent}</p>
             
-            <div class="options">
-                ${latexOptions.map((option, index) => `
-                    <label class="option">
-                        <input type="radio" name="answer" value="${index}">
-                        <span>${String.fromCharCode(65 + index)}. \\(${option}\\)</span>
-                    </label>
-                `).join('')}
-            </div>
+            ${options.length > 0 ? `
+                <div class="options">
+                    ${shuffledOptions.map((option, index) => `
+                        <label class="option">
+                            <input type="radio" name="answer" value="${index}">
+                            <span>${String.fromCharCode(65 + index)}. ${option}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            ` : ''}
             
             <div class="explanation" style="display: none;">
-                <h4>正確答案：\\(${convertToLatex(question.correctAnswer)}\\)</h4>
-                ${explanation}
+                <h4>解題步驟：</h4>
+                ${question.explanation.split('\n').map(step => `<p>${step}</p>`).join('')}
                 <div class="next-question-container">
                     <button onclick="nextQuestion()" class="next-btn">
                         下一題 <span class="arrow">→</span>
@@ -497,28 +517,27 @@ function displayQuestion(question) {
     questionArea.innerHTML = html;
     
     // 添加選項點擊事件
-    document.querySelectorAll('input[name="answer"]').forEach(input => {
-        input.addEventListener('change', () => {
-            checkAnswer(question.correctIndex, parseInt(input.value));
+    if (options.length > 0) {
+        document.querySelectorAll('input[name="answer"]').forEach(input => {
+            input.addEventListener('change', () => {
+                checkAnswer(correctIndex, parseInt(input.value));
+            });
         });
-    });
+    }
     
     // 重新渲染數學公式
-    MathJax.typesetPromise();
+    if (window.MathJax) {
+        MathJax.typesetPromise && MathJax.typesetPromise();
+    }
 }
 
-// 添加轉換為 LaTeX 格式的函數
-function convertToLatex(text) {
-    // 處理所有字母變量的指數
-    text = text.replace(/([a-z])(\d+)/g, '$1^{$2}');
-    
-    // 替換乘號
-    text = text.replace(/×/g, '\\times');
-    
-    // 替換其他數學符號
-    text = text.replace(/\*/g, '\\cdot');
-    
-    return text;
+// 輔助函數：打亂數組順序
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }
 
 // 修改檢查答案函數以支持 LaTeX

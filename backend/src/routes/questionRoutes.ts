@@ -24,23 +24,41 @@ router.get('/available-generators', async (req, res) => {
 });
 
 // 生成题目
-router.get('/generate/:generatorId', async (req: Request, res: Response) => {
+router.get('/generate/:generatorId', async (req, res) => {
     try {
-        const generatorId = req.params.generatorId;
+        const { generatorId } = req.params;
         const difficulty = parseInt(req.query.difficulty as string) || 1;
         
-        const generator = QuestionGeneratorFactory.createGenerator(generatorId, difficulty);
-        if (!generator) {
-            return res.status(404).json({ error: '找不到指定的题目生成器' });
+        console.log('Generating question for:', generatorId, 'difficulty:', difficulty);
+        
+        // 構建生成器路徑
+        const generatorPath = path.join(
+            __dirname,
+            '../generators',
+            'F1',
+            'F1_L3_Linear_Equations',
+            'F1L3.1_Equation_without_Fraction',
+            `${generatorId}.ts`
+        );
+        
+        // 檢查文件是否存在
+        if (!fs.existsSync(generatorPath)) {
+            throw new Error(`Generator not found: ${generatorId}`);
         }
-
-        const output = generator.generate();
-        const question = MC_Maker.createQuestion(output, difficulty);
+        
+        // 動態導入生成器
+        const Generator = (await import(generatorPath)).default;
+        
+        const generator = new Generator(difficulty);
+        const question = generator.generate();
         
         res.json(question);
-    } catch (error) {
-        console.error('生成题目时出错:', error);
-        res.status(500).json({ error: '生成题目时出错' });
+    } catch (error: any) {
+        console.error('Error generating question:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate question',
+            details: error?.message || 'Unknown error'
+        });
     }
 });
 
