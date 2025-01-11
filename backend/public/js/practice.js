@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 添加側邊欄調整功能
         setupSidebarResize();
         
+        // 添加難度按鈕事件監聽
+        setupDifficultyButtons();
+        
     } catch (error) {
         console.error('初始化失败:', error);
         console.error('Error details:', {
@@ -426,6 +429,39 @@ style.textContent = `
     .retry-btn:hover {
         background: #d32f2f;
     }
+
+    /* 難度按鈕樣式 */
+    .diff-btn {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .diff-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .diff-btn.active {
+        background: #33ccff;
+        color: white;
+        border-color: #33ccff;
+    }
+
+    /* 載入提示樣式 */
+    .loading {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+    }
+
+    /* 錯誤提示樣式 */
+    .error-message {
+        text-align: center;
+        padding: 20px;
+        background: #fff3f3;
+        border: 1px solid #ffcdd2;
+        border-radius: 4px;
+        margin: 20px 0;
+    }
 `;
 document.head.appendChild(style);
 
@@ -433,7 +469,10 @@ async function startPractice(generatorId, difficulty) {
     try {
         console.log('Starting practice with generator:', generatorId, 'difficulty:', difficulty);
         
-        // 使用完整的生成器ID
+        // 顯示載入中的提示
+        const questionArea = document.querySelector('.question-area');
+        questionArea.innerHTML = '<div class="loading">載入題目中...</div>';
+        
         const response = await fetch(`/api/questions/generate/${generatorId}?difficulty=${difficulty}`);
         
         if (!response.ok) {
@@ -653,4 +692,26 @@ function setupSidebarResize() {
         document.removeEventListener('mousemove', resize);
         document.removeEventListener('mouseup', stopResize);
     }
+}
+
+// 添加新函數：設置難度按鈕
+function setupDifficultyButtons() {
+    const difficultyButtons = document.querySelectorAll('.diff-btn');
+    difficultyButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // 移除其他按鈕的 active 類
+            difficultyButtons.forEach(btn => btn.classList.remove('active'));
+            // 添加當前按鈕的 active 類
+            button.classList.add('active');
+            
+            // 獲取當前選中的生成器
+            const activeGenerator = document.querySelector('.generator-item.active');
+            if (activeGenerator) {
+                // 重新生成題目
+                const generatorId = activeGenerator.dataset.topic;
+                const difficulty = button.dataset.difficulty;
+                startPractice(generatorId, difficulty);
+            }
+        });
+    });
 } 
