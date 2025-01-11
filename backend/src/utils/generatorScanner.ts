@@ -113,27 +113,15 @@ export class GeneratorScanner {
             if (fs.existsSync(descPath)) {
                 const content = await fs.promises.readFile(descPath, 'utf-8');
                 const lines = content.split('\n');
-                title = lines[1].trim(); // 取第二行（英文标题）
+                title = lines[1].trim();
             } else {
                 title = fileName;
             }
 
-            // 解析章节和小节信息，确保所有空格都转换为下划线
-            const formNumber = form.match(/F\d+/)?.[0] || '';
-            const chapterNumber = chapter.match(/L\d+/)?.[0] || '';
-            const chapterName = chapter.split('_')
-                .slice(2)
-                .join('_')
-                .replace(/\s+/g, '_');  // 替换空格为下划线
-
-            const sectionName = section.split('_')
-                .slice(-2)
-                .join('_')
-                .replace(/\s+/g, '_');  // 替换空格为下划线
-
-            // 构建ID时确保使用下划线
-            const chapterId = `${formNumber}_${chapterNumber}_${chapterName}`.replace(/\s+/g, '_');
-            const sectionId = sectionName;
+            // 保持完整的文件夹名称
+            const formId = form;  // 例如: "F1"
+            const chapterId = chapter;  // 例如: "F1_L12_Polynomials"
+            const sectionId = section;  // 例如: "F1L12.1_Law_of_Indices"
 
             return {
                 id: fileName,
@@ -141,13 +129,13 @@ export class GeneratorScanner {
                 difficulty: '1',
                 path: filePath,
                 chapter: {
-                    id: chapterId,  // 例如: F1_L12_Polynomials
-                    title: `${formNumber} ${chapterNumber} ${chapterName.replace(/_/g, ' ')}`, // 显示时用空格
-                    number: chapterNumber
+                    id: formId,  // 使用 F1, F2 作为章节ID
+                    title: formId,  // 显示 F1, F2
+                    number: formId.substring(1)  // 提取数字部分
                 },
                 section: {
-                    id: sectionId,  // 例如: Law_of_Indices
-                    title: sectionName.replace(/_/g, ' '), // 显示时用空格
+                    id: sectionId,
+                    title: sectionId,  // 保持完整名称
                     number: section.match(/\d+\.\d+/)?.[0] || ''
                 }
             };

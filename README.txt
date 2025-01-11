@@ -82,3 +82,9 @@ MIT License
 --------
 電郵: your.email@example.com
 GitHub: https://github.com/your-username/math-quiz-platform 
+
+cd backend
+npm run generateIndex
+
+cd backend
+npm run dev
