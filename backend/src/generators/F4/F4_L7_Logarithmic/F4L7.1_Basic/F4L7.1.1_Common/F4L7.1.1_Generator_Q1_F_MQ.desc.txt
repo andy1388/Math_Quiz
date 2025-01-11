@@ -1,5 +1,5 @@
 計算以下常用對數 (使用計算機)
-Evaluate the following common logarithm expressions using calculator
+Use of logarithm (With calculator)
 ===================================
 
 題型：計算常用對數值（以10為底）

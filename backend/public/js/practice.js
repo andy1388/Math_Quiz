@@ -401,24 +401,37 @@ function displayQuestion(question) {
     const questionArea = document.querySelector('.question-area');
     if (!questionArea) return;
 
-    // 构建题目 HTML
+    // 将内容转换为 LaTeX 格式
+    const latexContent = convertToLatex(question.content);
+    const latexOptions = question.options.map(opt => convertToLatex(opt));
+
+    // 处理解题步骤中的 LaTeX
+    const explanation = question.explanation.split('\n').map(line => {
+        if (line.includes('\\(') || line.includes('\\[')) {
+            // 如果行已经包含 LaTeX 标记，保持原样
+            return line;
+        }
+        // 对其他行中的数学表达式进行 LaTeX 转换
+        return convertToLatex(line);
+    }).join('<br>');
+
     let html = `
         <div class="question">
             <div class="question-content">
-                <p>題目：</p>
-                <div class="math">\\[${question.content}\\]</div>
+                <div class="math">\\[${latexContent}\\]</div>
             </div>
             <div class="options">
     `;
 
     // 添加选项
-    question.options.forEach((option, index) => {
+    latexOptions.forEach((option, index) => {
         const letter = String.fromCharCode(65 + index); // A, B, C, D...
         html += `
             <div class="option">
                 <input type="radio" name="answer" id="option${letter}" value="${index}">
                 <label for="option${letter}" class="math">
-                    ${letter}. \\[${option}\\]
+                    <span class="option-letter">${letter}.</span>
+                    <span class="option-content">\\[${option}\\]</span>
                 </label>
             </div>
         `;
@@ -427,7 +440,8 @@ function displayQuestion(question) {
     html += `
             </div>
             <div class="explanation" style="display: none;">
-                ${question.explanation}
+                <h4>解題步驟：</h4>
+                ${explanation}
             </div>
         </div>
     `;
@@ -445,18 +459,37 @@ function displayQuestion(question) {
     MathJax.typesetPromise();
 }
 
-// 添加轉換為 LaTeX 格式的函數
+// 改进 convertToLatex 函数
 function convertToLatex(text) {
-    // 處理所有字母變量的指數
-    text = text.replace(/([a-z])(\d+)/g, '$1^{$2}');
+    if (!text) return '';
     
-    // 替換乘號
-    text = text.replace(/×/g, '\\times');
+    let result = text;
     
-    // 替換其他數學符號
-    text = text.replace(/\*/g, '\\cdot');
+    // 处理指数
+    result = result.replace(/([a-zA-Z])(\d+)/g, '$1^{$2}');
     
-    return text;
+    // 处理乘号
+    result = result.replace(/×/g, '\\times');
+    result = result.replace(/\*/g, '\\cdot');
+    
+    // 处理分数
+    result = result.replace(/(\d+)\/(\d+)/g, '\\frac{$1}{$2}');
+    
+    // 处理根号
+    result = result.replace(/sqrt\(([^)]+)\)/g, '\\sqrt{$1}');
+    
+    // 处理特殊符号
+    result = result.replace(/pi/g, '\\pi');
+    result = result.replace(/theta/g, '\\theta');
+    result = result.replace(/alpha/g, '\\alpha');
+    result = result.replace(/beta/g, '\\beta');
+    result = result.replace(/delta/g, '\\delta');
+    
+    // 处理对数
+    result = result.replace(/log/g, '\\log');
+    result = result.replace(/ln/g, '\\ln');
+    
+    return result;
 }
 
 // 修改檢查答案函數以支持 LaTeX

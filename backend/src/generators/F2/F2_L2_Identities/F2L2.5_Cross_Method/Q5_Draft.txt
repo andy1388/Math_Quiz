@@ -1,0 +1,7 @@
+am² + (ac+b)m + bc
+
+Lv1 : wrong Sequence
+Lv2 : wrong Sequence with (ax+b)(cx+d)
+Lv3 : r^3-r^2-2r (can facr the unknown)
+Lv4 : the unknow can be a bracket
+Lv5 : 
