@@ -52,6 +52,8 @@ function renderSidebar(structure) {
 }
 
 function renderDirectoryStructure(structure) {
+    console.log('Rendering directory structure:', structure); // 调试信息
+
     // 检查结构是否为空
     if (!structure || Object.keys(structure).length === 0) {
         console.error('目录结构为空:', structure);
@@ -62,11 +64,9 @@ function renderDirectoryStructure(structure) {
     
     // 遍历每个章节
     Object.entries(structure).forEach(([chapterId, chapter]) => {
-        console.log('处理章节:', chapterId, chapter); // 添加调试日志
-        
         html += `
             <div class="folder chapter">
-                <div class="folder-title">
+                <div class="folder-title" data-path="${chapterId}">
                     <span class="icon folder-icon">📁</span>
                     <span class="folder-name">${chapter.title}</span>
                 </div>
@@ -75,11 +75,9 @@ function renderDirectoryStructure(structure) {
         
         // 遍历章节下的小节
         Object.entries(chapter.sections).forEach(([sectionId, section]) => {
-            console.log('处理小节:', sectionId, section); // 添加调试日志
-            
             html += `
                 <div class="folder section">
-                    <div class="folder-title">
+                    <div class="folder-title" data-path="${chapterId}/${sectionId}">
                         <span class="icon folder-icon">📁</span>
                         <span class="folder-name">${section.title}</span>
                     </div>
@@ -111,22 +109,46 @@ function renderDirectoryStructure(structure) {
         `;
     });
     
-    html += '</div>';
+    console.log('Generated HTML:', html); // 检查生成的HTML
     return html;
 }
 
 function addEventListeners() {
+    console.log('Adding event listeners...'); // 调试信息
+
     // 添加文件夹点击事件（展开/折叠）
-    document.querySelectorAll('.folder-title').forEach(title => {
+    const folderTitles = document.querySelectorAll('.folder-title');
+    console.log('Found folder titles:', folderTitles.length); // 检查是否找到元素
+
+    folderTitles.forEach(title => {
         title.addEventListener('click', (e) => {
             e.stopPropagation();
             const folder = title.parentElement;
+            const folderName = title.querySelector('.folder-name')?.textContent || 'Unknown';
+            const folderType = folder.classList.contains('chapter') ? 'Chapter' : 'Section';
+            
+            // 添加详细日志
+            console.log('=== Folder Click Event ===');
+            console.log('Element clicked:', title);
+            console.log('Folder details:', {
+                type: folderType,
+                name: folderName,
+                path: title.closest('.directory-structure')?.dataset?.path || 'Unknown',
+                isExpanded: !folder.classList.contains('expanded'),
+                timestamp: new Date().toISOString(),
+                classList: folder.classList.toString()
+            });
+            console.log('==================');
+
             folder.classList.toggle('expanded');
         });
     });
 
     // 添加生成器点击事件
-    document.querySelectorAll('.generator-item').forEach(item => {
+    const generatorItems = document.querySelectorAll('.generator-item');
+    console.log('Found generator items:', generatorItems.length); // 检查生成器项目数量
+
+    generatorItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             document.querySelectorAll('.generator-item').forEach(i => 
