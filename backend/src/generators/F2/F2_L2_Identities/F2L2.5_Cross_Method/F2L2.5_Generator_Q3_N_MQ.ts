@@ -248,29 +248,67 @@ export default class F2L2_5_Generator_Q3_N_MQ extends QuestionGenerator {
         const { a, b, c, d, e } = factors;
         
         // 生成错误答案的策略
-        const wrongChoices = [
-            // 1. 系数错误
-            { ...factors, a: a + 1 },
-            { ...factors, a: a - 1 },
-            { ...factors, c: c + 1 },
-            { ...factors, c: c - 1 },
-            
-            // 2. 常数项错误
-            { ...factors, b: -b },
-            { ...factors, d: -d },
-            
-            // 3. 交换错误
-            { ...factors, a: c, c: a },
-            { ...factors, b: d, d: b },
-            
-            // 4. 分配错误（难度3和4）
-            ...(this.difficulty >= 3 ? [
-                { ...factors, e: undefined, a: (e as number) * a },
-                { ...factors, e: undefined, c: (e as number) * c }
-            ] : [])
-        ];
+        let wrongChoices: Factor[] = [];
         
-        // 添加错误答案直到有3个
+        if (this.difficulty <= 2) {
+            // 难度1-2的错误答案策略
+            wrongChoices = [
+                // 系数错误
+                { ...factors, a: a + 1 },
+                { ...factors, a: a - 1 },
+                { ...factors, c: c + 1 },
+                { ...factors, c: c - 1 },
+                // 常数项错误
+                { ...factors, b: -b },
+                { ...factors, d: -d },
+                // 交换错误
+                { ...factors, a: c, c: a },
+                { ...factors, b: d, d: b }
+            ];
+        } else {
+            // 难度3-5的错误答案策略
+            if (this.difficulty === 3) {
+                // 保持括号内容不变，改变外部系数
+                wrongChoices = [
+                    { ...factors, e: (e as number) + 1 },
+                    { ...factors, e: (e as number) - 1 },
+                    { ...factors, e: (e as number) * 2 }
+                ];
+            } else if (this.difficulty === 4) {
+                // 保持括号内容不变，改变外部负系数
+                wrongChoices = [
+                    { ...factors, e: (e as number) + 1 },
+                    { ...factors, e: (e as number) - 1 },
+                    { ...factors, e: -(e as number) }  // 变号
+                ];
+            } else {  // 难度5
+                const [p, q] = e as [number, number];
+                // 保持括号内容不变，改变分数
+                wrongChoices = [
+                    { ...factors, e: [p + 1, q] as [number, number] },
+                    { ...factors, e: [p, q + 1] as [number, number] },
+                    { ...factors, e: [q, p] as [number, number] }  // 分子分母互换
+                ];
+            }
+            
+            // 再添加一些改变括号内容的选项
+            wrongChoices.push(
+                { ...factors, a: a + 1, c: c - 1 },
+                { ...factors, a: a - 1, c: c + 1 },
+                { ...factors, b: -b, d: -d }
+            );
+        }
+        
+        // 打乱错误选项顺序
+        wrongChoices = this.shuffleArray(wrongChoices);
+        
+        // 确保至少有一个只改变外部系数的错误答案
+        if (this.difficulty >= 3) {
+            const firstChoice = wrongChoices[0];
+            wrongAnswers.add(this.formatAnswer(firstChoice));
+        }
+        
+        // 添加其他错误答案直到有3个
         for (const wrong of wrongChoices) {
             if (wrongAnswers.size < 3) {
                 wrongAnswers.add(this.formatAnswer(wrong));
