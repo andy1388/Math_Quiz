@@ -166,9 +166,13 @@ export default class F2L2_5_Generator_Q3_N_MQ extends QuestionGenerator {
 
         // 辅助函数：将数字转换为分数表示
         const toFraction = (num: number): string => {
+            // 处理负数，将负号放在分数前面
+            const sign = num < 0 ? '-' : '';
+            const absNum = Math.abs(num);
+            
             // 将数字乘以分母q，得到分子
-            const numerator = Math.round(num * q);
-            return `\\frac{${numerator}}{${q}}`;
+            const numerator = Math.round(absNum * q);
+            return `${sign}\\frac{${numerator}}{${q}}`;
         };
 
         // 格式化x²项
