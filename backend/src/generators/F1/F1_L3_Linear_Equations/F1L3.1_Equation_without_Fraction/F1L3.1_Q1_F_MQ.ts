@@ -161,31 +161,68 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
         const steps: string[] = [];
         
         if (this.difficulty <= 2) {
+            // Level 1-2: ax + b = c
+            const [leftSide, rightSide] = [equation.leftSide, equation.rightSide];
             steps.push(
                 '1. 移項：將常數項移到等號右邊',
-                '2. 計算：解出變量係數',
-                '3. 求解：得到變量的值'
+                `\\[${leftSide} = ${rightSide}\\]`,
+                `\\[x = ${rightSide} ${formatNumber(-parseInt(rightSide))}\\]`,
+                '2. 計算：解出變量的值',
+                `\\[x = ${equation.solution}\\]`
             );
         } else if (this.difficulty === 3) {
+            // Level 3: ax + bx = c
+            const [a, b] = equation.leftSide.match(/-?\d+/g)?.map(Number) || [0, 0];
+            const c = parseInt(equation.rightSide);
             steps.push(
                 '1. 合併同類項：將變量項合併',
-                '2. 計算：得到簡化後的方程',
-                '3. 求解：得到變量的值'
+                `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                `\\[(${a} + ${b})x = ${c}\\]`,
+                `\\[${a + b}x = ${c}\\]`,
+                '2. 求解：得到變量的值',
+                `\\[x = ${c} \\div ${a + b}\\]`,
+                `\\[x = ${equation.solution}\\]`
             );
         } else if (this.difficulty === 4) {
-            steps.push(
-                '1. 移項：將所有變量項移到等號左邊',
-                '2. 移項：將所有常數項移到等號右邊',
-                '3. 合併同類項',
-                '4. 求解：得到變量的值'
-            );
+            // Level 4: ax + b = cx + d
+            const matches = equation.leftSide.match(/-?\d+/g)?.map(Number);
+            const rightMatches = equation.rightSide.match(/-?\d+/g)?.map(Number);
+            if (matches && rightMatches) {
+                const [a, b] = matches;
+                const [c, d] = rightMatches;
+                steps.push(
+                    '1. 移項：將所有變量項移到等號左邊',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]`,
+                    '2. 合併同類項',
+                    `\\[${a - c}x ${formatNumber(b)} = ${d}\\]`,
+                    '3. 移項：將常數項移到等號右邊',
+                    `\\[${a - c}x = ${d} ${formatNumber(-b)}\\]`,
+                    '4. 求解：得到變量的值',
+                    `\\[x = ${d - b} \\div ${a - c}\\]`,
+                    `\\[x = ${equation.solution}\\]`
+                );
+            }
         } else {
-            steps.push(
-                '1. 移項：將所有變量項移到等號左邊',
-                '2. 移項：將所有常數項移到等號右邊',
-                '3. 合併同類項（注意小數計算）',
-                '4. 求解：得到變量的值（四捨五入到小數點後一位）'
-            );
+            // Level 5: 小數係數
+            const matches = equation.leftSide.match(/-?\d+\.?\d*/g)?.map(Number);
+            const rightMatches = equation.rightSide.match(/-?\d+\.?\d*/g)?.map(Number);
+            if (matches && rightMatches) {
+                const [a, b] = matches;
+                const [c, d] = rightMatches;
+                steps.push(
+                    '1. 移項：將所有變量項移到等號左邊',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]`,
+                    '2. 合併同類項（注意小數計算）',
+                    `\\[${(a - c).toFixed(1)}x ${formatNumber(b)} = ${d}\\]`,
+                    '3. 移項：將常數項移到等號右邊',
+                    `\\[${(a - c).toFixed(1)}x = ${d} ${formatNumber(-b)}\\]`,
+                    '4. 求解：得到變量的值',
+                    `\\[x = ${(d - b).toFixed(1)} \\div ${(a - c).toFixed(1)}\\]`,
+                    `\\[x = ${equation.solution}\\]`
+                );
+            }
         }
 
         return steps.join('\n');
