@@ -92,14 +92,27 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel3(): LinearEquation {
-        // ax + bx = c 形式，兩個變量項
+        // ax + bx = c 形式，兩個變量項都在左邊
         const solution = getRandomInt(-8, 8);
-        const a = getNonZeroRandomInt(-5, 5);
-        const b = getNonZeroRandomInt(-5, 5);
+        
+        // 確保係數和不為0
+        let a, b;
+        do {
+            a = getNonZeroRandomInt(-5, 5);
+            b = getNonZeroRandomInt(-5, 5);
+        } while (a + b === 0);  // 避免係數和為0的情況
+        
+        // 計算等式右邊的值
         const c = (a + b) * solution;
 
+        // 構建左邊的表達式，確保正確顯示加號或減號
+        const firstTerm = LaTeX.formatLinearTerm(a, 'x');
+        const secondTerm = b > 0 ? 
+            `+${LaTeX.formatLinearTerm(b, 'x')}` : 
+            LaTeX.formatLinearTerm(b, 'x');
+
         return {
-            leftSide: `${LaTeX.formatLinearTerm(a, 'x')} ${LaTeX.formatLinearTerm(b, 'x')}`,
+            leftSide: `${firstTerm}${secondTerm}`,  // 不需要額外的空格，因為符號已包含在 secondTerm 中
             rightSide: c.toString(),
             solution
         };
@@ -177,7 +190,7 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
             steps.push(
                 '1. 合併同類項：將變量項合併',
                 `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
-                `\\[(${a} + ${b})x = ${c}\\]`,
+                `\\[${a}x ${b >= 0 ? '+' : ''}${b}x = ${c}\\]`,
                 `\\[${a + b}x = ${c}\\]`,
                 '2. 求解：得到變量的值',
                 `\\[x = ${c} \\div ${a + b}\\]`,
