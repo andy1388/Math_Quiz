@@ -25,8 +25,11 @@ export default class F4L7_1_1_Generator_Q1_F_MQ extends QuestionGenerator {
             case 2: // 较大整数 10-9999
                 number = Math.floor(Math.random() * 9990) + 10;
                 break;
-            default: // 小数 0.1-0.9
-                number = (Math.floor(Math.random() * 9) + 1) / 10;
+            default: // 小数 0.1-19.9
+                // 生成0.1到19.9之间的小数
+                const integerPart = Math.floor(Math.random() * 20);  // 0-19
+                const decimalPart = Math.floor(Math.random() * 9) + 1;  // 1-9
+                number = integerPart + decimalPart / 10;
                 break;
         }
 
@@ -110,16 +113,16 @@ export default class F4L7_1_1_Generator_Q1_F_MQ extends QuestionGenerator {
 
     private generateSteps(number: number, result: number): string {
         let steps = `解題步驟：\n`;
-        steps += `1. 使用計算機計算 \\log ${number}\n`;
+        steps += `1. 使用計算機計算 \\[\\log ${number}\\]\n`;
         steps += `2. 確保答案準確到小數點後3位\n`;
         
         if (number < 1) {
-            steps += `3. 注意：當 ${number} < 1 時，結果為負數\n`;
+            steps += `3. 注意：當 \\[${number} < 1\\] 時，結果為負數\n`;
         } else if (number >= 10) {
-            steps += `3. 注意：當 ${number} ≥ 10 時，結果為正數且可能大於1\n`;
+            steps += `3. 注意：當 \\[${number} \\geq 10\\] 時，結果為正數且可能大於1\n`;
         }
         
-        steps += `\n最終答案：${result}`;
+        steps += `\n最終答案：\\[${result}\\]`;
         
         return steps;
     }
