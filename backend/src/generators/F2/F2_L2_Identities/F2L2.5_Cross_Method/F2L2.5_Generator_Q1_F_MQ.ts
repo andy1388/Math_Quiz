@@ -140,6 +140,12 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
         return `${firstTerm}${secondTerm}`;
     }
 
+    private areFactorsEquivalent(f1: Factor, f2: Factor): boolean {
+        // 检查两组因子是否等价（考虑交换顺序）
+        return (f1.m === f2.m && f1.n === f2.n) || 
+               (f1.m === f2.n && f1.n === f2.m);
+    }
+
     private generateWrongAnswers(factors: Factor): string[] {
         const wrongAnswers = new Set<string>();
         const { m, n, type } = factors;
@@ -178,13 +184,33 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
                     break;
             }
         } else {
-            // 其他难度的错误答案生成保持不变
-            wrongAnswers.add(this.formatAnswer({ m: -m, n: -n }));
-            wrongAnswers.add(this.formatAnswer({ m: n, n: m }));
-            wrongAnswers.add(this.formatAnswer({ m: m + 1, n: n - 1 }));
-            wrongAnswers.add(this.formatAnswer({ m: m - 1, n: n + 1 }));
+            // 其他难度的错误答案生成
+            const wrongChoices: Factor[] = [
+                // 1. 符号错误：反转符号
+                { m: -m, n: -n },
+                // 2. 系数计算错误：加减1
+                { m: m + 1, n: n - 1 },
+                { m: m - 1, n: n + 1 },
+                // 3. 随机变化
+                { m: m + 2, n: n - 2 },
+                { m: m - 2, n: n + 2 },
+                // 4. 其他变化
+                { m: m + 1, n: n + 1 },
+                { m: m - 1, n: n - 1 }
+            ];
+
+            // 过滤掉等价的答案
+            const validWrongs = wrongChoices.filter(wrong => 
+                !this.areFactorsEquivalent(factors, wrong)
+            );
+
+            // 添加有效的错误答案
+            validWrongs.forEach(wrong => {
+                wrongAnswers.add(this.formatAnswer(wrong));
+            });
         }
 
+        // 确保只返回3个不同的错误答案
         return Array.from(wrongAnswers).slice(0, 3);
     }
 
