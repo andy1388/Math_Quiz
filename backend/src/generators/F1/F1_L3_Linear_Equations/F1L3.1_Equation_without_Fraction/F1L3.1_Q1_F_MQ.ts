@@ -65,7 +65,20 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel1(): LinearEquation {
-        // ax + b = c 形式
+        // x ± b = c 形式，係數固定為1
+        const solution = getRandomInt(-10, 10);
+        const b = getNonZeroRandomInt(-10, 10);
+        const c = solution + b;  // a = 1，所以 c = x + b
+
+        return {
+            leftSide: `x ${LaTeX.formatConstant(b)}`,
+            rightSide: c.toString(),
+            solution
+        };
+    }
+
+    private generateLevel2(): LinearEquation {
+        // ax ± b = c 形式，變量只在左邊
         const solution = getRandomInt(-10, 10);
         const a = getNonZeroRandomInt(-5, 5);
         const b = getNonZeroRandomInt(-10, 10);
@@ -78,24 +91,10 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel2(): LinearEquation {
-        // -ax ± b = ±c 形式
-        const solution = getRandomInt(-10, 10);
-        const a = -getNonZeroRandomInt(1, 5);
-        const b = getNonZeroRandomInt(-10, 10);
-        const c = a * solution + b;
-
-        return {
-            leftSide: `${LaTeX.formatLinearTerm(a, 'x')} ${LaTeX.formatConstant(b)}`,
-            rightSide: c.toString(),
-            solution
-        };
-    }
-
     private generateLevel3(): LinearEquation {
-        // ax + bx = c 形式
+        // ax + bx = c 形式，兩個變量項
         const solution = getRandomInt(-8, 8);
-        const a = getNonZeroRandomInt(2, 6);
+        const a = getNonZeroRandomInt(-5, 5);
         const b = getNonZeroRandomInt(-5, 5);
         const c = (a + b) * solution;
 
@@ -107,11 +106,11 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel4(): LinearEquation {
-        // ax + b = cx + d 形式
+        // ax ± b = cx ± d 形式，變量在兩邊
         const solution = getRandomInt(-6, 6);
-        const a = getNonZeroRandomInt(2, 8);
+        const a = getNonZeroRandomInt(-5, 5);
         const b = getNonZeroRandomInt(-10, 10);
-        const c = getNonZeroRandomInt(-6, 6);
+        const c = getNonZeroRandomInt(-5, 5);
         const d = (a - c) * solution + b;
 
         return {
