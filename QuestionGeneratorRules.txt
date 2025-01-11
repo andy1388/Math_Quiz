@@ -1,8 +1,6 @@
-數學題目生成器規則說明 v2.0
+數學題目生成器規則說明 v2.1
 ==========================
 
-1. 基本架構
-----------
 1. 基本架構
 ----------
 1.1 文件結構 (按課程大綱)
@@ -98,9 +96,78 @@
     面積單位: cm², m²
     體積單位: cm³, m³
 
-4. 答案格式規範
+4. 輸入/輸出格式規範 (新增)
+------------------------
+4.1 生成器類結構
+    ```typescript
+    import { QuestionGenerator, IGeneratorOutput } from '../../QuestionGenerator';
+
+    export class F1L12Generator extends QuestionGenerator {
+        constructor(difficulty: number) {
+            super(difficulty, 'F1L12.1_Q1_F_MQ');
+        }
+
+        generate(): IGeneratorOutput {
+            return {
+                content: string,          // 題目內容
+                correctAnswer: string,    // 正確答案
+                wrongAnswers: string[],   // 錯誤選項陣列
+                explanation: string       // 解題說明
+            };
+        }
+    }
+    ```
+
+4.2 IGeneratorOutput 介面
+    ```typescript
+    interface IGeneratorOutput {
+        content: string;        // 題目內容
+        correctAnswer: string;  // 正確答案
+        wrongAnswers: string[]; // 錯誤選項（通常3個）
+        explanation: string;    // 解題步驟說明
+        
+        // 可選屬性
+        hasImage?: boolean;     // 是否包含圖片
+        imageUrl?: string;      // 圖片URL
+        
+        type?: 'text' | 'image' | 'mixed';
+        
+        metadata?: {
+            topic?: string;
+            subtopic?: string;
+            skills?: string[];
+            prerequisites?: string[];
+        };
+        
+        displayOptions?: {
+            latex?: boolean;    // 是否需要LaTeX渲染
+            graph?: boolean;    // 是否需要圖表
+            table?: boolean;    // 是否需要表格
+        };
+    }
+    ```
+
+4.3 LaTeX 格式規範
+    - 基本運算符：\times, \div, \cdot
+    - 指數：x^{2}, a^{n}
+    - 分數：\frac{分子}{分母}
+    - 根號：\sqrt{}, \sqrt[n]{}
+    - 特殊符號：\pi, \infty, \pm
+    
+    格式化規則：
+    - 所有數學公式必須用 \( \) 或 \[ \] 包圍
+    - 行內公式使用 \( \)
+    - 獨立公式使用 \[ \]
+
+4.4 錯誤選項要求
+    - 必須生成至少3個錯誤選項
+    - 錯誤選項必須合理且具有迷惑性
+    - 避免明顯不合理的選項
+    - 錯誤選項的格式必須與正確答案一致
+
+5. 答案格式規範
 -------------
-4.1 計算題答案格式
+5.1 計算題答案格式
     {
         "steps": [
             {
@@ -113,36 +180,36 @@
         "unit": "單位"
     }
 
-4.2 證明題答案格式
+5.2 證明題答案格式
     {
         "given": ["已知條件1", "已知條件2"],
         "prove": ["證明步驟1", "證明步驟2"],
         "conclusion": "結論"
     }
 
-5. 質量控制
+6. 質量控制
 ----------
-5.1 生成限制
+6.1 生成限制
     - 每個數值必須在合理範圍內
     - 確保方程有解
     - 避免除以零
     - 避免不合理的圖形
 
-5.2 答案驗證
+6.2 答案驗證
     - 自動計算答案
     - 檢查步驟合理性
     - 驗證單位一致性
     - 確保答案唯一
 
-6. 擴展功能
+7. 擴展功能
 ----------
-6.1 圖形生成
+7.1 圖形生成
     - 支持基本幾何圖形
     - 支持坐標系圖形
     - 支持統計圖表
     - 支持立體圖形
 
-6.2 公式渲染
+7.2 公式渲染
     - 支持 LaTeX 格式
     - 支持數學符號
     - 支持特殊字符
