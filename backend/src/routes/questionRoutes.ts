@@ -5,7 +5,8 @@ import { QuestionGeneratorFactory } from '../generators/QuestionGeneratorFactory
 import { MC_Maker } from '../generators/MC_Maker';
 import { Request, Response } from 'express';
 import path from 'path';
-import fs from 'fs';
+import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
 
 const router = express.Router();
 const scanner = new GeneratorScanner();
@@ -71,6 +72,37 @@ router.get('/folder-content/:path(*)', async (req, res) => {
     } catch (error) {
         console.error('Error loading folder content:', error);
         res.status(500).json({ error: 'Failed to load folder content' });
+    }
+});
+
+// 添加新的接口來獲取生成器的難度等級
+router.get('/generator-info/:generatorId', async (req, res) => {
+    try {
+        const { generatorId } = req.params;
+        
+        // 構建 .desc.txt 文件路徑
+        const descPath = path.join(
+            __dirname,
+            '../generators/F1/F1_L3_Linear_Equations/F1L3.1_Equation_without_Fraction',
+            `${generatorId}.desc.txt`
+        );
+        
+        // 檢查文件是否存在
+        if (!fs.existsSync(descPath)) {
+            throw new Error(`Description file not found: ${generatorId}`);
+        }
+        
+        // 讀取文件內容
+        const content = await fsPromises.readFile(descPath, 'utf-8');
+        
+        // 解析 Level number
+        const levelMatch = content.match(/Level number：(\d+)/);
+        const levelNumber = levelMatch ? parseInt(levelMatch[1]) : 5;
+        
+        res.json({ levelNumber });
+    } catch (error) {
+        console.error('Error getting generator info:', error);
+        res.status(500).json({ error: 'Failed to get generator info' });
     }
 });
 

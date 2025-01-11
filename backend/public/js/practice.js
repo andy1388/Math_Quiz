@@ -203,7 +203,7 @@ function addEventListeners() {
 
 function addGeneratorEventListeners(container) {
     container.querySelectorAll('.generator-item').forEach(item => {
-        item.addEventListener('click', (e) => {
+        item.addEventListener('click', async (e) => {
             e.preventDefault();
             document.querySelectorAll('.generator-item').forEach(i => 
                 i.classList.remove('active')
@@ -211,10 +211,64 @@ function addGeneratorEventListeners(container) {
             item.classList.add('active');
             
             const generatorId = item.dataset.topic;
-            const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
-            startPractice(generatorId, difficulty);
+            
+            try {
+                // 獲取生成器的難度等級數量
+                const response = await fetch(`/api/questions/generator-info/${generatorId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to get generator info');
+                }
+                
+                const { levelNumber } = await response.json();
+                
+                // 更新難度按鈕
+                updateDifficultyButtons(levelNumber);
+                
+                // 使用難度1開始練習
+                startPractice(generatorId, 1);
+            } catch (error) {
+                console.error('Error:', error);
+                // 使用默認5個難度
+                updateDifficultyButtons(5);
+                startPractice(generatorId, 1);
+            }
         });
     });
+}
+
+// 更新難度按鈕
+function updateDifficultyButtons(levelNumber) {
+    const difficultyFilter = document.querySelector('.difficulty-filter');
+    if (!difficultyFilter) return;
+    
+    // 清空現有按鈕
+    difficultyFilter.innerHTML = '<span>難度：</span>';
+    
+    // 生成新的難度按鈕
+    for (let i = 1; i <= levelNumber; i++) {
+        const button = document.createElement('button');
+        button.className = 'diff-btn' + (i === 1 ? ' active' : '');
+        button.dataset.difficulty = i;
+        button.textContent = i;
+        button.addEventListener('click', () => {
+            // 移除其他按鈕的 active 類
+            difficultyFilter.querySelectorAll('.diff-btn').forEach(btn => 
+                btn.classList.remove('active')
+            );
+            // 添加當前按鈕的 active 類
+            button.classList.add('active');
+            
+            // 重新生成題目
+            const activeGenerator = document.querySelector('.generator-item.active');
+            if (activeGenerator) {
+                startPractice(activeGenerator.dataset.topic, i);
+            }
+        });
+        difficultyFilter.appendChild(button);
+    }
+    
+    // 顯示難度選擇器
+    difficultyFilter.style.display = 'flex';
 }
 
 // 更新 CSS - 合併所有樣式
