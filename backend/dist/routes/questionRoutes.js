@@ -37,124 +37,99 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const MC_Maker_1 = require("../generators/MC_Maker");
+const generatorScanner_1 = require("../utils/generatorScanner");
 const router = express_1.default.Router();
-// 動態導入生成器
-async function loadGenerator(topic) {
+const scanner = new generatorScanner_1.GeneratorScanner();
+let generatorCache = new Map();
+// 初始化时扫描所有生成器
+async function initializeGenerators() {
     try {
-        const generatorPath = constructGeneratorPath(topic);
-        if (!generatorPath)
-            return null;
-        const module = await Promise.resolve(`${generatorPath}`).then(s => __importStar(require(s)));
-        return Object.values(module)[0] || null;
+        generatorCache = await scanner.scanGenerators();
     }
     catch (error) {
-        console.error('加載生成器失敗:', error);
-        return null;
+        console.error('初始化生成器缓存失败:', error);
+        throw error;
     }
 }
-function constructGeneratorPath(topic) {
-    const generatorsPath = path_1.default.join(__dirname, '../generators');
-    // 遞歸搜索目錄找到對應的生成器文件
-    const generatorFile = findGeneratorFile(generatorsPath, topic);
-    return generatorFile;
-}
-function findGeneratorFile(baseDir, topic) {
-    const files = fs_1.default.readdirSync(baseDir);
-    for (const file of files) {
-        const fullPath = path_1.default.join(baseDir, file);
-        const stat = fs_1.default.statSync(fullPath);
-        if (stat.isDirectory()) {
-            const found = findGeneratorFile(fullPath, topic);
-            if (found)
-                return found;
-        }
-        else if (file.endsWith('Generator_Q1.ts')) {
-            // 從文件名中提取章節ID
-            const match = file.match(/^(F\dL\d+(?:\.\d+)*)/);
-            if (match && match[1] === topic) {
-                return fullPath;
-            }
-        }
-    }
-    return null;
-}
-router.get('/generate/:topic', async (req, res) => {
-    const { topic } = req.params;
-    const difficulty = parseInt(req.query.difficulty) || 1;
+// 获取可用生成器列表
+router.get('/available-generators', async (req, res) => {
     try {
-        const GeneratorClass = await loadGenerator(topic);
-        if (!GeneratorClass) {
-            return res.status(404).json({ error: '題目類型不存在' });
-        }
-        const generator = new GeneratorClass(difficulty);
-        const output = generator.generate();
-        const question = MC_Maker_1.MC_Maker.createQuestion(output, difficulty);
-        res.json(question);
-    }
-    catch (error) {
-        console.error('生成題目錯誤:', error);
-        res.status(500).json({ error: '生成題目時發生錯誤' });
-    }
-});
-router.get('/available-generators', (req, res) => {
-    try {
-        const generatorsPath = path_1.default.join(__dirname, '../generators');
-        console.log('掃描目錄:', generatorsPath);
-        const structure = getDirectoryStructure(generatorsPath);
-        console.log('目錄結構:', JSON.stringify(structure, null, 2));
+        const generators = Array.from(generatorCache.values());
+        const structure = organizeGenerators(generators);
         res.json(structure);
     }
     catch (error) {
-        console.error('獲取生成器列表失敗:', error);
-        res.status(500).json({ error: '無法獲取生成器列表' });
+        console.error('获取生成器列表失败:', error);
+        res.status(500).json({ error: '获取生成器列表失败' });
     }
 });
-function getDirectoryStructure(dir) {
+// 生成题目
+router.get('/generate/:generatorId', async (req, res) => {
     try {
-        const items = fs_1.default.readdirSync(dir);
-        const structure = [];
-        // 添加排序函數
-        function sortByLessonNumber(a, b) {
-            // 提取課程編號
-            const getNumber = (str) => {
-                const match = str.match(/L(\d+)/);
-                return match ? parseInt(match[1]) : 0;
-            };
-            const numA = getNumber(a);
-            const numB = getNumber(b);
-            return numA - numB;
+        const { generatorId } = req.params;
+        const { difficulty = 1 } = req.query;
+        console.log('Attempting to generate question:', { generatorId, difficulty });
+        const generatorInfo = generatorCache.get(generatorId);
+        if (!generatorInfo) {
+            console.error('Generator not found:', generatorId);
+            return res.status(404).json({ error: '生成器不存在' });
         }
-        // 排序目錄項目
-        items.sort(sortByLessonNumber).forEach(item => {
-            const fullPath = path_1.default.join(dir, item);
-            const stat = fs_1.default.statSync(fullPath);
-            if (stat.isDirectory()) {
-                const children = getDirectoryStructure(fullPath);
-                structure.push({
-                    name: item,
-                    type: 'directory',
-                    children: children
-                });
-            }
-            else if (item.endsWith('Generator_Q1.ts')) {
-                const match = item.match(/^(F\dL\d+(?:\.\d+)*)/);
-                if (match) {
-                    structure.push({
-                        name: item,
-                        type: 'generator',
-                        topic: match[1]
-                    });
-                }
-            }
-        });
-        return structure;
+        try {
+            console.log('Generator path:', generatorInfo.path);
+            const GeneratorClass = (await Promise.resolve(`${generatorInfo.path}`).then(s => __importStar(require(s)))).default;
+            console.log('Generator class loaded:', !!GeneratorClass);
+            const generator = new GeneratorClass(Number(difficulty));
+            console.log('Generator instance created');
+            const question = generator.generate();
+            console.log('Question generated');
+            res.json(question);
+        }
+        catch (importError) {
+            console.error('Error details:', {
+                message: importError.message || 'Unknown import error',
+                stack: importError.stack,
+                path: generatorInfo.path
+            });
+            throw importError;
+        }
     }
     catch (error) {
-        console.error('讀取目錄失敗:', dir, error);
-        return [];
+        console.error('Failed to generate question:', error);
+        res.status(500).json({
+            error: '生成题目失败',
+            details: error.message || 'Unknown error'
+        });
     }
+});
+// 组织生成器结构
+function organizeGenerators(generators) {
+    const structure = {};
+    generators.forEach(gen => {
+        const chapterId = gen.chapter.id;
+        const sectionId = gen.section.id;
+        // 如果章节不存在，创建它
+        if (!structure[chapterId]) {
+            structure[chapterId] = {
+                title: gen.chapter.title,
+                sections: {}
+            };
+        }
+        // 如果小节不存在，创建它
+        if (!structure[chapterId].sections[sectionId]) {
+            structure[chapterId].sections[sectionId] = {
+                title: gen.section.title,
+                generators: []
+            };
+        }
+        // 添加生成器信息
+        structure[chapterId].sections[sectionId].generators.push({
+            id: gen.id,
+            title: gen.title,
+            difficulty: gen.difficulty
+        });
+    });
+    return structure;
 }
+// 启动时初始化
+initializeGenerators().catch(console.error);
 exports.default = router;
