@@ -2,35 +2,33 @@ let AVAILABLE_GENERATORS = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        // 獲取目錄結構
         const response = await fetch('/api/questions/available-generators');
         if (!response.ok) {
-            console.error('获取生成器列表失败:', response.status);
             throw new Error('無法獲取生成器列表');
         }
         const structure = await response.json();
         
-        console.log('API返回的目录结构:', structure);
-        
-        // 渲染側邊欄
+        console.log('Raw API response:', structure);
+        console.log('Structure keys:', Object.keys(structure));
+        console.log('First level structure:', structure[Object.keys(structure)[0]]);
+
         const sidebarContent = document.querySelector('.topic-nav');
         if (!sidebarContent) {
-            console.error('找不到側邊欄容器 .topic-nav');
-            return;
+            throw new Error('找不到側邊欄容器');
         }
         
         const html = renderDirectoryStructure(structure);
-        console.log('生成的HTML结构:', html);
-        
         sidebarContent.innerHTML = html;
-        
-        // 检查DOM是否正确更新
-        console.log('更新后的侧边栏DOM:', sidebarContent.innerHTML);
         
         addEventListeners();
         
     } catch (error) {
         console.error('初始化失败:', error);
+        console.error('Error details:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack
+        });
     }
 });
 
@@ -52,47 +50,83 @@ function renderSidebar(structure) {
 }
 
 function renderDirectoryStructure(structure) {
-    console.log('Rendering directory structure:', structure); // 调试信息
+    console.log('Rendering directory structure:', structure);
 
-    // 检查结构是否为空
     if (!structure || Object.keys(structure).length === 0) {
-        console.error('目录结构为空:', structure);
         return '<div class="directory-structure"><p>暫無可用的練習題目</p></div>';
+    }
+
+    // 检查数据结构
+    for (const formId in structure) {
+        if (!structure[formId].chapters) {
+            console.error(`Form ${formId} missing chapters property:`, structure[formId]);
+            continue;
+        }
     }
 
     let html = '<div class="directory-structure">';
     
-    // 遍历每个章节
-    Object.entries(structure).forEach(([chapterId, chapter]) => {
+    // 遍历 Form (F1, F2)
+    Object.entries(structure).forEach(([formId, form]) => {
+        if (!form || !form.chapters) {
+            console.error(`Invalid form structure for ${formId}:`, form);
+            return;
+        }
+
         html += `
-            <div class="folder chapter">
-                <div class="folder-title" data-path="${chapterId}">
+            <div class="folder form">
+                <div class="folder-title" data-path="${formId}">
                     <span class="icon folder-icon">📁</span>
-                    <span class="folder-name">${chapter.title}</span>
+                    <span class="folder-name">${form.title}</span>
                 </div>
                 <div class="folder-content">
         `;
         
-        // 遍历章节下的小节
-        Object.entries(chapter.sections).forEach(([sectionId, section]) => {
+        // 遍历章节
+        Object.entries(form.chapters || {}).forEach(([chapterId, chapter]) => {
+            if (!chapter || !chapter.sections) {
+                console.error(`Invalid chapter structure for ${chapterId}:`, chapter);
+                return;
+            }
+
             html += `
-                <div class="folder section">
-                    <div class="folder-title" data-path="${chapterId}/${sectionId}">
+                <div class="folder chapter">
+                    <div class="folder-title" data-path="${formId}/${chapterId}">
                         <span class="icon folder-icon">📁</span>
-                        <span class="folder-name">${section.title}</span>
+                        <span class="folder-name">${chapter.title}</span>
                     </div>
                     <div class="folder-content">
             `;
             
-            // 遍历小节下的生成器
-            section.generators.forEach(generator => {
-                console.log('处理生成器:', generator); // 添加调试日志
+            // 遍历小节
+            Object.entries(chapter.sections || {}).forEach(([sectionId, section]) => {
+                if (!section || !section.generators) {
+                    console.error(`Invalid section structure for ${sectionId}:`, section);
+                    return;
+                }
+
+                html += `
+                    <div class="folder section">
+                        <div class="folder-title" data-path="${formId}/${chapterId}/${sectionId}">
+                            <span class="icon folder-icon">📁</span>
+                            <span class="folder-name">${section.title}</span>
+                        </div>
+                        <div class="folder-content">
+                `;
+                
+                // 遍历生成器
+                (section.generators || []).forEach(generator => {
+                    html += `
+                        <div class="generator-item" data-topic="${generator.id}">
+                            <span class="icon file-icon">📄</span>
+                            <span class="generator-title">${generator.title}</span>
+                            <span class="difficulty-badge">${generator.difficulty}</span>
+                        </div>
+                    `;
+                });
                 
                 html += `
-                    <div class="generator-item" data-topic="${generator.id}">
-                        <span class="icon file-icon">📄</span>
-                        <span class="generator-title">${generator.title}</span>
-                        <span class="difficulty-badge">${generator.difficulty}</span>
+                        </div>
                     </div>
                 `;
             });
@@ -109,7 +143,7 @@ function renderDirectoryStructure(structure) {
         `;
     });
     
-    console.log('Generated HTML:', html); // 检查生成的HTML
+    html += '</div>';
     return html;
 }
 

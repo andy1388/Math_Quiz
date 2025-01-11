@@ -29,7 +29,9 @@ async function initializeGenerators() {
 router.get('/available-generators', async (req, res) => {
     try {
         const generators = Array.from(generatorCache.values());
+        console.log('Raw generators:', JSON.stringify(generators, null, 2));
         const structure = organizeGenerators(generators);
+        console.log('Organized structure:', JSON.stringify(structure, null, 2));
         res.json(structure);
     } catch (error) {
         console.error('获取生成器列表失败:', error);
@@ -62,34 +64,59 @@ router.get('/generate/:generatorId', async (req: Request, res: Response) => {
 function organizeGenerators(generators: GeneratorInfo[]): DirectoryStructure {
     const structure: DirectoryStructure = {};
     
+    // 按Form分组
+    const formGroups = new Map<string, GeneratorInfo[]>();
     generators.forEach(gen => {
-        const chapterId = gen.chapter.id;
-        const sectionId = gen.section.id;
-        
-        // 如果章节不存在，创建它
-        if (!structure[chapterId]) {
-            structure[chapterId] = {
-                title: gen.chapter.title,
+        const formId = gen.chapter.id.split('_')[0]; // 获取 F1, F2 等
+        if (!formGroups.has(formId)) {
+            formGroups.set(formId, []);
+        }
+        formGroups.get(formId)?.push(gen);
+    });
+
+    // 为每个Form创建结构
+    formGroups.forEach((formGenerators, formId) => {
+        structure[formId] = {
+            title: `Form ${formId.substring(1)}`,
+            chapters: {}
+        };
+
+        // 按章节分组
+        const chapterGroups = new Map<string, GeneratorInfo[]>();
+        formGenerators.forEach(gen => {
+            const chapterId = gen.chapter.id;
+            if (!chapterGroups.has(chapterId)) {
+                chapterGroups.set(chapterId, []);
+            }
+            chapterGroups.get(chapterId)?.push(gen);
+        });
+
+        // 为每个章节创建结构
+        chapterGroups.forEach((chapterGenerators, chapterId) => {
+            structure[formId].chapters[chapterId] = {
+                title: chapterGenerators[0].chapter.title,
                 sections: {}
             };
-        }
-        
-        // 如果小节不存在，创建它
-        if (!structure[chapterId].sections[sectionId]) {
-            structure[chapterId].sections[sectionId] = {
-                title: gen.section.title,
-                generators: []
-            };
-        }
-        
-        // 添加生成器信息
-        structure[chapterId].sections[sectionId].generators.push({
-            id: gen.id,
-            title: gen.title,
-            difficulty: gen.difficulty
+
+            // 按小节分组并添加生成器
+            chapterGenerators.forEach(gen => {
+                const sectionId = gen.section.id;
+                if (!structure[formId].chapters[chapterId].sections[sectionId]) {
+                    structure[formId].chapters[chapterId].sections[sectionId] = {
+                        title: gen.section.title,
+                        generators: []
+                    };
+                }
+                structure[formId].chapters[chapterId].sections[sectionId].generators.push({
+                    id: gen.id,
+                    title: gen.title,
+                    difficulty: gen.difficulty
+                });
+            });
         });
     });
-    
+
+    console.log('Final structure:', JSON.stringify(structure, null, 2));
     return structure;
 }
 

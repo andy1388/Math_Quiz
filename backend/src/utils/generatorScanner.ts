@@ -34,56 +34,67 @@ export class GeneratorScanner {
     }
 
     private async scanForm(formPath: string, form: string) {
-        const items = await fs.promises.readdir(formPath);
+        try {
+            const items = await fs.promises.readdir(formPath);
+            console.log(`Scanning form ${form}, found items:`, items);
 
-        // 遍历所有目录
-        for (const item of items) {
-            const itemPath = path.join(formPath, item);
-            const stat = await fs.promises.stat(itemPath);
-            
-            if (stat.isDirectory()) {
-                // 检查是否包含 'L' 的目录（比如 F1_L12_Polynomials）
-                if (item.includes('L')) {
-                    await this.scanChapter(itemPath, form, item);
-                } else {
-                    // 如果不是以 L 开头，递归扫描子目录
-                    await this.scanForm(itemPath, form);
+            // 遍历所有目录
+            for (const item of items) {
+                const itemPath = path.join(formPath, item);
+                const stat = await fs.promises.stat(itemPath);
+                
+                if (stat.isDirectory()) {
+                    // 检查是否是章节目录（例如 L12_Polynomials）
+                    if (item.includes('L')) {
+                        console.log(`Found chapter: ${item}`);
+                        await this.scanChapter(itemPath, form, item);
+                    }
                 }
             }
+        } catch (error) {
+            console.error(`Error scanning form ${form}:`, error);
         }
     }
 
     private async scanChapter(chapterPath: string, form: string, chapter: string) {
-        const sections = await fs.promises.readdir(chapterPath);
-        
-        for (const section of sections) {
-            const sectionPath = path.join(chapterPath, section);
-            const stat = await fs.promises.stat(sectionPath);
+        try {
+            const sections = await fs.promises.readdir(chapterPath);
+            console.log(`Scanning chapter ${chapter}, found sections:`, sections);
             
-            if (stat.isDirectory()) {
-                if (section.includes('Law_of_Indices') || 
-                    section.includes('Cross_Method')) {  // 添加新的条件
+            for (const section of sections) {
+                const sectionPath = path.join(chapterPath, section);
+                const stat = await fs.promises.stat(sectionPath);
+                
+                if (stat.isDirectory()) {
+                    // 扫描所有小节，不再限制特定名称
+                    console.log(`Found section: ${section}`);
                     await this.scanSection(sectionPath, form, chapter, section);
-                } else {
-                    // 如果不是目标目录，继续递归扫描
-                    await this.scanChapter(sectionPath, form, section);
                 }
             }
+        } catch (error) {
+            console.error(`Error scanning chapter ${chapter}:`, error);
         }
     }
 
     private async scanSection(sectionPath: string, form: string, chapter: string, section: string) {
-        // 扫描生成器文件
-        const files = await fs.promises.readdir(sectionPath);
-        
-        const generators = files.filter(f => f.endsWith('_MQ.ts'));
-        
-        for (const file of generators) {
-            const filePath = path.join(sectionPath, file);
-            const info = await this.parseGeneratorInfo(filePath, form, chapter, section);
-            if (info) {
-                this.generators.set(info.id, info);
+        try {
+            const files = await fs.promises.readdir(sectionPath);
+            console.log(`Scanning section ${section}, found files:`, files);
+            
+            // 查找生成器文件
+            const generators = files.filter(f => f.endsWith('_MQ.ts'));
+            console.log(`Found generators:`, generators);
+            
+            for (const file of generators) {
+                const filePath = path.join(sectionPath, file);
+                const info = await this.parseGeneratorInfo(filePath, form, chapter, section);
+                if (info) {
+                    this.generators.set(info.id, info);
+                    console.log(`Added generator: ${info.id}`);
+                }
             }
+        } catch (error) {
+            console.error(`Error scanning section ${section}:`, error);
         }
     }
 
@@ -97,7 +108,7 @@ export class GeneratorScanner {
             const fileName = path.basename(filePath, '.ts');
             const descPath = filePath.replace('.ts', '.desc.txt');
             
-            // 读取描述文件，取第二行（英文标题）
+            // 读取描述文件
             let title = '';
             if (fs.existsSync(descPath)) {
                 const content = await fs.promises.readFile(descPath, 'utf-8');
@@ -107,9 +118,22 @@ export class GeneratorScanner {
                 title = fileName;
             }
 
-            // 直接使用文件夹名称
-            const chapterTitle = chapter.split('_').slice(1).join(' '); // 移除 F1_ 前缀
-            const sectionTitle = section.split('_').slice(1).join(' '); // 移除 F1L12.1_ 前缀
+            // 解析章节和小节信息，确保所有空格都转换为下划线
+            const formNumber = form.match(/F\d+/)?.[0] || '';
+            const chapterNumber = chapter.match(/L\d+/)?.[0] || '';
+            const chapterName = chapter.split('_')
+                .slice(2)
+                .join('_')
+                .replace(/\s+/g, '_');  // 替换空格为下划线
+
+            const sectionName = section.split('_')
+                .slice(-2)
+                .join('_')
+                .replace(/\s+/g, '_');  // 替换空格为下划线
+
+            // 构建ID时确保使用下划线
+            const chapterId = `${formNumber}_${chapterNumber}_${chapterName}`.replace(/\s+/g, '_');
+            const sectionId = sectionName;
 
             return {
                 id: fileName,
@@ -117,17 +141,18 @@ export class GeneratorScanner {
                 difficulty: '1',
                 path: filePath,
                 chapter: {
-                    id: chapter,
-                    title: `${form} ${chapterTitle}`, // 例如："F1 L12 Polynomials"
-                    number: chapter.match(/L\d+/)?.[0] || ''
+                    id: chapterId,  // 例如: F1_L12_Polynomials
+                    title: `${formNumber} ${chapterNumber} ${chapterName.replace(/_/g, ' ')}`, // 显示时用空格
+                    number: chapterNumber
                 },
                 section: {
-                    id: section,
-                    title: sectionTitle, // 例如："Law of Indices"
+                    id: sectionId,  // 例如: Law_of_Indices
+                    title: sectionName.replace(/_/g, ' '), // 显示时用空格
                     number: section.match(/\d+\.\d+/)?.[0] || ''
                 }
             };
         } catch (error) {
+            console.error('Error parsing generator info:', error);
             return null;
         }
     }
