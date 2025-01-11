@@ -9,6 +9,8 @@
 /* 左側導航欄 */
 .sidebar {
     width: 300px;
+    min-width: 200px;
+    max-width: 600px;
     height: calc(100vh - 60px);
     background-color: #f8f9fa;
     border-right: 1px solid #33ccff;
@@ -16,6 +18,8 @@
     position: fixed;
     left: 0;
     top: 60px;
+    transition: width 0.3s ease;
+    z-index: 100;
 }
 
 /* 移除搜索框的樣式 */
@@ -573,4 +577,30 @@ details[open] > summary::before {
     flex: 1;
     padding: 20px;
     min-height: calc(100vh - 60px);
+    transition: margin-left 0.3s ease;
+}
+
+/* 調整手柄 */
+.resize-handle {
+    position: absolute;
+    right: -5px;
+    top: 0;
+    width: 10px;
+    height: 100%;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.2s;
+}
+
+.resize-handle:hover,
+.resize-handle.active {
+    background: rgba(51, 204, 255, 0.3);
+}
+
+/* 拖動時禁用文字選擇 */
+.resizing {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 } 

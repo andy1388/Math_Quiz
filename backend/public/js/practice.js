@@ -1,4 +1,6 @@
 let AVAILABLE_GENERATORS = [];
+let isResizing = false;
+let lastWidth = localStorage.getItem('sidebarWidth') || '300px';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
@@ -21,6 +23,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         sidebarContent.innerHTML = html;
         
         addEventListeners();
+        
+        // 添加側邊欄調整功能
+        setupSidebarResize();
         
     } catch (error) {
         console.error('初始化失败:', error);
@@ -570,4 +575,63 @@ function checkGeneratorExists(topicId) {
     return AVAILABLE_GENERATORS.some(generator => 
         generator.startsWith(topicId + '.')
     );
+}
+
+function setupSidebarResize() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
+    
+    // 恢復保存的寬度
+    if (lastWidth) {
+        sidebar.style.width = lastWidth;
+        mainContent.style.marginLeft = lastWidth;
+    }
+    
+    // 創建調整手柄
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle';
+    sidebar.appendChild(handle);
+    
+    // 監聽鼠標事件
+    handle.addEventListener('mousedown', initResize);
+    
+    function initResize(e) {
+        isResizing = true;
+        handle.classList.add('active');
+        document.body.classList.add('resizing');
+        
+        // 添加鼠標移動和鬆開事件監聽器
+        document.addEventListener('mousemove', resize);
+        document.addEventListener('mouseup', stopResize);
+        
+        e.preventDefault();
+    }
+    
+    function resize(e) {
+        if (!isResizing) return;
+        
+        // 計算新寬度
+        let newWidth = e.clientX;
+        
+        // 限制最小和最大寬度
+        newWidth = Math.max(200, Math.min(600, newWidth));
+        
+        // 更新側邊欄和主內容區域
+        sidebar.style.width = `${newWidth}px`;
+        mainContent.style.marginLeft = `${newWidth}px`;
+        
+        // 保存寬度到本地存儲
+        lastWidth = `${newWidth}px`;
+        localStorage.setItem('sidebarWidth', lastWidth);
+    }
+    
+    function stopResize() {
+        isResizing = false;
+        handle.classList.remove('active');
+        document.body.classList.remove('resizing');
+        
+        // 移除事件監聽器
+        document.removeEventListener('mousemove', resize);
+        document.removeEventListener('mouseup', stopResize);
+    }
 } 
