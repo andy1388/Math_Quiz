@@ -132,7 +132,21 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
     }
 
     private formatAnswer(factors: Factor): string {
-        const { m, n } = factors;
+        const { m, n, type } = factors;
+        
+        // 对于难度5的完全平方式
+        if (this.difficulty === 5) {
+            switch (type) {
+                case 'difference':  // x² - m²
+                    return `(x + ${m})(x - ${m})`;
+                case 'plusSquare':  // (x + m)²
+                    return `(x + ${m})^2`;
+                case 'minusSquare': // (x - m)²
+                    return `(x - ${m})^2`;
+            }
+        }
+
+        // 其他难度的格式保持不变
         const firstTerm = m === 0 ? 'x' :
                          m > 0 ? `(x - ${m})` : `(x + ${-m})`;
         const secondTerm = n === 0 ? 'x' :
@@ -165,22 +179,22 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
 
                 case 'plusSquare':  // (x + m)²
                     // 1. 符号错误
-                    wrongAnswers.add(this.formatAnswer({ m: -m, n: -m }));
+                    wrongAnswers.add(`(x - ${m})^2`);
                     // 2. 系数错误
-                    wrongAnswers.add(this.formatAnswer({ m: m - 1, n: m - 1 }));
-                    wrongAnswers.add(this.formatAnswer({ m: m + 1, n: m + 1 }));
+                    wrongAnswers.add(`(x + ${m - 1})^2`);
+                    wrongAnswers.add(`(x + ${m + 1})^2`);
                     // 3. 展开错误
-                    wrongAnswers.add(this.formatAnswer({ m: m/2, n: m/2 }));
+                    wrongAnswers.add(`(x + ${m/2})^2`);
                     break;
 
                 case 'minusSquare':  // (x - m)²
                     // 1. 符号错误
-                    wrongAnswers.add(this.formatAnswer({ m: m, n: m }));
+                    wrongAnswers.add(`(x + ${m})^2`);
                     // 2. 系数错误
-                    wrongAnswers.add(this.formatAnswer({ m: -(m - 1), n: -(m - 1) }));
-                    wrongAnswers.add(this.formatAnswer({ m: -(m + 1), n: -(m + 1) }));
+                    wrongAnswers.add(`(x - ${m - 1})^2`);
+                    wrongAnswers.add(`(x - ${m + 1})^2`);
                     // 3. 展开错误
-                    wrongAnswers.add(this.formatAnswer({ m: -m/2, n: -m/2 }));
+                    wrongAnswers.add(`(x - ${m/2})^2`);
                     break;
             }
         } else {
@@ -221,42 +235,42 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
             switch (type) {
                 case 'difference':
                     return `解題步驟：
-1. 觀察二次項：x² ${c >= 0 ? '+' : ''}${c}
-2. 發現這是完全平方差的形式：x² - ${m * m}
+1. 觀察二次項：\\[x^2 ${c >= 0 ? '+' : ''}${c}\\]
+2. 發現這是完全平方差的形式：\\[x^2 - ${m * m}\\]
 3. 因式分解：
-   - 可以寫成 x² - (${m})² 的形式
-   - 使用公式：a² - b² = (a + b)(a - b)
-4. 最終答案：(x + ${m})(x - ${m})`;
+   - 可以寫成 \\[x^2 - (${m})^2\\] 的形式
+   - 使用公式：\\[a^2 - b^2 = (a + b)(a - b)\\]
+4. 最終答案：\\[(x + ${m})(x - ${m})\\]`;
 
                 case 'plusSquare':
                     return `解題步驟：
-1. 觀察二次項：x² ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}
-2. 發現這是完全平方式：x² + 2(${m})x + ${m}²
+1. 觀察二次項：\\[x^2 ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}\\]
+2. 發現這是完全平方式：\\[x^2 + 2(${m})x + ${m}^2\\]
 3. 因式分解：
-   - 一次項係數為${2*m}，是常數項${m*m}的平方根的2倍
-   - 這是(x + ${m})的完全平方式
-4. 最終答案：(x + ${m})²`;
+   - 一次項係數為 ${2*m}，是常數項 ${m*m} 的平方根的2倍
+   - 這是 \\[(x + ${m})\\] 的完全平方式
+4. 最終答案：\\[(x + ${m})^2\\]`;
 
                 case 'minusSquare':
                     return `解題步驟：
-1. 觀察二次項：x² ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}
-2. 發現這是完全平方式：x² - 2(${m})x + ${m}²
+1. 觀察二次項：\\[x^2 ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}\\]
+2. 發現這是完全平方式：\\[x^2 - 2(${m})x + ${m}^2\\]
 3. 因式分解：
-   - 一次項係數為${-2*m}，是常數項${m*m}的平方根的-2倍
-   - 這是(x - ${m})的完全平方式
-4. 最終答案：(x - ${m})²`;
+   - 一次項係數為 ${-2*m}，是常數項 ${m*m} 的平方根的-2倍
+   - 這是 \\[(x - ${m})\\] 的完全平方式
+4. 最終答案：\\[(x - ${m})^2\\]`;
             }
         }
 
-        // 其他难度的解题步骤保持不变
+        // 其他难度的解题步骤
         return `解題步驟：
-1. 觀察二次項：x² ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}
+1. 觀察二次項：\\[x^2 ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}\\]
 2. 找出兩個數：
-   - 它們的和為一次項係數的相反數：${m} + ${n} = ${-b}
-   - 它們的積為常數項：${m} × ${n} = ${c}
+   - 它們的和為一次項係數的相反數：\\[${m} + ${n} = ${-b}\\]
+   - 它們的積為常數項：\\[${m} \\times ${n} = ${c}\\]
 3. 因式分解：
-   - 第一個因式：(x ${m >= 0 ? '- ' + m : '+ ' + (-m)})
-   - 第二個因式：(x ${n >= 0 ? '- ' + n : '+ ' + (-n)})
-4. 最終答案：(x ${m >= 0 ? '- ' + m : '+ ' + (-m)})(x ${n >= 0 ? '- ' + n : '+ ' + (-n)})`;
+   - 第一個因式：\\[(x ${m >= 0 ? '- ' + m : '+ ' + (-m)})\\]
+   - 第二個因式：\\[(x ${n >= 0 ? '- ' + n : '+ ' + (-n)})\\]
+4. 最終答案：\\[(x ${m >= 0 ? '- ' + m : '+ ' + (-m)})(x ${n >= 0 ? '- ' + n : '+ ' + (-n)})\\]`;
     }
 } 
