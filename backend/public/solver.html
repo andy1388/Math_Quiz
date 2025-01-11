@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方程式求解器 - 數學測驗平台</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/solver.css">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="/" class="logo">數學測驗平台</a>
+            <div class="nav-links">
+                <a href="/practice.html">練習</a>
+                <a href="/solver.html" class="active">求解器</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="solver-container">
+        <div class="input-section">
+            <h1>方程式求解器</h1>
+            <div class="equation-input">
+                <input type="text" id="equation-input" placeholder="輸入方程式，例如：2x + 3 = 5">
+                <button id="solve-btn">求解</button>
+            </div>
+        </div>
+
+        <div class="solution-section">
+            <div class="steps-container">
+                <!-- 解題步驟會在這裡動態生成 -->
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/solver.js"></script>
+</body>
+</html> 
