@@ -501,36 +501,55 @@ details[open] > summary::before {
 
 /* 文件夹标题样式 */
 .folder-title {
+    color: white;
     cursor: pointer;
-    padding: 5px;
-    border-radius: 4px;
+    padding: 8px 12px;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    transition: background-color 0.2s;
 }
 
-.folder-title:hover {
-    background-color: #f0f0f0;
+.folder-name {
+    color: white;
+    flex: 1;
 }
 
 /* 生成器项目样式 */
 .generator-item {
-    padding: 8px;
-    margin: 5px 0;
+    color: white;
+    padding: 8px 12px;
     cursor: pointer;
-    border-radius: 4px;
     display: flex;
     align-items: center;
     gap: 8px;
+    transition: background-color 0.2s;
 }
 
-.generator-item:hover {
-    background-color: #e9ecef;
-}
-
-.generator-item.active {
-    background-color: #33ccff;
+.generator-title {
     color: white;
+    flex: 1;
+}
+
+/* 难度标签样式 */
+.difficulty-badge {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+}
+
+/* 文件夹内容样式 */
+.folder-content {
+    padding-left: 20px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 悬停效果 */
+.folder-title:hover,
+.generator-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* 图标样式 */
@@ -546,20 +565,6 @@ details[open] > summary::before {
 
 .file-icon {
     color: #75bfff;
-}
-
-/* 难度标签样式 */
-.difficulty-badge {
-    font-size: 0.8em;
-    padding: 2px 6px;
-    border-radius: 3px;
-    background-color: #e9ecef;
-    color: #666;
-}
-
-.generator-item.active .difficulty-badge {
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
 }
 
 /* 确保主内容区域不被侧边栏遮挡 */

@@ -60,17 +60,24 @@ export class GeneratorScanner {
         const chapters: { [key: string]: ChapterStructure } = {};
         const items = await fs.promises.readdir(formPath);
 
-        for (const item of items) {
-            if (item.includes('L')) {
-                const chapterPath = path.join(formPath, item);
-                const stat = await fs.promises.stat(chapterPath);
-                
-                if (stat.isDirectory()) {
-                    chapters[item] = {
-                        title: item,
-                        sections: await this.scanSectionsBasic(chapterPath)
-                    };
-                }
+        // 按L数字排序
+        const sortedItems = items
+            .filter(item => item.includes('L'))
+            .sort((a, b) => {
+                const numA = parseInt(a.match(/L(\d+)/)?.[1] || '0');
+                const numB = parseInt(b.match(/L(\d+)/)?.[1] || '0');
+                return numA - numB;
+            });
+
+        for (const item of sortedItems) {
+            const chapterPath = path.join(formPath, item);
+            const stat = await fs.promises.stat(chapterPath);
+            
+            if (stat.isDirectory()) {
+                chapters[item] = {
+                    title: item,
+                    sections: await this.scanSectionsBasic(chapterPath)
+                };
             }
         }
         return chapters;
@@ -80,14 +87,21 @@ export class GeneratorScanner {
         const sections: { [key: string]: SectionStructure } = {};
         const items = await fs.promises.readdir(chapterPath);
 
-        for (const item of items) {
+        // 按小节编号排序
+        const sortedItems = items.sort((a, b) => {
+            const numA = parseFloat(a.match(/\d+\.\d+/)?.[0] || '0');
+            const numB = parseFloat(b.match(/\d+\.\d+/)?.[0] || '0');
+            return numA - numB;
+        });
+
+        for (const item of sortedItems) {
             const sectionPath = path.join(chapterPath, item);
             const stat = await fs.promises.stat(sectionPath);
             
             if (stat.isDirectory()) {
                 sections[item] = {
                     title: item,
-                    generators: []  // 初始为空数组，等点击时再加载
+                    generators: []
                 };
             }
         }
