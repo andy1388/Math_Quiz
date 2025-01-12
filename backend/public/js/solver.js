@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const solveBtn = document.getElementById('solve-btn');
     const generatedQuestion = document.querySelector('.generated-question');
     const stepsContainer = document.querySelector('.steps-container');
+    const equationInput = document.getElementById('equation-input');
+    const previewContent = document.querySelector('.preview-content');
 
     // 添加加載難度信息的函數
     async function loadDifficulties(type) {
@@ -59,52 +61,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = await response.json();
             
-            // 顯示生成的題目，使用 MathJax 渲染
-            generatedQuestion.innerHTML = `
-                <div class="question-display">
-                    <div class="question-text">\\(${data.question}\\)</div>
-                </div>
-            `;
-
-            // 更新生成記錄，確保 LaTeX 格式正確
+            // 更新生成記錄
             const historyList = document.getElementById('history-list');
             const listItem = document.createElement('li');
             
-            // 創建題目文本，使用 MathJax 渲染
-            const questionText = document.createElement('span');
-            questionText.innerHTML = `\\(${data.question}\\)`;
+            // 创建一个容器来包装分数
+            const fractionContainer = document.createElement('div');
+            fractionContainer.style.display = 'inline-block';
+            fractionContainer.style.verticalAlign = 'middle';
+            fractionContainer.innerHTML = `\\[${data.question}\\]`;
             
-            // 創建難度標籤
+            // 创建难度标签
             const difficultyLabel = document.createElement('span');
             difficultyLabel.className = `difficulty-label level-${difficulty.value}`;
             difficultyLabel.textContent = `Level ${difficulty.value}`;
             
-            // 將元素添加到列表項
-            listItem.appendChild(questionText);
+            // 将元素添加到列表项
+            listItem.appendChild(fractionContainer);
             listItem.appendChild(difficultyLabel);
             
-            // 添加點擊事件
+            // 添加点击事件
             listItem.addEventListener('click', () => {
-                document.getElementById('equation-input').value = data.question;
+                const equation = data.question;
+                equationInput.value = equation;
+                previewContent.innerHTML = `\\[${equation}\\]`;
+                MathJax.typesetPromise();
+                solveEquation(equation, operationType.value, difficulty.value);
             });
 
-            // 將新記錄添加到列表頂部
+            // 将新记录添加到列表顶部
             if (historyList.firstChild) {
                 historyList.insertBefore(listItem, historyList.firstChild);
             } else {
                 historyList.appendChild(listItem);
             }
 
-            // 限制記錄數量為10條
+            // 限制记录数量为10条
             while (historyList.children.length > 10) {
                 historyList.removeChild(historyList.lastChild);
             }
 
-            // 重新渲染所有數學公式
+            // 重新渲染所有数学公式
             MathJax.typesetPromise();
 
-            // 自動填入求解器輸入框
+            // 自动填入求解器输入框并更新预览
             document.getElementById('equation-input').value = data.question;
+            previewContent.innerHTML = `\\[${data.question}\\]`;
+            MathJax.typesetPromise();
 
         } catch (error) {
             console.error('Error:', error);
@@ -119,7 +122,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         
-        solveEquation(equation, operationType.value, difficulty.value);
+        // 如果输入不是 LaTeX 格式，转换为 LaTeX 格式
+        const latexEquation = equation.startsWith('\\') ? equation : convertToLatex(equation);
+        solveEquation(latexEquation, operationType.value, difficulty.value);
     });
 
     document.getElementById('equation-input').addEventListener('keypress', (e) => {
@@ -127,17 +132,28 @@ document.addEventListener('DOMContentLoaded', async () => {
             solveBtn.click();
         }
     });
+
+    // 添加输入监听器来更新预览
+    equationInput.addEventListener('input', () => {
+        const input = equationInput.value.trim();
+        const latex = input.startsWith('\\') ? input : convertToLatex(input);
+        previewContent.innerHTML = `\\[${latex}\\]`;
+        MathJax.typesetPromise();
+    });
 });
 
 async function solveEquation(equation, type, difficulty) {
     try {
+        // 如果输入是 LaTeX 格式，保持原样；如果是普通分数格式，转换为 LaTeX
+        const latexEquation = equation.startsWith('\\') ? equation : convertToLatex(equation);
+        
         const response = await fetch('/api/solver/solve', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ 
-                equation,
+                equation: latexEquation,
                 type: type || 'addition',
                 difficulty: parseInt(difficulty || '1')
             })
@@ -168,15 +184,37 @@ function displaySolution(solution) {
                 <span class="step-description">${step.description}</span>
             </div>
             <div class="step-equation">
-                <pre class="math">${step.operation}</pre>
+                <div class="math">\\[${step.operation}\\]</div>
             </div>
-            ${step.result ? `<div class="step-result">${step.result}</div>` : ''}
+            ${step.result ? `<div class="step-result">\\[${step.result}\\]</div>` : ''}
         `;
         stepsContainer.appendChild(stepElement);
     });
 
     // 重新渲染數學公式
-    if (window.MathJax) {
-        MathJax.typesetPromise && MathJax.typesetPromise();
+    MathJax.typesetPromise();
+}
+
+// 修改 convertToLatex 函数，使其更智能地处理各种输入
+function convertToLatex(input) {
+    // 移除多余的空格
+    input = input.trim();
+    
+    // 如果已经是 LaTeX 格式，直接返回
+    if (input.includes('\\frac')) {
+        return input;
     }
+    
+    // 检查是否是分数格式 (例如: 12/28)
+    const fractionMatch = input.match(/^(\d+)\/(\d+)$/);
+    if (fractionMatch) {
+        return `\\frac{${fractionMatch[1]}}{${fractionMatch[2]}}`;
+    }
+    
+    // 如果是普通数字，直接返回
+    if (/^\d+$/.test(input)) {
+        return input;
+    }
+    
+    return input;
 } 

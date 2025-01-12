@@ -274,7 +274,7 @@ optgroup {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 25px;
+    min-height: 40px;
 }
 
 #history-list li:last-child {
@@ -284,6 +284,16 @@ optgroup {
 #history-list li:hover {
     background-color: #f0f0f0;
     cursor: pointer;
+}
+
+#history-list .MathJax {
+    font-size: 16px !important;
+    margin: 0 !important;
+}
+
+.difficulty-label {
+    margin-left: 15px;
+    flex-shrink: 0;
 }
 
 /* 添加难度标签样式 */
@@ -302,4 +312,24 @@ optgroup {
 .level-2 { background-color: #2196F3; }  /* 初级 - 蓝色 */
 .level-3 { background-color: #FF9800; }  /* 中级 - 橙色 */
 .level-4 { background-color: #9C27B0; }  /* 进阶 - 紫色 */
-.level-5 { background-color: #F44336; }  /* 挑战 - 红色 */ 
+.level-5 { background-color: #F44336; }  /* 挑战 - 红色 */
+
+.equation-preview {
+    margin: 10px 0 20px;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-content {
+    font-size: 20px;
+}
+
+.preview-content .MathJax {
+    margin: 0 !important;
+} 

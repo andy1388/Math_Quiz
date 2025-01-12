@@ -3,6 +3,7 @@ import { AdditionGenerator } from '../arithmetic/Addition';
 import { FractionReductionGenerator } from '../arithmetic/FractionReduction';
 import { DecimalFractionConversionGenerator } from '../arithmetic/DecimalFractionConversion';
 import { NumberTheoryGenerator } from '../arithmetic/NumberTheory';
+import { Solver } from '../Solver';
 
 const router = express.Router();
 
@@ -96,6 +97,21 @@ router.get('/difficulties/:type', async (req, res) => {
     } catch (error) {
         console.error('Get Difficulties Error:', error);
         res.status(500).json({ error: '獲取難度信息失敗' });
+    }
+});
+
+router.post('/solve', async (req, res) => {
+    try {
+        const { equation } = req.body;
+        const solution = Solver.solve(equation);
+        res.json(solution);
+    } catch (error) {
+        console.error('Solve Error:', error);
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: '未知錯誤' });
+        }
     }
 });
 
