@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 添加初始表达式
             const initialStep = document.createElement('div');
             initialStep.className = 'expression-step';
-            initialStep.innerHTML = `<div class="math">\\[${data.question}\\]</div>`;
+            initialStep.innerHTML = `<div class="math" data-latex="${data.question}">\\[${data.question}\\]</div>`;
             expressionHistory.appendChild(initialStep);
             
             // 重新渲染数学公式
@@ -185,17 +185,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.addEventListener('click', async () => {
             const operation = btn.dataset.op;
             const expressionHistory = document.querySelector('.expression-history');
-            // 直接获取 equation-input 的值
-            const content = document.getElementById('equation-input').value;
+            // 获取实验区最后一个表达式的 LaTeX
+            const lastExpression = expressionHistory.lastElementChild?.querySelector('.math');
+            const content = lastExpression?.getAttribute('data-latex');
             
             if (!content) {
                 alert('請先生成或輸入題目');
                 return;
             }
 
+            console.log('Original LaTeX:', content);
+
             try {
                 const requestData = { 
-                    latex: content,  // 直接使用 equation-input 的值
+                    latex: content,  // 使用实验区最后一个表达式的 LaTeX
                     operation: operation 
                 };
                 console.log('Sending request data:', requestData);
