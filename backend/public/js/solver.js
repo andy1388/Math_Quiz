@@ -177,9 +177,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             // 更新操作按钮状态
             updateOperationButtons(latexEquation);
         });
-
-        // 继续原有的求解流程
-        solveEquation(latexEquation, operationType.value, difficulty.value);
     });
 
     document.getElementById('equation-input').addEventListener('keypress', (e) => {
