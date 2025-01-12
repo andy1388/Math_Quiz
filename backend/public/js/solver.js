@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     generateBtn.addEventListener('click', async () => {
         try {
-            const response = await fetch('/api/generate', {
+            const response = await fetch('/api/solver/generate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('equation-input').value = data.question;
             
             // 自動觸發求解
-            solveBtn.click();
+            solveEquation(data.question, operationType.value, difficulty.value);
 
         } catch (error) {
             console.error('Error:', error);
@@ -47,12 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
     solveBtn.addEventListener('click', () => {
         const equation = document.getElementById('equation-input').value.trim();
         if (!equation) {
-            alert('請輸入方程式');
+            alert('請輸入算式');
             return;
         }
         
-        // 發送求解請求
-        solveEquation(equation);
+        solveEquation(equation, operationType.value, difficulty.value);
     });
 
     document.getElementById('equation-input').addEventListener('keypress', (e) => {
@@ -62,14 +61,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-async function solveEquation(equation) {
+async function solveEquation(equation, type, difficulty) {
     try {
-        const response = await fetch('/api/solve', {
+        const response = await fetch('/api/solver/solve', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ equation })
+            body: JSON.stringify({ 
+                equation,
+                type: type || 'addition',
+                difficulty: parseInt(difficulty || '1')
+            })
         });
 
         if (!response.ok) {

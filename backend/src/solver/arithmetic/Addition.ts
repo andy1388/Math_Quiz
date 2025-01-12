@@ -1,4 +1,15 @@
-import { ArithmeticOperation, CalculationStep } from '../types/Operation';
+interface ArithmeticOperation {
+    type: 'addition' | 'subtraction' | 'multiplication' | 'division';
+    operands: number[];
+    difficulty: number;
+}
+
+interface CalculationStep {
+    description: string;
+    operation: string;
+    result: number;
+    explanation?: string;
+}
 
 export class AdditionGenerator {
     private difficulty: number;
@@ -56,7 +67,7 @@ export class AdditionGenerator {
 
     solve(operation: ArithmeticOperation): CalculationStep[] {
         const steps: CalculationStep[] = [];
-        const sum = operation.operands.reduce((a, b) => a + b, 0);
+        const sum = operation.operands.reduce((a: number, b: number): number => a + b, 0);
 
         // 基本步驟
         steps.push({

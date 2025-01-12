@@ -1,9 +1,15 @@
 import express from 'express';
 import { AdditionGenerator } from '../arithmetic/Addition';
 
+interface ArithmeticOperation {
+    type: 'addition' | 'subtraction' | 'multiplication' | 'division';
+    operands: number[];
+    difficulty: number;
+}
+
 const router = express.Router();
 
-router.post('/api/generate', async (req, res) => {
+router.post('/generate', async (req, res) => {
     try {
         const { type, difficulty } = req.body;
 
@@ -25,15 +31,24 @@ router.post('/api/generate', async (req, res) => {
     }
 });
 
-router.post('/api/solve', async (req, res) => {
+router.post('/solve', async (req, res) => {
     try {
         const { equation, type, difficulty } = req.body;
 
         if (type === 'addition') {
             const generator = new AdditionGenerator(difficulty);
-            const numbers = equation.split('+').map(n => parseFloat(n.trim()));
-            const operation = {
-                type: 'addition',
+            const cleanEquation = equation.replace('= ?', '').trim();
+            const numbers: number[] = cleanEquation.split('+').map((n: string): number => {
+                const trimmed = n.trim();
+                const parsed = parseFloat(trimmed);
+                if (isNaN(parsed)) {
+                    throw new Error('無效的數字格式');
+                }
+                return parsed;
+            });
+
+            const operation: ArithmeticOperation = {
+                type: 'addition' as const,
                 operands: numbers,
                 difficulty
             };
