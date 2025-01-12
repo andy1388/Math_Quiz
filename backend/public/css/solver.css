@@ -1,3 +1,90 @@
+.solver-layout {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    margin-top: 60px;
+    min-height: calc(100vh - 80px);
+}
+
+/* 左側生成器區域 */
+.generator-section {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.generator-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 選擇器組樣式 */
+.select-group {
+    margin-bottom: 15px;
+}
+
+.select-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #666;
+    font-size: 14px;
+}
+
+select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.3s;
+}
+
+select:focus {
+    border-color: #33ccff;
+    outline: none;
+}
+
+optgroup {
+    font-weight: bold;
+    color: #666;
+}
+
+option {
+    padding: 5px;
+}
+
+/* 生成按鈕樣式 */
+#generate-btn {
+    width: 100%;
+    padding: 12px;
+    background: #33ccff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#generate-btn:hover {
+    background: #00bfff;
+}
+
+/* 右側求解器區域 */
+.solver-section {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
 .solver-container {
     max-width: 800px;
     margin: 80px auto 20px;
@@ -85,4 +172,13 @@
 
 .highlight {
     color: #33ccff;
+}
+
+/* 生成的題目區域 */
+.generated-question {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-height: 100px;
 } 

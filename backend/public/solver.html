@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>方程式求解器 - 數學測驗平台</title>
+    <title>數學求解器 - 數學測驗平台</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/solver.css">
     <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
@@ -20,18 +20,60 @@
         </nav>
     </header>
 
-    <main class="solver-container">
-        <div class="input-section">
-            <h1>方程式求解器</h1>
-            <div class="equation-input">
-                <input type="text" id="equation-input" placeholder="輸入方程式，例如：2x + 3 = 5">
-                <button id="solve-btn">求解</button>
+    <main class="solver-layout">
+        <!-- 左側：題目生成 -->
+        <div class="generator-section">
+            <h2>生成練習題</h2>
+            <div class="generator-controls">
+                <!-- 運算類型選擇 -->
+                <div class="select-group">
+                    <label for="operation-type">運算類型：</label>
+                    <select id="operation-type">
+                        <optgroup label="四則運算">
+                            <option value="addition">加法</option>
+                            <option value="subtraction">減法</option>
+                            <option value="multiplication">乘法</option>
+                            <option value="division">除法</option>
+                            <option value="mixed">混合運算</option>
+                        </optgroup>
+                        <optgroup label="方程">
+                            <option value="linear">一次方程</option>
+                            <option value="quadratic">二次方程</option>
+                            <option value="fraction">分數方程</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <!-- 難度選擇 -->
+                <div class="select-group">
+                    <label for="difficulty">難度等級：</label>
+                    <select id="difficulty">
+                        <option value="1">Level 1 - 基礎</option>
+                        <option value="2">Level 2 - 初級</option>
+                        <option value="3">Level 3 - 中級</option>
+                        <option value="4">Level 4 - 進階</option>
+                        <option value="5">Level 5 - 挑戰</option>
+                    </select>
+                </div>
+
+                <button id="generate-btn">生成題目</button>
+            </div>
+            <div class="generated-question">
+                <!-- 生成的題目會顯示在這裡 -->
             </div>
         </div>
 
-        <div class="solution-section">
-            <div class="steps-container">
-                <!-- 解題步驟會在這裡動態生成 -->
+        <!-- 右側：求解器 -->
+        <div class="solver-section">
+            <h2>方程式求解器</h2>
+            <div class="equation-input">
+                <input type="text" id="equation-input" placeholder="輸入算式或方程式，例如：2x + 3 = 5">
+                <button id="solve-btn">求解</button>
+            </div>
+            <div class="solution-section">
+                <div class="steps-container">
+                    <!-- 解題步驟會在這裡動態生成 -->
+                </div>
             </div>
         </div>
     </main>
