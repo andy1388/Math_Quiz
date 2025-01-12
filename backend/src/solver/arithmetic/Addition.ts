@@ -1,14 +1,7 @@
 interface ArithmeticOperation {
-    type: 'addition' | 'subtraction' | 'multiplication' | 'division';
+    type: 'addition';
     operands: number[];
     difficulty: number;
-}
-
-interface CalculationStep {
-    description: string;
-    operation: string;
-    result: number;
-    explanation?: string;
 }
 
 interface DifficultyInfo {
@@ -100,47 +93,5 @@ export class AdditionGenerator {
             default:
                 return [1, 1];
         }
-    }
-
-    solve(operation: ArithmeticOperation): CalculationStep[] {
-        const steps: CalculationStep[] = [];
-        const sum = operation.operands.reduce((a: number, b: number): number => a + b, 0);
-
-        // 基本步驟
-        steps.push({
-            description: '直接相加',
-            operation: operation.operands.join(' + '),
-            result: sum
-        });
-
-        // 根據難度添加詳細步驟
-        if (this.difficulty >= 2) {
-            steps.unshift({
-                description: '對齊個位數',
-                operation: this.formatAlignedNumbers(operation.operands),
-                result: sum
-            });
-        }
-
-        if (this.difficulty >= 3) {
-            steps.splice(1, 0, {
-                description: '由右至左逐位相加',
-                operation: this.formatCarryOver(operation.operands),
-                result: sum
-            });
-        }
-
-        return steps;
-    }
-
-    private formatAlignedNumbers(numbers: number[]): string {
-        const maxLength = Math.max(...numbers.map(n => n.toString().length));
-        return numbers.map(n => n.toString().padStart(maxLength)).join('\n+');
-    }
-
-    private formatCarryOver(numbers: number[]): string {
-        // 實現進位標記的格式化
-        // 這裡需要更詳細的實現...
-        return '待實現';
     }
 } 

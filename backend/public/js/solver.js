@@ -68,9 +68,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 自動填入求解器輸入框
             document.getElementById('equation-input').value = data.question;
-            
-            // 自動觸發求解
-            solveEquation(data.question, operationType.value, difficulty.value);
 
         } catch (error) {
             console.error('Error:', error);
