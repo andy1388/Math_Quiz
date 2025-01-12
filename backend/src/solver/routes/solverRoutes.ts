@@ -132,7 +132,15 @@ router.post('/process', (req, res) => {
             case 'combine':
                 result = ExpressionAnalyzer.combineTerms(latex);
                 break;
-            // ... 其他操作 ...
+            case 'decimal-fraction':
+                if (latex.includes('.')) {
+                    result = ExpressionAnalyzer.convertDecimalToFraction(latex);
+                } else if (latex.includes('\\frac')) {
+                    result = ExpressionAnalyzer.convertFractionToDecimal(latex);
+                } else {
+                    return res.status(400).json({ error: '表達式中沒有小數或分數' });
+                }
+                break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }

@@ -489,6 +489,60 @@ export const ExpressionAnalyzer = {
         }
         // 否则返回小数形式
         return rounded.toString();
+    },
+
+    /**
+     * 小數轉分數
+     */
+    convertDecimalToFraction(decimal: string): string {
+        // 移除等号及其后面的内容
+        const [expression, equals] = decimal.split('=');
+        
+        // 处理表达式中的每个数字
+        const converted = expression.replace(/\d+\.\d+/g, (match) => {
+            const num = parseFloat(match);
+            const [numerator, denominator] = this._decimalToFraction(num);
+            return `\\frac{${numerator}}{${denominator}}`;
+        });
+
+        // 添加等号部分（如果有）
+        return equals ? `${converted}=${equals}` : converted;
+    },
+
+    /**
+     * 分數轉小數
+     */
+    convertFractionToDecimal(fraction: string): string {
+        // 移除等号及其后面的内容
+        const [expression, equals] = fraction.split('=');
+        
+        // 处理表达式中的分数
+        const converted = expression.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, (_, num, den) => {
+            const decimal = (parseInt(num) / parseInt(den)).toFixed(5);
+            // 移除末尾的0和不必要的小数点
+            return decimal.replace(/\.?0+$/, '');
+        });
+
+        // 添加等号部分（如果有）
+        return equals ? `${converted}=${equals}` : converted;
+    },
+
+    /**
+     * 將小數轉換為最簡分數
+     */
+    _decimalToFraction(decimal: number): [number, number] {
+        const precision = 1e5; // 5位小数精度
+        let numerator = Math.round(decimal * precision);
+        let denominator = precision;
+        
+        // 使用辗转相除法求最大公约数
+        const gcd = (a: number, b: number): number => {
+            return b === 0 ? a : gcd(b, a % b);
+        };
+        
+        // 约分
+        const divisor = gcd(numerator, denominator);
+        return [numerator / divisor, denominator / divisor];
     }
 };
 
@@ -547,7 +601,8 @@ export const MathOperations = {
     REDUCE_FRACTION: 'reduce',
     COMMON_DENOMINATOR: 'common-denominator',
     EXPAND: 'expand',
-    FACTORIZE: 'factorize'
+    FACTORIZE: 'factorize',
+    DECIMAL_FRACTION_CONVERSION: 'decimal-fraction'
 } as const;
 
 export interface OperationButton {
@@ -603,5 +658,14 @@ export const OPERATION_BUTTONS: OperationButton[] = [
         description: '將表達式分解為因式',
         operation: 'FACTORIZE',
         isAvailable: (latex: string) => ExpressionAnalyzer.getExpressionType(latex) === 'polynomial'
+    },
+    {
+        id: 'decimal-fraction',
+        label: '小數分數轉換',
+        description: '在小數和分數之間轉換',
+        operation: 'DECIMAL_FRACTION_CONVERSION',
+        isAvailable: (latex: string) => {
+            return latex.includes('.') || latex.includes('\\frac');
+        }
     }
 ]; 
