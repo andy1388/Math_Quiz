@@ -231,4 +231,42 @@ optgroup {
 .difficulty-info:hover .info-text {
     text-decoration: underline;
     cursor: help;
+}
+
+.generation-history {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.generation-history h3 {
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #333;
+}
+
+#history-list {
+    list-style-type: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#history-list li {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#history-list li:last-child {
+    border-bottom: none;
+}
+
+#history-list li:hover {
+    background-color: #f0f0f0;
+    cursor: pointer;
 } 

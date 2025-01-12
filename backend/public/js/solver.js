@@ -66,6 +66,40 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
 
+            // 更新生成記錄
+            const historyList = document.getElementById('history-list');
+            const listItem = document.createElement('li');
+            
+            // 創建題目文本
+            const questionText = document.createElement('span');
+            questionText.textContent = data.question;
+            
+            // 創建難度標籤
+            const difficultyLabel = document.createElement('span');
+            difficultyLabel.className = `difficulty-label level-${difficulty.value}`;
+            difficultyLabel.textContent = `Level ${difficulty.value}`;
+            
+            // 將元素添加到列表項
+            listItem.appendChild(questionText);
+            listItem.appendChild(difficultyLabel);
+            
+            // 添加點擊事件
+            listItem.addEventListener('click', () => {
+                document.getElementById('equation-input').value = data.question;
+            });
+
+            // 將新記錄添加到列表頂部
+            if (historyList.firstChild) {
+                historyList.insertBefore(listItem, historyList.firstChild);
+            } else {
+                historyList.appendChild(listItem);
+            }
+
+            // 限制記錄數量為10條
+            while (historyList.children.length > 10) {
+                historyList.removeChild(historyList.lastChild);
+            }
+
             // 自動填入求解器輸入框
             document.getElementById('equation-input').value = data.question;
 
