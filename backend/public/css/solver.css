@@ -50,13 +50,38 @@ select:focus {
     outline: none;
 }
 
+/* 選項樣式 */
+option {
+    padding: 8px;
+    font-size: 14px;
+}
+
+/* 添加選項的提示樣式 */
+option[value="1"] { color: #4CAF50; }  /* 基礎 - 綠色 */
+option[value="2"] { color: #2196F3; }  /* 初級 - 藍色 */
+option[value="3"] { color: #FF9800; }  /* 中級 - 橙色 */
+option[value="4"] { color: #9C27B0; }  /* 進階 - 紫色 */
+option[value="5"] { color: #F44336; }  /* 挑戰 - 紅色 */
+
+/* 懸停效果 */
+select:hover {
+    border-color: #33ccff;
+}
+
+/* 當選擇器被展開時的樣式 */
+select:focus option {
+    background-color: #f5f5f5;
+}
+
+/* 選中選項的樣式 */
+select option:checked {
+    background-color: #e3f2fd;
+    font-weight: bold;
+}
+
 optgroup {
     font-weight: bold;
     color: #666;
-}
-
-option {
-    padding: 5px;
 }
 
 /* 生成按鈕樣式 */
@@ -181,4 +206,29 @@ option {
     border: 1px solid #ddd;
     border-radius: 4px;
     min-height: 100px;
+}
+
+/* 難度說明提示框 */
+.difficulty-info {
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    align-items: center;
+}
+
+.info-icon {
+    margin-right: 5px;
+    color: #33ccff;
+    font-style: normal;
+}
+
+.info-text {
+    font-style: italic;
+}
+
+/* 懸停時顯示完整說明 */
+.difficulty-info:hover .info-text {
+    text-decoration: underline;
+    cursor: help;
 } 

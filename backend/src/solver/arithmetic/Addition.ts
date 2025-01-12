@@ -11,11 +11,48 @@ interface CalculationStep {
     explanation?: string;
 }
 
+interface DifficultyInfo {
+    level: number;
+    name: string;
+    description: string;
+}
+
 export class AdditionGenerator {
     private difficulty: number;
+    private static readonly difficultyInfos: DifficultyInfo[] = [
+        {
+            level: 1,
+            name: "基礎",
+            description: "個位數加法 (1-9)"
+        },
+        {
+            level: 2,
+            name: "初級",
+            description: "雙位數加法 (10-99)"
+        },
+        {
+            level: 3,
+            name: "中級",
+            description: "三位數加法 (100-999)"
+        },
+        {
+            level: 4,
+            name: "進階",
+            description: "帶小數加法"
+        },
+        {
+            level: 5,
+            name: "挑戰",
+            description: "混合計算（三個數相加）"
+        }
+    ];
 
     constructor(difficulty: number) {
         this.difficulty = difficulty;
+    }
+
+    static getDifficultyInfos(): DifficultyInfo[] {
+        return this.difficultyInfos;
     }
 
     generate(): ArithmeticOperation {

@@ -1,10 +1,44 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const operationType = document.getElementById('operation-type');
     const difficulty = document.getElementById('difficulty');
     const generateBtn = document.getElementById('generate-btn');
     const solveBtn = document.getElementById('solve-btn');
     const generatedQuestion = document.querySelector('.generated-question');
     const stepsContainer = document.querySelector('.steps-container');
+
+    // 添加加載難度信息的函數
+    async function loadDifficulties(type) {
+        try {
+            const response = await fetch(`/api/solver/difficulties/${type}`);
+            if (!response.ok) {
+                throw new Error('獲取難度信息失敗');
+            }
+
+            const difficulties = await response.json();
+            
+            // 更新難度選擇器
+            difficulty.innerHTML = difficulties.map(diff => `
+                <option value="${diff.level}">Level ${diff.level} - ${diff.name} [${diff.description}]</option>
+            `).join('');
+
+            // 更新提示信息
+            const infoText = document.querySelector('.info-text');
+            if (infoText) {
+                infoText.textContent = `選擇不同難度等級來練習不同類型的${type === 'addition' ? '加法' : ''}題目`;
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('加載難度信息失敗：' + error.message);
+        }
+    }
+
+    // 當運算類型改變時加載相應的難度信息
+    operationType.addEventListener('change', () => {
+        loadDifficulties(operationType.value);
+    });
+
+    // 初始加載難度信息
+    await loadDifficulties('addition');
 
     generateBtn.addEventListener('click', async () => {
         try {
