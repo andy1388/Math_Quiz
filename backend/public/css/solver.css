@@ -206,6 +206,7 @@ optgroup {
     border: 1px solid #ddd;
     border-radius: 4px;
     min-height: 50px;
+    display: none;
 }
 
 /* 難度說明提示框 */

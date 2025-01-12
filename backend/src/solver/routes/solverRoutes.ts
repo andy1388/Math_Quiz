@@ -1,5 +1,7 @@
 import express from 'express';
 import { AdditionGenerator } from '../arithmetic/Addition';
+import { FractionReductionGenerator } from '../arithmetic/FractionReduction';
+import { DecimalFractionConversionGenerator } from '../arithmetic/DecimalFractionConversion';
 
 const router = express.Router();
 
@@ -7,17 +9,39 @@ router.post('/generate', async (req, res) => {
     try {
         const { type, difficulty } = req.body;
 
-        if (type === 'addition') {
-            const generator = new AdditionGenerator(difficulty);
-            const operation = generator.generate();
-            const question = operation.operands.join(' + ') + ' = ?';
+        switch (type) {
+            case 'addition':
+                const additionGenerator = new AdditionGenerator(difficulty);
+                const additionOperation = additionGenerator.generate();
+                const additionQuestion = additionOperation.operands.join(' + ') + ' = ?';
+                res.json({
+                    question: formatToLatex(additionQuestion),
+                    operation: additionOperation
+                });
+                break;
 
-            res.json({
-                question: formatToLatex(question),
-                operation
-            });
-        } else {
-            res.status(400).json({ error: '不支援的運算類型' });
+            case 'fraction-reduction':
+                const fractionGenerator = new FractionReductionGenerator(difficulty);
+                const fractionOperation = fractionGenerator.generate();
+                const fractionQuestion = `\\frac{${fractionOperation.numerator}}{${fractionOperation.denominator}}`;
+                res.json({
+                    question: fractionQuestion,
+                    operation: fractionOperation
+                });
+                break;
+
+            case 'decimal-fraction-conversion':
+                const conversionGenerator = new DecimalFractionConversionGenerator(difficulty);
+                const conversionOperation = conversionGenerator.generate();
+                const conversionQuestion = `${conversionOperation.value} = ?`;
+                res.json({
+                    question: conversionQuestion,
+                    operation: conversionOperation
+                });
+                break;
+
+            default:
+                res.status(400).json({ error: '不支援的運算類型' });
         }
     } catch (error) {
         console.error('Generate Error:', error);
@@ -29,11 +53,18 @@ router.get('/difficulties/:type', async (req, res) => {
     try {
         const { type } = req.params;
         
-        if (type === 'addition') {
-            const difficulties = AdditionGenerator.getDifficultyInfos();
-            res.json(difficulties);
-        } else {
-            res.status(400).json({ error: '不支援的運算類型' });
+        switch (type) {
+            case 'addition':
+                res.json(AdditionGenerator.getDifficultyInfos());
+                break;
+            case 'fraction-reduction':
+                res.json(FractionReductionGenerator.getDifficultyInfos());
+                break;
+            case 'decimal-fraction-conversion':
+                res.json(DecimalFractionConversionGenerator.getDifficultyInfos());
+                break;
+            default:
+                res.status(400).json({ error: '不支援的運算類型' });
         }
     } catch (error) {
         console.error('Get Difficulties Error:', error);
@@ -41,9 +72,7 @@ router.get('/difficulties/:type', async (req, res) => {
     }
 });
 
-// 辅助函数：将普通数学表达式转换为 LaTeX 格式
 function formatToLatex(expression: string): string {
-    // 替换基本运算符
     return expression
         .replace(/\+/g, ' + ')
         .replace(/\-/g, ' - ')

@@ -26,17 +26,17 @@ export class AdditionGenerator {
         {
             level: 3,
             name: "中級",
-            description: "三位數加法 (100-999)"
+            description: "小數加法 (0.1-99.9)"
         },
         {
             level: 4,
             name: "進階",
-            description: "帶小數加法"
+            description: "分數加法"
         },
         {
             level: 5,
             name: "挑戰",
-            description: "混合計算（三個數相加）"
+            description: "混合計算（分數與小數）"
         }
     ];
 
@@ -71,27 +71,32 @@ export class AdditionGenerator {
                     Math.floor(Math.random() * 90) + 10
                 ];
             
-            case 3: // 三位數加法 (100-999)
+            case 3: // 小數加法 (0.1-99.9)
                 return [
-                    Math.floor(Math.random() * 900) + 100,
-                    Math.floor(Math.random() * 900) + 100
+                    Number((Math.random() * 99.9).toFixed(1)),
+                    Number((Math.random() * 99.9).toFixed(1))
                 ];
             
-            case 4: // 帶小數加法
+            case 4: // 分數加法
                 return [
-                    Number((Math.random() * 100).toFixed(1)),
-                    Number((Math.random() * 100).toFixed(1))
+                    this.generateFraction(),
+                    this.generateFraction()
                 ];
             
-            case 5: // 混合計算（三個數相加）
+            case 5: // 混合計算（分數與小數）
                 return [
-                    Math.floor(Math.random() * 100),
-                    Math.floor(Math.random() * 100),
-                    Math.floor(Math.random() * 100)
+                    Math.random() > 0.5 ? this.generateFraction() : Number((Math.random() * 99.9).toFixed(1)),
+                    Math.random() > 0.5 ? this.generateFraction() : Number((Math.random() * 99.9).toFixed(1))
                 ];
             
             default:
                 return [1, 1];
         }
+    }
+
+    private generateFraction(): number {
+        const numerator = Math.floor(Math.random() * 9) + 1;
+        const denominator = Math.floor(Math.random() * 9) + 1;
+        return numerator / denominator;
     }
 } 
