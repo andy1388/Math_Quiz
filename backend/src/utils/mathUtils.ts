@@ -348,8 +348,9 @@ export const ExpressionAnalyzer = {
         terms.forEach(term => {
             // 提取变量和系数
             const { coefficient, variable } = this._parseTermParts(term);
-            // 纯数字项使用特殊标识
-            const key = variable ? variable : 'constant';
+            
+            // 对于纯数字项（包括小数），使用特殊标识
+            const key = this._isNumeric(term) ? 'numeric' : (variable || 'constant');
             
             if (!groups.has(key)) {
                 groups.set(key, []);
@@ -361,7 +362,7 @@ export const ExpressionAnalyzer = {
         const likeTermGroups = Array.from(groups.entries())
             .filter(([_, terms]) => terms.length > 1)  // 只保留有同类项的组
             .map(([variable, terms]) => ({
-                variable: variable === 'constant' ? '常數項' : variable,
+                variable: variable === 'numeric' ? '數值項' : (variable || '常數項'),
                 terms,
                 count: terms.length
             }));
@@ -373,21 +374,27 @@ export const ExpressionAnalyzer = {
     },
 
     /**
+     * 检查是否为数值（包括小数）
+     */
+    _isNumeric(term: string): boolean {
+        // 移除前导的加减号
+        const cleanTerm = term.replace(/^[+-]/, '');
+        // 检查是否为数字（包括小数）
+        return !isNaN(parseFloat(cleanTerm)) && cleanTerm.length > 0;
+    },
+
+    /**
      * 分割項
      */
     _splitTerms(latex: string): string[] {
         // 处理第一项可能的正号
         const normalized = latex.replace(/^\+/, '');
         
-        // 分割项并确保每一项都是有效的
+        // 分割并保留正负号
         return normalized
             .replace(/\s+/g, '')
             .split(/(?=[+-])/)
-            .filter(term => {
-                // 过滤掉空项和只包含运算符的项
-                const cleaned = term.trim();
-                return cleaned.length > 0 && !/^[+-]$/.test(cleaned);
-            })
+            .filter(term => term.length > 0)
             .map(term => term.trim());
     },
 
@@ -398,8 +405,8 @@ export const ExpressionAnalyzer = {
         // 移除前导的加号
         term = term.replace(/^\+/, '');
         
-        // 如果是纯数字（包括负数），返回系数，无变量
-        if (/^[+-]?\d+$/.test(term)) {
+        // 如果是纯数字（包括小数），返回系数，无变量
+        if (this._isNumeric(term)) {
             return {
                 coefficient: term,
                 variable: ''
@@ -407,7 +414,7 @@ export const ExpressionAnalyzer = {
         }
         
         // 匹配系数和变量部分
-        const match = term.match(/^([+-]?\d*)(.*?)$/);
+        const match = term.match(/^([+-]?\d*\.?\d*)(.*?)$/);
         if (!match) {
             return { coefficient: '', variable: term };
         }
@@ -436,8 +443,9 @@ export const ExpressionAnalyzer = {
         // 分组并合并系数
         terms.forEach(term => {
             const { coefficient, variable } = this._parseTermParts(term);
-            const key = variable || 'constant';
-            const coef = parseInt(coefficient) || 1;
+            const key = variable || 'numeric'; // 使用 'numeric' 标识纯数字项
+            // 使用 parseFloat 而不是 parseInt 来处理小数
+            const coef = parseFloat(coefficient) || 1;
             groups.set(key, (groups.get(key) || 0) + coef);
         });
 
@@ -445,12 +453,15 @@ export const ExpressionAnalyzer = {
         let result = Array.from(groups.entries())
             .filter(([_, coef]) => coef !== 0)  // 移除系数为0的项
             .map(([variable, coefficient]) => {
-                if (variable === 'constant') {
-                    return coefficient > 0 ? `+${coefficient}` : `${coefficient}`;
+                // 格式化系数，最多保留5位小数
+                const formattedCoef = this._formatCoefficient(coefficient);
+                
+                if (variable === 'numeric') {
+                    return coefficient > 0 ? `+${formattedCoef}` : formattedCoef;
                 }
                 if (coefficient === 1) return `+${variable}`;
                 if (coefficient === -1) return `-${variable}`;
-                return coefficient > 0 ? `+${coefficient}${variable}` : `${coefficient}${variable}`;
+                return coefficient > 0 ? `+${formattedCoef}${variable}` : `${formattedCoef}${variable}`;
             })
             .join('');
 
@@ -459,6 +470,25 @@ export const ExpressionAnalyzer = {
         
         // 添加等号部分（如果有）
         return equals ? `${result}=${equals}` : result;
+    },
+
+    /**
+     * 格式化系数
+     */
+    _formatCoefficient(num: number): string {
+        // 检查是否为整数
+        if (Number.isInteger(num)) {
+            return num.toString();
+        }
+        
+        // 处理小数，最多保留5位小数
+        const rounded = Number(num.toFixed(5));
+        // 如果舍入后变成整数，返回整数
+        if (Number.isInteger(rounded)) {
+            return rounded.toString();
+        }
+        // 否则返回小数形式
+        return rounded.toString();
     }
 };
 
