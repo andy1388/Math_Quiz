@@ -1,0 +1,122 @@
+/* 解題器容器 */
+.solver-container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    margin-top: 60px;
+    height: calc(100vh - 80px);
+    background: #f5f5f5;
+}
+
+/* 左側面板 */
+.generator-panel {
+    flex: 0 0 300px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+/* 右側面板 */
+.solver-panel {
+    flex: 1;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 模組選擇器 */
+.module-selector select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* 參數面板 */
+.parameter-panel {
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+/* 操作按鈕 */
+.action-button {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+.action-button:hover {
+    background: #45a049;
+}
+
+/* 歷史記錄 */
+.history-panel {
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.history-panel ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.history-panel li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+/* 內容區塊 */
+.math-content {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* 標題樣式 */
+h2 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+h3 {
+    color: #666;
+    margin-bottom: 10px;
+    font-size: 16px;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .solver-container {
+        flex-direction: column;
+    }
+
+    .generator-panel {
+        flex: none;
+        width: 100%;
+    }
+
+    .solver-panel {
+        width: 100%;
+    }
+} 

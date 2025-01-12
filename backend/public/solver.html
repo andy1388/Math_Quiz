@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學解題器</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/solver.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">數學測驗平台</div>
+            <ul>
+                <li><a href="/">首頁</a></li>
+                <li><a href="/practice">練習</a></li>
+                <li><a href="/quiz">測驗</a></li>
+                <li><a href="/solver.html" class="active">解題</a></li>
+                <li><a href="/profile">個人資料</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="solver-container">
+        <!-- 左側面板：題目生成器 -->
+        <div class="generator-panel">
+            <h2>題目生成器</h2>
+            <div class="module-selector">
+                <select id="moduleSelect">
+                    <option value="">選擇題目類型</option>
+                    <optgroup label="基礎運算">
+                        <option value="arithmetic-basic">四則運算</option>
+                        <option value="arithmetic-fraction">分數運算</option>
+                        <option value="arithmetic-exponent">指數運算</option>
+                    </optgroup>
+                    <optgroup label="代數">
+                        <option value="algebra-linear">一元一次方程</option>
+                        <option value="algebra-quadratic">二元一次方程組</option>
+                    </optgroup>
+                    <optgroup label="幾何">
+                        <option value="geometry-triangle">三角形</option>
+                        <option value="geometry-circle">圓形</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div id="parameterPanel" class="parameter-panel">
+                <!-- 動態生成的參數設定區 -->
+            </div>
+            <button id="generateBtn" class="action-button">生成題目</button>
+            <div class="history-panel">
+                <h3>歷史記錄</h3>
+                <ul id="historyList">
+                    <!-- 動態生成的歷史記錄 -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- 右側面板：解題與解析 -->
+        <div class="solver-panel">
+            <div class="question-display">
+                <h2>題目</h2>
+                <div id="questionContent" class="math-content">
+                    <!-- 題目內容 -->
+                </div>
+            </div>
+            <div class="solution-steps">
+                <h2>解題步驟</h2>
+                <div id="solutionContent">
+                    <!-- 解題步驟 -->
+                </div>
+            </div>
+            <div class="explanation">
+                <h2>詳細解析</h2>
+                <div id="explanationContent">
+                    <!-- 詳細解析 -->
+                </div>
+            </div>
+            <div class="knowledge-points">
+                <h2>相關知識點</h2>
+                <div id="knowledgeContent">
+                    <!-- 知識點 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/solver.js"></script>
+</body>
+</html> 

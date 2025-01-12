@@ -11,4 +11,12 @@ document.addEventListener('DOMContentLoaded', () => {
             navMenu.classList.toggle('active');
         });
     }
+
+    // 為所有導航連結添加點擊事件處理
+    document.querySelectorAll('nav a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            console.log('Navigating to:', href);
+        });
+    });
 }); 
