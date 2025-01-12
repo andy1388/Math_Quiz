@@ -303,4 +303,71 @@ function updateExpressionAndButtons(latex) {
         updateExpressionStatus(latex);
         updateOperationButtons(latex);
     });
+}
+
+// 更新表达式状态显示
+async function updateExpressionStatus(latex) {
+    try {
+        const response = await fetch('/api/solver/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ latex })
+        });
+
+        if (!response.ok) {
+            throw new Error('分析失敗');
+        }
+
+        const info = await response.json();
+        
+        // 更新类型和项数
+        document.getElementById('expr-type').textContent = getTypeText(info.type);
+        document.getElementById('term-count').textContent = info.termCount;
+        
+        // 更新分数相关信息
+        document.getElementById('fraction-status').textContent = 
+            info.fractionInfo.hasFraction ? '有' : '無';
+        document.getElementById('fraction-count').textContent = 
+            info.fractionInfo.fractionCount;
+        document.getElementById('nested-fraction').textContent = 
+            info.fractionInfo.hasNestedFraction ? '有' : '無';
+        document.getElementById('nested-level').textContent = 
+            info.fractionInfo.nestedLevel;
+        
+        // 更新无理数相关信息
+        document.getElementById('irrational-status').textContent = 
+            info.irrationalInfo.hasIrrational ? '有' : '無';
+        document.getElementById('sqrt-status').textContent = 
+            info.irrationalInfo.types.hasSquareRoot ? '有' : '無';
+        document.getElementById('pi-status').textContent = 
+            info.irrationalInfo.types.hasPi ? '有' : '無';
+        document.getElementById('e-status').textContent = 
+            info.irrationalInfo.types.hasE ? '有' : '無';
+        
+        // 更新变量相关信息
+        document.getElementById('variable-status').textContent = 
+            info.variables.hasVariables ? `有 (${info.variables.count}個)` : '無';
+        document.getElementById('variable-list').textContent = 
+            info.variables.list.length > 0 ? info.variables.list.join(', ') : '-';
+
+    } catch (error) {
+        console.error('Error:', error);
+        // 清空所有状态显示
+        document.querySelectorAll('.status-value').forEach(el => {
+            el.textContent = '-';
+        });
+    }
+}
+
+// 类型文字转换
+function getTypeText(type) {
+    const typeMap = {
+        'constant': '常數',
+        'numerical': '數值多項式',
+        'monomial': '單項式',
+        'polynomial': '多項式'
+    };
+    return typeMap[type] || type;
 } 
