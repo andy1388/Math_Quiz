@@ -422,6 +422,43 @@ export const ExpressionAnalyzer = {
             coefficient: coefficient,
             variable: variable.trim()
         };
+    },
+
+    /**
+     * 合併同類項
+     */
+    combineTerms(latex: string): string {
+        // 移除等号及其后面的内容
+        const [expression, equals] = latex.split('=');
+        const terms = this._splitTerms(expression);
+        const groups = new Map<string, number>();
+
+        // 分组并合并系数
+        terms.forEach(term => {
+            const { coefficient, variable } = this._parseTermParts(term);
+            const key = variable || 'constant';
+            const coef = parseInt(coefficient) || 1;
+            groups.set(key, (groups.get(key) || 0) + coef);
+        });
+
+        // 构建结果
+        let result = Array.from(groups.entries())
+            .filter(([_, coef]) => coef !== 0)  // 移除系数为0的项
+            .map(([variable, coefficient]) => {
+                if (variable === 'constant') {
+                    return coefficient > 0 ? `+${coefficient}` : `${coefficient}`;
+                }
+                if (coefficient === 1) return `+${variable}`;
+                if (coefficient === -1) return `-${variable}`;
+                return coefficient > 0 ? `+${coefficient}${variable}` : `${coefficient}${variable}`;
+            })
+            .join('');
+
+        // 处理结果的格式
+        result = result.replace(/^\+/, '');  // 移除开头的加号
+        
+        // 添加等号部分（如果有）
+        return equals ? `${result}=${equals}` : result;
     }
 };
 

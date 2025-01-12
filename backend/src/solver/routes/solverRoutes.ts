@@ -5,6 +5,7 @@ import { DecimalFractionConversionGenerator } from '../arithmetic/DecimalFractio
 import { NumberTheoryGenerator } from '../arithmetic/NumberTheory';
 import { Solver } from '../Solver';
 import { analyzeExpression } from '../controllers/analyzeController';
+import { ExpressionAnalyzer } from '../../utils/mathUtils';
 
 const router = express.Router();
 
@@ -117,6 +118,80 @@ router.post('/solve', async (req, res) => {
 });
 
 router.post('/analyze', analyzeExpression);
+
+router.post('/process', (req, res) => {
+    try {
+        const { latex, operation } = req.body;
+        
+        if (!latex) {
+            return res.status(400).json({ error: '缺少表達式' });
+        }
+
+        let result;
+        switch (operation) {
+            case 'combine':
+                result = ExpressionAnalyzer.combineTerms(latex);
+                break;
+            // ... 其他操作 ...
+            default:
+                return res.status(400).json({ error: '不支持的操作' });
+        }
+
+        res.json({ latex: result });
+    } catch (error) {
+        console.error('Process error:', error);
+        res.status(500).json({ error: '處理失敗' });
+    }
+});
+
+router.post('/check-operation', (req, res) => {
+    try {
+        const { operation, latex } = req.body;
+        
+        if (!latex || !operation) {
+            return res.status(400).json({ error: '缺少必要參數' });
+        }
+
+        let available = false;
+        switch (operation) {
+            case 'combine':
+                // 检查是否有同类项
+                const likeTerms = ExpressionAnalyzer.analyzeLikeTerms(latex);
+                available = likeTerms.hasLikeTerms;
+                break;
+            case 'simplify':
+                // 简化操作总是可用
+                available = true;
+                break;
+            case 'reduce':
+                // 检查是否有分数
+                const fractionInfo = ExpressionAnalyzer.analyzeFraction(latex);
+                available = fractionInfo.hasFraction;
+                break;
+            case 'common-denominator':
+                // 检查是否有分数
+                const fractionInfo2 = ExpressionAnalyzer.analyzeFraction(latex);
+                available = fractionInfo2.hasFraction;
+                break;
+            case 'expand':
+                // 检查是否有括号
+                available = latex.includes('(') || latex.includes('\\left(');
+                break;
+            case 'factorize':
+                // 检查是否是多项式
+                const type = ExpressionAnalyzer.getExpressionType(latex);
+                available = type === 'polynomial';
+                break;
+            default:
+                available = false;
+        }
+
+        res.json({ available });
+    } catch (error) {
+        console.error('Check operation error:', error);
+        res.status(500).json({ error: '檢查操作可用性失敗' });
+    }
+});
 
 function formatToLatex(expression: string): string {
     return expression

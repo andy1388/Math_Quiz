@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    // 等待 MathJax 加载完成
+    if (!window.MathJax || !window.MathJax.typesetPromise) {
+        await new Promise(resolve => {
+            document.addEventListener('MathJaxReady', resolve);
+        });
+    }
+
     const operationType = document.getElementById('operation-type');
     const difficulty = document.getElementById('difficulty');
     const generateBtn = document.getElementById('generate-btn');
@@ -42,6 +49,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 初始加載難度信息 - 使用當前選中的運算類型
     await loadDifficulties(operationType.value);
 
+    // 修改所有使用 MathJax.typesetPromise 的地方
+    async function typesetMath() {
+        try {
+            await MathJax.typesetPromise();
+        } catch (error) {
+            console.error('MathJax typeset error:', error);
+        }
+    }
+
     generateBtn.addEventListener('click', async () => {
         try {
             const response = await fetch('/api/solver/generate', {
@@ -61,9 +77,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = await response.json();
             
-            // 更新實驗區的顯示
-            const generatedContent = document.querySelector('.generated-content');
-            generatedContent.innerHTML = `\\[${data.question}\\]`;
+            // 清空表达式历史
+            const expressionHistory = document.querySelector('.expression-history');
+            expressionHistory.innerHTML = '';
+            
+            // 添加初始表达式
+            const initialStep = document.createElement('div');
+            initialStep.className = 'expression-step';
+            initialStep.innerHTML = `<div class="math">\\[${data.question}\\]</div>`;
+            expressionHistory.appendChild(initialStep);
+            
+            // 重新渲染数学公式
+            await typesetMath();
             
             // 更新表达式属性
             await updateExpressionStatus(data.question);
@@ -159,7 +184,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('.op-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const operation = btn.dataset.op;
-            const content = document.querySelector('.generated-content').textContent;
+            const expressionHistory = document.querySelector('.expression-history');
+            const lastExpression = expressionHistory.lastElementChild?.querySelector('.math')?.textContent || '';
+            
+            // 如果没有表达式历史，使用生成的内容
+            const content = lastExpression || document.querySelector('.generated-content').textContent;
             
             if (!content) {
                 alert('請先生成或輸入題目');
@@ -183,12 +212,41 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 const result = await response.json();
-                document.querySelector('.generated-content').innerHTML = 
-                    `\\[${result.latex}\\]`;
-                MathJax.typesetPromise();
                 
-                // 更新表达式属性
+                // 创建新的表达式步骤
+                const stepElement = document.createElement('div');
+                stepElement.className = 'expression-step';
+                
+                // 如果是第一个表达式，不显示操作标签
+                if (expressionHistory.children.length === 0) {
+                    stepElement.innerHTML = `<div class="math">\\[${content}\\]</div>`;
+                    expressionHistory.appendChild(stepElement);
+                    
+                    // 创建新步骤显示结果
+                    const resultStep = document.createElement('div');
+                    resultStep.className = 'expression-step';
+                    resultStep.innerHTML = `
+                        <span class="operation-label">${btn.title}</span>
+                        <div class="math">\\[${result.latex}\\]</div>
+                    `;
+                    expressionHistory.appendChild(resultStep);
+                } else {
+                    stepElement.innerHTML = `
+                        <span class="operation-label">${btn.title}</span>
+                        <div class="math">\\[${result.latex}\\]</div>
+                    `;
+                    expressionHistory.appendChild(stepElement);
+                }
+                
+                // 重新渲染数学公式
+                await typesetMath();
+                
+                // 更新表达式属性和同类项信息
                 await updateExpressionStatus(result.latex);
+                
+                // 更新操作按钮状态
+                await updateOperationButtons(result.latex);
+
             } catch (error) {
                 console.error('Operation Error:', error);
                 alert('操作失敗：' + error.message);

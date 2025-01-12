@@ -6,8 +6,23 @@
     <title>數學求解器 - 佛理做數</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/solver.css">
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- 使用本地的 MathJax -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                ready: () => {
+                    MathJax.startup.defaultReady();
+                    // 通知页面 MathJax 已准备就绪
+                    document.dispatchEvent(new Event('MathJaxReady'));
+                }
+            }
+        };
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
     <header>
@@ -101,7 +116,9 @@
             <div class="experiment-section">
                 <h2>實驗區</h2>
                 <div class="experiment-content">
-                    <div class="generated-content"></div>
+                    <div class="expression-history">
+                        <!-- 表达式历史记录会在这里动态生成 -->
+                    </div>
                 </div>
 
                 <!-- 表達式狀態區域 -->
