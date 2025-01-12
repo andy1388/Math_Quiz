@@ -24,7 +24,7 @@ router.post('/generate', async (req, res) => {
             case 'fraction-reduction':
                 const fractionGenerator = new FractionReductionGenerator(difficulty);
                 const fractionOperation = fractionGenerator.generate();
-                const fractionQuestion = `\\frac{${fractionOperation.numerator}}{${fractionOperation.denominator}}`;
+                const fractionQuestion = fractionGenerator.getLatexQuestion(fractionOperation);
                 res.json({
                     question: fractionQuestion,
                     operation: fractionOperation

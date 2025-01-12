@@ -65,8 +65,21 @@ export class FractionReductionGenerator {
                 range = 10;
         }
 
-        const denominator = Math.floor(Math.random() * range) + 2;
-        const numerator = Math.floor(Math.random() * range) + 1;
+        let denominator = Math.floor(Math.random() * (range - 1)) + 2;
+        let numerator = Math.floor(Math.random() * (range - 1)) + 1;
+
+        const factor = Math.floor(Math.random() * 3) + 2;
+        numerator *= factor;
+        denominator *= factor;
+
         return { numerator, denominator };
+    }
+
+    static formatToLatex(numerator: number, denominator: number): string {
+        return `\\frac{${numerator}}{${denominator}}`;
+    }
+
+    getLatexQuestion(operation: FractionOperation): string {
+        return FractionReductionGenerator.formatToLatex(operation.numerator, operation.denominator);
     }
 } 
