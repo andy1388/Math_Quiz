@@ -65,6 +65,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const generatedContent = document.querySelector('.generated-content');
             generatedContent.innerHTML = `\\[${data.question}\\]`;
             
+            // 更新表达式属性
+            await updateExpressionStatus(data.question);
+            
             // 更新生成記錄
             const historyList = document.getElementById('history-list');
             const listItem = document.createElement('li');
@@ -84,10 +87,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             listItem.appendChild(difficultyLabel);
             
             // 添加点击事件
-            listItem.addEventListener('click', () => {
+            listItem.addEventListener('click', async () => {
                 const equation = data.question;
                 equationInput.value = equation;
                 previewContent.innerHTML = `\\[${equation}\\]`;
+                
+                // 更新表达式属性
+                await updateExpressionStatus(equation);
+                
                 MathJax.typesetPromise();
                 solveEquation(equation, operationType.value, difficulty.value);
             });
@@ -137,10 +144,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 添加输入监听器来更新预览
-    equationInput.addEventListener('input', () => {
+    equationInput.addEventListener('input', async () => {
         const input = equationInput.value.trim();
         const latex = input.startsWith('\\') ? input : convertToLatex(input);
         previewContent.innerHTML = `\\[${latex}\\]`;
+        
+        // 更新表达式属性
+        await updateExpressionStatus(latex);
+        
         MathJax.typesetPromise();
     });
 
@@ -176,8 +187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     `\\[${result.latex}\\]`;
                 MathJax.typesetPromise();
                 
-                // 更新表达式状态
-                updateExpressionStatus(result.latex);
+                // 更新表达式属性
+                await updateExpressionStatus(result.latex);
             } catch (error) {
                 console.error('Operation Error:', error);
                 alert('操作失敗：' + error.message);
