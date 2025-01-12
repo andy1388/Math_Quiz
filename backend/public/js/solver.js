@@ -39,8 +39,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         loadDifficulties(operationType.value);
     });
 
-    // 初始加載難度信息
-    await loadDifficulties('addition');
+    // 初始加載難度信息 - 使用當前選中的運算類型
+    await loadDifficulties(operationType.value);
 
     generateBtn.addEventListener('click', async () => {
         try {
