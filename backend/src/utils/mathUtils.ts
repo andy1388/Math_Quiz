@@ -338,15 +338,18 @@ export const ExpressionAnalyzer = {
      * 分析同類項
      */
     analyzeLikeTerms(latex: string): LikeTermsInfo {
-        const cleanLatex = this._cleanLatex(latex);
+        // 移除等号及其后面的内容
+        const expressionPart = latex.split('=')[0];
+        const cleanLatex = this._cleanLatex(expressionPart);
         const terms = this._splitTerms(cleanLatex);
         const groups = new Map<string, string[]>();
 
         // 分析每个项
         terms.forEach(term => {
             // 提取变量和系数
-            const { variable, coefficient } = this._parseTermParts(term);
-            const key = variable || 'constant'; // 如果没有变量，归类为常数项
+            const { coefficient, variable } = this._parseTermParts(term);
+            // 纯数字项使用特殊标识
+            const key = variable ? variable : 'constant';
             
             if (!groups.has(key)) {
                 groups.set(key, []);
@@ -375,10 +378,16 @@ export const ExpressionAnalyzer = {
     _splitTerms(latex: string): string[] {
         // 处理第一项可能的正号
         const normalized = latex.replace(/^\+/, '');
+        
+        // 分割项并确保每一项都是有效的
         return normalized
             .replace(/\s+/g, '')
             .split(/(?=[+-])/)
-            .filter(term => term.length > 0)
+            .filter(term => {
+                // 过滤掉空项和只包含运算符的项
+                const cleaned = term.trim();
+                return cleaned.length > 0 && !/^[+-]$/.test(cleaned);
+            })
             .map(term => term.trim());
     },
 
@@ -388,6 +397,14 @@ export const ExpressionAnalyzer = {
     _parseTermParts(term: string): { coefficient: string; variable: string } {
         // 移除前导的加号
         term = term.replace(/^\+/, '');
+        
+        // 如果是纯数字（包括负数），返回系数，无变量
+        if (/^[+-]?\d+$/.test(term)) {
+            return {
+                coefficient: term,
+                variable: ''
+            };
+        }
         
         // 匹配系数和变量部分
         const match = term.match(/^([+-]?\d*)(.*?)$/);
