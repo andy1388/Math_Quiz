@@ -1,13 +1,65 @@
+/* 基本布局 */
 .solver-layout {
     display: flex;
     gap: 20px;
     padding: 20px;
     margin-top: 60px;
-    min-height: calc(100vh - 80px);
 }
 
 /* 左側生成器區域 */
 .generator-section {
+    width: 400px;  /* 固定左側寬度 */
+    flex-shrink: 0;
+}
+
+/* 生成按鈕樣式 */
+#generate-btn {
+    width: 100%;
+    padding: 12px;
+    background: #33ccff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#generate-btn:hover {
+    background: #00bfff;
+}
+
+/* 求解按鈕樣式 */
+#solve-btn {
+    padding: 12px 24px;
+    font-size: 16px;
+    background: #33ccff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#solve-btn:hover {
+    background: #00bfff;
+}
+
+#solve-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* 右側區域 */
+.right-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 求解器區域樣式 */
+.solver-section {
     flex: 1;
     background: white;
     border-radius: 8px;
@@ -15,25 +67,69 @@
     padding: 20px;
 }
 
-.generator-controls {
+/* 輸入區域樣式 */
+.equation-input {
     display: flex;
-    flex-direction: column;
     gap: 10px;
-    margin-bottom: 20px;
+    max-width: 600px;
+    margin: 20px auto;
 }
 
-/* 選擇器組樣式 */
-.select-group {
-    margin-bottom: 15px;
+#equation-input {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 18px;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    transition: border-color 0.3s;
 }
 
-.select-group label {
-    display: block;
-    margin-bottom: 5px;
-    color: #666;
-    font-size: 14px;
+#equation-input:focus {
+    border-color: #33ccff;
+    outline: none;
 }
 
+/* 實驗區樣式 */
+.experiment-section {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.experiment-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.generated-content {
+    font-size: 24px;
+    text-align: center;
+}
+
+.generated-content .MathJax {
+    margin: 0 !important;
+}
+
+/* 難度標籤樣式 */
+.difficulty-label {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+.level-1 { background-color: #4CAF50; }  /* 基礎 - 綠色 */
+.level-2 { background-color: #2196F3; }  /* 初級 - 藍色 */
+.level-3 { background-color: #FF9800; }  /* 中級 - 橙色 */
+.level-4 { background-color: #9C27B0; }  /* 進階 - 紫色 */
+.level-5 { background-color: #F44336; }  /* 挑戰 - 紅色 */
+
+/* 選擇器樣式 */
 select {
     width: 100%;
     padding: 10px;
@@ -54,6 +150,12 @@ select:focus {
 option {
     padding: 8px;
     font-size: 14px;
+}
+
+/* 選項組樣式 */
+optgroup {
+    font-weight: bold;
+    color: #666;
 }
 
 /* 添加選項的提示樣式 */
@@ -79,137 +181,7 @@ select option:checked {
     font-weight: bold;
 }
 
-optgroup {
-    font-weight: bold;
-    color: #666;
-}
-
-/* 生成按鈕樣式 */
-#generate-btn {
-    width: 100%;
-    padding: 12px;
-    background: #33ccff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-#generate-btn:hover {
-    background: #00bfff;
-}
-
-/* 右側求解器區域 */
-.solver-section {
-    flex: 1;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 20px;
-}
-
-.solver-container {
-    max-width: 800px;
-    margin: 80px auto 20px;
-    padding: 0 20px;
-}
-
-.input-section {
-    margin-bottom: 40px;
-    text-align: center;
-}
-
-.equation-input {
-    display: flex;
-    gap: 10px;
-    max-width: 600px;
-    margin: 20px auto;
-}
-
-#equation-input {
-    flex: 1;
-    padding: 12px 16px;
-    font-size: 18px;
-    border: 2px solid #ddd;
-    border-radius: 4px;
-    transition: border-color 0.3s;
-}
-
-#equation-input:focus {
-    border-color: #33ccff;
-    outline: none;
-}
-
-#solve-btn {
-    padding: 12px 24px;
-    font-size: 16px;
-    background: #33ccff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-#solve-btn:hover {
-    background: #00bfff;
-}
-
-.solution-section {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    padding: 20px;
-}
-
-.step {
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eee;
-}
-
-.step:last-child {
-    border-bottom: none;
-}
-
-.step-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-    color: #666;
-}
-
-.step-number {
-    background: #33ccff;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    margin-right: 10px;
-    font-size: 14px;
-}
-
-.step-equation {
-    margin: 10px 0;
-    font-size: 18px;
-}
-
-.highlight {
-    color: #33ccff;
-}
-
-/* 生成的題目區域 */
-.generated-question {
-    margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    min-height: 50px;
-    display: none;
-}
-
-/* 難度說明提示框 */
+/* 難度信息提示框 */
 .difficulty-info {
     margin-top: 5px;
     font-size: 12px;
@@ -232,104 +204,4 @@ optgroup {
 .difficulty-info:hover .info-text {
     text-decoration: underline;
     cursor: help;
-}
-
-.generation-history {
-    margin-top: 10px;
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-    height: 350px;
-    display: flex;
-    flex-direction: column;
-}
-
-.generation-history h3 {
-    margin: 0 0 15px 0;
-    font-size: 16px;
-    color: #333;
-    height: 20px;
-}
-
-#history-list {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-    flex: 1;
-    overflow-y: auto;
-    background:
-        linear-gradient(#f9f9f9 30%, rgba(249,249,249, 0)),
-        linear-gradient(rgba(249,249,249, 0), #f9f9f9 70%) 0 100%,
-        radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.2), rgba(0,0,0,0)),
-        radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.2), rgba(0,0,0,0)) 0 100%;
-    background-repeat: no-repeat;
-    background-size: 100% 40px, 100% 40px, 100% 14px, 100% 14px;
-    background-attachment: local, local, scroll, scroll;
-}
-
-#history-list li {
-    padding: 12px 15px;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    min-height: 40px;
-}
-
-#history-list li:last-child {
-    border-bottom: none;
-}
-
-#history-list li:hover {
-    background-color: #f0f0f0;
-    cursor: pointer;
-}
-
-#history-list .MathJax {
-    font-size: 16px !important;
-    margin: 0 !important;
-}
-
-.difficulty-label {
-    margin-left: 15px;
-    flex-shrink: 0;
-}
-
-/* 添加难度标签样式 */
-.difficulty-label {
-    padding: 2px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    font-weight: bold;
-    color: white;
-    background-color: #33ccff;
-    margin-left: 10px;
-}
-
-/* 不同难度级别的颜色 */
-.level-1 { background-color: #4CAF50; }  /* 基础 - 绿色 */
-.level-2 { background-color: #2196F3; }  /* 初级 - 蓝色 */
-.level-3 { background-color: #FF9800; }  /* 中级 - 橙色 */
-.level-4 { background-color: #9C27B0; }  /* 进阶 - 紫色 */
-.level-5 { background-color: #F44336; }  /* 挑战 - 红色 */
-
-.equation-preview {
-    margin: 10px 0 20px;
-    padding: 15px;
-    border: 1px solid #eee;
-    border-radius: 4px;
-    background-color: #f9f9f9;
-    min-height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.preview-content {
-    font-size: 20px;
-}
-
-.preview-content .MathJax {
-    margin: 0 !important;
 } 

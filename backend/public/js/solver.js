@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = await response.json();
             
+            // 更新實驗區的顯示
+            const generatedContent = document.querySelector('.generated-content');
+            generatedContent.innerHTML = `\\[${data.question}\\]`;
+            
             // 更新生成記錄
             const historyList = document.getElementById('history-list');
             const listItem = document.createElement('li');

@@ -76,21 +76,32 @@
             </div>
         </div>
 
-        <!-- 右側：求解器 -->
-        <div class="solver-section">
-            <h2>方程式求解器</h2>
-            <div class="equation-input">
-                <input type="text" 
-                       id="equation-input" 
-                       placeholder="輸入算式，例如：\frac{12}{28} 或 12/28">
-                <button id="solve-btn">求解</button>
+        <!-- 右側：求解器和實驗區 -->
+        <div class="right-section">
+            <!-- 求解器 -->
+            <div class="solver-section">
+                <h2>方程式求解器</h2>
+                <div class="equation-input">
+                    <input type="text" 
+                           id="equation-input" 
+                           placeholder="輸入算式，例如：\frac{12}{28} 或 12/28">
+                    <button id="solve-btn">求解</button>
+                </div>
+                <div class="equation-preview">
+                    <div class="preview-content"></div>
+                </div>
+                <div class="solution-section">
+                    <div class="steps-container">
+                        <!-- 解題步驟會在這裡動態生成 -->
+                    </div>
+                </div>
             </div>
-            <div class="equation-preview">
-                <div class="preview-content"></div>
-            </div>
-            <div class="solution-section">
-                <div class="steps-container">
-                    <!-- 解題步驟會在這裡動態生成 -->
+
+            <!-- 實驗區 -->
+            <div class="experiment-section">
+                <h2>實驗區</h2>
+                <div class="experiment-content">
+                    <div class="generated-content"></div>
                 </div>
             </div>
         </div>
