@@ -69,10 +69,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const historyList = document.getElementById('history-list');
             const listItem = document.createElement('li');
             
-            // 创建一个容器来包装分数
+            // 创建分数容器
             const fractionContainer = document.createElement('div');
-            fractionContainer.style.display = 'inline-block';
-            fractionContainer.style.verticalAlign = 'middle';
+            fractionContainer.className = 'fraction-container';
             fractionContainer.innerHTML = `\\[${data.question}\\]`;
             
             // 创建难度标签
@@ -80,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             difficultyLabel.className = `difficulty-label level-${difficulty.value}`;
             difficultyLabel.textContent = `Level ${difficulty.value}`;
             
-            // 将元素添加到列表项
+            // 将元素添加到列表项（先添加分数，后添加标签）
             listItem.appendChild(fractionContainer);
             listItem.appendChild(difficultyLabel);
             

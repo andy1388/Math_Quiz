@@ -4,12 +4,41 @@
     gap: 20px;
     padding: 20px;
     margin-top: 60px;
+    min-height: calc(100vh - 100px); /* 确保最小高度填满视窗 */
 }
 
 /* 左側生成器區域 */
 .generator-section {
     width: 400px;  /* 固定左側寬度 */
     flex-shrink: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 140px); /* 调整最小高度 */
+}
+
+/* 生成記錄區域 */
+.generation-history {
+    flex: 1;
+    margin-top: 20px;
+    overflow-y: auto;
+}
+
+#history-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#history-list li {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 /* 生成按鈕樣式 */
@@ -56,15 +85,17 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-height: calc(100vh - 140px);
 }
 
 /* 求解器區域樣式 */
 .solver-section {
-    flex: 1;
+    flex: 1;  /* 改为 1，减少高度占比 */
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 20px;
+    min-height: 300px;  /* 设置最小高度 */
 }
 
 /* 輸入區域樣式 */
@@ -91,11 +122,12 @@
 
 /* 實驗區樣式 */
 .experiment-section {
-    flex: 1;
+    flex: 2;  /* 改为 2，增加高度占比 */
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     padding: 20px;
+    min-height: 400px;  /* 增加最小高度 */
 }
 
 .experiment-content {
@@ -103,6 +135,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    min-height: 360px;  /* 增加内容区最小高度 */
 }
 
 .generated-content {
@@ -121,6 +154,7 @@
     font-size: 12px;
     font-weight: bold;
     color: white;
+    margin-left: auto;
 }
 
 .level-1 { background-color: #4CAF50; }  /* 基礎 - 綠色 */
@@ -204,4 +238,16 @@ select option:checked {
 .difficulty-info:hover .info-text {
     text-decoration: underline;
     cursor: help;
+}
+
+/* 数学公式容器 */
+.fraction-container {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.fraction-container .MathJax {
+    margin: 0 !important;
 } 
