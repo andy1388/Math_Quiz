@@ -263,12 +263,36 @@ export const ExpressionAnalyzer = {
      * 查找所有變量
      */
     findVariables(latex: string): VariableInfo {
-        const variables = new Set(latex.match(/[a-zA-Z]/g) || []);
+        // 首先清理 LaTeX 命令
+        const cleanLatex = this._removeLatexCommands(latex);
+        
+        // 只匹配独立的字母（不是LaTeX命令的一部分）
+        const variables = new Set(
+            cleanLatex.match(/(?<![\\{])[a-zA-Z](?![a-zA-Z}])/g) || []
+        );
+
         return {
             hasVariables: variables.size > 0,
             count: variables.size,
             list: Array.from(variables)
         };
+    },
+
+    /**
+     * 移除 LaTeX 命令
+     */
+    _removeLatexCommands(latex: string): string {
+        return latex
+            // 移除 \frac 命令
+            .replace(/\\frac\{[^{}]*\}\{[^{}]*\}/g, '')
+            // 移除 \sqrt 命令
+            .replace(/\\sqrt\{[^{}]*\}/g, '')
+            // 移除其他常见的 LaTeX 命令
+            .replace(/\\[a-zA-Z]+/g, '')
+            // 移除花括号
+            .replace(/[\{\}]/g, '')
+            // 移除空格
+            .replace(/\s+/g, '');
     },
 
     // 輔助方法
