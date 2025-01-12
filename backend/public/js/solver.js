@@ -59,20 +59,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = await response.json();
             
-            // 顯示生成的題目
+            // 顯示生成的題目，使用 MathJax 渲染
             generatedQuestion.innerHTML = `
                 <div class="question-display">
-                    <div class="question-text">${data.question}</div>
+                    <div class="question-text">\\(${data.question}\\)</div>
                 </div>
             `;
 
-            // 更新生成記錄
+            // 更新生成記錄，確保 LaTeX 格式正確
             const historyList = document.getElementById('history-list');
             const listItem = document.createElement('li');
             
-            // 創建題目文本
+            // 創建題目文本，使用 MathJax 渲染
             const questionText = document.createElement('span');
-            questionText.textContent = data.question;
+            questionText.innerHTML = `\\(${data.question}\\)`;
             
             // 創建難度標籤
             const difficultyLabel = document.createElement('span');
@@ -99,6 +99,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             while (historyList.children.length > 10) {
                 historyList.removeChild(historyList.lastChild);
             }
+
+            // 重新渲染所有數學公式
+            MathJax.typesetPromise();
 
             // 自動填入求解器輸入框
             document.getElementById('equation-input').value = data.question;
