@@ -187,4 +187,227 @@ export const DEFAULT_CONFIG = {
     COEFFICIENT_RANGE: { min: -12, max: 12 },
     DECIMAL_PLACES: 1,
     VARIABLE_NAMES: ['x', 'y', 'z'] as const
-} as const; 
+} as const;
+
+/**
+ * 表達式分析工具
+ */
+export const ExpressionAnalyzer = {
+    /**
+     * 分析表達式的完整信息
+     */
+    analyze(latex: string): ExpressionInfo {
+        return {
+            type: this.getExpressionType(latex),
+            termCount: this.countTerms(latex),
+            fractionInfo: this.analyzeFraction(latex),
+            irrationalInfo: this.analyzeIrrational(latex),
+            variables: this.findVariables(latex)
+        };
+    },
+
+    /**
+     * 獲取表達式類型
+     */
+    getExpressionType(latex: string): ExpressionType {
+        const cleanLatex = this._cleanLatex(latex);
+        const hasVariable = /[a-zA-Z]/.test(cleanLatex);
+        const hasMultipleTerms = /[+\-]/.test(cleanLatex);
+
+        if (!hasVariable && !hasMultipleTerms) return 'constant';
+        if (!hasVariable && hasMultipleTerms) return 'numerical';
+        if (hasVariable && !hasMultipleTerms) return 'monomial';
+        return 'polynomial';
+    },
+
+    /**
+     * 計算項數
+     */
+    countTerms(latex: string): number {
+        const cleanLatex = this._cleanLatex(latex);
+        // 如果是常數或單項式，返回1
+        if (!this._hasMultipleTerms(cleanLatex)) return 1;
+        // 計算運算符數量並加1
+        const operators = cleanLatex.match(/[+\-]/g) || [];
+        return operators.length + 1;
+    },
+
+    /**
+     * 分析分數相關信息
+     */
+    analyzeFraction(latex: string): FractionInfo {
+        return {
+            hasFraction: latex.includes('\\frac'),
+            hasNestedFraction: this._hasNestedFraction(latex),
+            fractionCount: (latex.match(/\\frac/g) || []).length,
+            nestedLevel: this._getNestedFractionLevel(latex)
+        };
+    },
+
+    /**
+     * 分析無理數相關信息
+     */
+    analyzeIrrational(latex: string): IrrationalInfo {
+        return {
+            hasIrrational: this._hasIrrational(latex),
+            types: {
+                hasSquareRoot: latex.includes('\\sqrt'),
+                hasPi: latex.includes('\\pi'),
+                hasE: latex.includes('\\e')
+            },
+            count: this._countIrrationalTerms(latex)
+        };
+    },
+
+    /**
+     * 查找所有變量
+     */
+    findVariables(latex: string): VariableInfo {
+        const variables = new Set(latex.match(/[a-zA-Z]/g) || []);
+        return {
+            hasVariables: variables.size > 0,
+            count: variables.size,
+            list: Array.from(variables)
+        };
+    },
+
+    // 輔助方法
+    _cleanLatex(latex: string): string {
+        return latex.replace(/\s+/g, '');
+    },
+
+    _hasMultipleTerms(latex: string): boolean {
+        return /[+\-]/.test(latex);
+    },
+
+    _hasNestedFraction(latex: string): boolean {
+        const nestedPattern = /\\frac\{[^{}]*\\frac[^{}]*\}/;
+        return nestedPattern.test(latex);
+    },
+
+    _getNestedFractionLevel(latex: string): number {
+        let level = 0;
+        let maxLevel = 0;
+        for (let i = 0; i < latex.length; i++) {
+            if (latex.slice(i).startsWith('\\frac')) {
+                level++;
+                maxLevel = Math.max(maxLevel, level);
+            }
+            if (latex[i] === '}') level--;
+        }
+        return maxLevel;
+    },
+
+    _hasIrrational(latex: string): boolean {
+        return latex.includes('\\sqrt') || 
+               latex.includes('\\pi') || 
+               latex.includes('\\e');
+    },
+
+    _countIrrationalTerms(latex: string): number {
+        const irrationalMatches = latex.match(/\\(?:sqrt|pi|e)/g) || [];
+        return irrationalMatches.length;
+    }
+};
+
+// 類型定義
+export type ExpressionType = 'constant' | 'numerical' | 'monomial' | 'polynomial';
+
+export interface ExpressionInfo {
+    type: ExpressionType;
+    termCount: number;
+    fractionInfo: FractionInfo;
+    irrationalInfo: IrrationalInfo;
+    variables: VariableInfo;
+}
+
+export interface FractionInfo {
+    hasFraction: boolean;
+    hasNestedFraction: boolean;
+    fractionCount: number;
+    nestedLevel: number;
+}
+
+export interface IrrationalInfo {
+    hasIrrational: boolean;
+    types: {
+        hasSquareRoot: boolean;
+        hasPi: boolean;
+        hasE: boolean;
+    };
+    count: number;
+}
+
+export interface VariableInfo {
+    hasVariables: boolean;
+    count: number;
+    list: string[];
+}
+
+/**
+ * 數學運算操作定義
+ */
+export const MathOperations = {
+    COMBINE_LIKE_TERMS: 'combine',
+    SIMPLIFY: 'simplify',
+    REDUCE_FRACTION: 'reduce',
+    COMMON_DENOMINATOR: 'common-denominator',
+    EXPAND: 'expand',
+    FACTORIZE: 'factorize'
+} as const;
+
+export interface OperationButton {
+    id: string;
+    label: string;
+    description: string;
+    operation: keyof typeof MathOperations;
+    isAvailable: (latex: string) => boolean;
+}
+
+/**
+ * 運算按鈕配置
+ */
+export const OPERATION_BUTTONS: OperationButton[] = [
+    {
+        id: 'combine',
+        label: '合併同類項',
+        description: '合併表達式中的同類項',
+        operation: 'COMBINE_LIKE_TERMS',
+        isAvailable: (latex: string) => ExpressionAnalyzer.getExpressionType(latex) === 'polynomial'
+    },
+    {
+        id: 'simplify',
+        label: '化簡',
+        description: '化簡表達式',
+        operation: 'SIMPLIFY',
+        isAvailable: () => true
+    },
+    {
+        id: 'reduce',
+        label: '約分',
+        description: '約分分數',
+        operation: 'REDUCE_FRACTION',
+        isAvailable: (latex: string) => ExpressionAnalyzer.analyzeFraction(latex).hasFraction
+    },
+    {
+        id: 'common-denominator',
+        label: '通分',
+        description: '將分數轉換為同分母',
+        operation: 'COMMON_DENOMINATOR',
+        isAvailable: (latex: string) => ExpressionAnalyzer.analyzeFraction(latex).hasFraction
+    },
+    {
+        id: 'expand',
+        label: '展開',
+        description: '展開括號',
+        operation: 'EXPAND',
+        isAvailable: (latex: string) => latex.includes('(') || latex.includes('\\left(')
+    },
+    {
+        id: 'factorize',
+        label: '因式分解',
+        description: '將表達式分解為因式',
+        operation: 'FACTORIZE',
+        isAvailable: (latex: string) => ExpressionAnalyzer.getExpressionType(latex) === 'polynomial'
+    }
+]; 

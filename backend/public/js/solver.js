@@ -143,6 +143,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewContent.innerHTML = `\\[${latex}\\]`;
         MathJax.typesetPromise();
     });
+
+    // 添加操作按钮事件处理
+    document.querySelectorAll('.op-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const operation = btn.dataset.op;
+            const content = document.querySelector('.generated-content').textContent;
+            
+            if (!content) {
+                alert('請先生成或輸入題目');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/solver/process', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        latex: content,
+                        operation: operation 
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('處理失敗');
+                }
+
+                const result = await response.json();
+                document.querySelector('.generated-content').innerHTML = 
+                    `\\[${result.latex}\\]`;
+                MathJax.typesetPromise();
+                
+                // 更新表达式状态
+                updateExpressionStatus(result.latex);
+            } catch (error) {
+                console.error('Operation Error:', error);
+                alert('操作失敗：' + error.message);
+            }
+        });
+    });
 });
 
 async function solveEquation(equation, type, difficulty) {
@@ -220,4 +261,46 @@ function convertToLatex(input) {
     }
     
     return input;
+}
+
+// 更新按钮状态
+function updateOperationButtons(latex) {
+    document.querySelectorAll('.op-btn').forEach(btn => {
+        const operation = btn.dataset.op;
+        const isAvailable = checkOperationAvailability(operation, latex);
+        btn.disabled = !isAvailable;
+        btn.title = isAvailable ? btn.title : '當前表達式不支持此操作';
+    });
+}
+
+// 检查操作是否可用
+async function checkOperationAvailability(operation, latex) {
+    try {
+        const response = await fetch('/api/solver/check-operation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ operation, latex })
+        });
+        
+        if (!response.ok) {
+            return false;
+        }
+        
+        const { available } = await response.json();
+        return available;
+    } catch (error) {
+        console.error('Error checking operation availability:', error);
+        return false;
+    }
+}
+
+// 在生成新题目或更新表达式时调用
+function updateExpressionAndButtons(latex) {
+    document.querySelector('.generated-content').innerHTML = `\\[${latex}\\]`;
+    MathJax.typesetPromise().then(() => {
+        updateExpressionStatus(latex);
+        updateOperationButtons(latex);
+    });
 } 
