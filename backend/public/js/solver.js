@@ -213,6 +213,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 const result = await response.json();
                 
+                // 清理 LaTeX 字符串以进行比较
+                const cleanContent = content.replace(/\\[[\]]/g, '').trim();
+                const cleanResult = result.latex.replace(/\\[[\]]/g, '').trim();
+                
+                // 如果结果与原表达式相同，不进行更新
+                if (cleanContent === cleanResult) {
+                    alert('表達式無需更改');
+                    return;
+                }
+                
                 // 创建新的表达式步骤
                 const stepElement = document.createElement('div');
                 stepElement.className = 'expression-step';
