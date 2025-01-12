@@ -4,6 +4,7 @@ import { FractionReductionGenerator } from '../arithmetic/FractionReduction';
 import { DecimalFractionConversionGenerator } from '../arithmetic/DecimalFractionConversion';
 import { NumberTheoryGenerator } from '../arithmetic/NumberTheory';
 import { Solver } from '../Solver';
+import { analyzeExpression } from '../controllers/analyzeController';
 
 const router = express.Router();
 
@@ -114,6 +115,8 @@ router.post('/solve', async (req, res) => {
         }
     }
 });
+
+router.post('/analyze', analyzeExpression);
 
 function formatToLatex(expression: string): string {
     return expression
