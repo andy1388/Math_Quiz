@@ -2,6 +2,7 @@ import express from 'express';
 import { AdditionGenerator } from '../arithmetic/Addition';
 import { FractionReductionGenerator } from '../arithmetic/FractionReduction';
 import { DecimalFractionConversionGenerator } from '../arithmetic/DecimalFractionConversion';
+import { NumberTheoryGenerator } from '../arithmetic/NumberTheory';
 
 const router = express.Router();
 
@@ -40,6 +41,27 @@ router.post('/generate', async (req, res) => {
                 });
                 break;
 
+            case 'gcd':
+            case 'lcm':
+            case 'prime-factorization':
+                const numberTheoryGenerator = new NumberTheoryGenerator(type, difficulty);
+                const numberTheoryOperation = numberTheoryGenerator.generate();
+                let numberTheoryQuestion = '';
+                
+                if (type === 'gcd') {
+                    numberTheoryQuestion = `\\gcd(${numberTheoryOperation.numbers.join(', ')})`;
+                } else if (type === 'lcm') {
+                    numberTheoryQuestion = `\\operatorname{lcm}(${numberTheoryOperation.numbers.join(', ')})`;
+                } else {
+                    numberTheoryQuestion = `${numberTheoryOperation.numbers[0]} = ?`;
+                }
+                
+                res.json({
+                    question: numberTheoryQuestion,
+                    operation: numberTheoryOperation
+                });
+                break;
+
             default:
                 res.status(400).json({ error: '不支援的運算類型' });
         }
@@ -62,6 +84,11 @@ router.get('/difficulties/:type', async (req, res) => {
                 break;
             case 'decimal-fraction-conversion':
                 res.json(DecimalFractionConversionGenerator.getDifficultyInfos());
+                break;
+            case 'gcd':
+            case 'lcm':
+            case 'prime-factorization':
+                res.json(NumberTheoryGenerator.getDifficultyInfos(type));
                 break;
             default:
                 res.status(400).json({ error: '不支援的運算類型' });
