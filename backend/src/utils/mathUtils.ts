@@ -575,17 +575,52 @@ export const ExpressionAnalyzer = {
                 throw new Error('表達式為空');
             }
 
+            console.log('Processing expression:', expr); // 添加日志
+
             let converted: string;
             
-            if (expr.includes('\\frac')) {
-                // 如果是分数，转换为小数
-                converted = expr.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, (match, num, den) => {
-                    if (!num || !den || parseInt(den) === 0) {
-                        throw new Error('無效的分數格式');
+            // 首先尝试匹配完整的 LaTeX 分数格式
+            const fractionMatch = expr.match(/\\frac\s*\{(\d+)\}\s*\{(\d+)\}/);
+            if (fractionMatch) {
+                console.log('Matched fraction:', fractionMatch); // 添加日志
+                // 如果是分数，直接提取分子分母并计算
+                const [_, numerator, denominator] = fractionMatch;
+                if (!numerator || !denominator || parseInt(denominator) === 0) {
+                    throw new Error('無效的分數格式');
+                }
+                const num = parseInt(numerator);
+                const den = parseInt(denominator);
+                
+                // 如果分母为1，直接返回分子
+                if (den === 1) {
+                    converted = num.toString();
+                } else {
+                    const decimal = num / den;
+                    
+                    // 检查是否为循环小数
+                    const remainders: number[] = [];
+                    let dividend = (num % den) * 10;
+                    let decimals: number[] = [];
+                    
+                    while (dividend !== 0 && !remainders.includes(dividend)) {
+                        remainders.push(dividend);
+                        decimals.push(Math.floor(dividend / den));
+                        dividend = (dividend % den) * 10;
                     }
-                    const decimal = this.calculateDecimalFromFraction(parseInt(num), parseInt(den));
-                    return decimal;
-                });
+                    
+                    if (dividend === 0) {
+                        // 有限小数，保留到小数点后5位，并移除末尾的0
+                        converted = decimal.toFixed(5).replace(/\.?0+$/, '');
+                    } else {
+                        // 循环小数
+                        const cycleStartIndex = remainders.indexOf(dividend);
+                        const integerPart = Math.floor(decimal);
+                        const nonRepeating = decimals.slice(0, cycleStartIndex).join('');
+                        const repeating = decimals.slice(cycleStartIndex).join('');
+                        
+                        converted = `${integerPart}${nonRepeating.length > 0 ? '.' + nonRepeating : ''}.\\overline{${repeating}}`;
+                    }
+                }
             } else if (expr.includes('\\overline')) {
                 // 如果是循环小数，转换为分数
                 converted = expr.replace(/(\d*\.?\d*)?\\overline\{(\d+)\}/g, (_, nonRepeating = '', repeating) => {
@@ -595,7 +630,7 @@ export const ExpressionAnalyzer = {
                     const [numerator, denominator] = this.calculateFractionFromRecurring(nonRepeating, repeating);
                     return `\\frac{${numerator}}{${denominator}}`;
                 });
-            } else if (expr.match(/\d+\.\d+/)) {  // 修改这里，使用 match 而不是 includes
+            } else if (expr.match(/\d+\.\d+/)) {
                 // 如果是普通小数，转换为分数
                 converted = expr.replace(/\d+\.\d+/g, (match) => {
                     if (isNaN(parseFloat(match))) {
@@ -604,21 +639,15 @@ export const ExpressionAnalyzer = {
                     const [numerator, denominator] = this.decimalToFraction(parseFloat(match));
                     return `\\frac{${numerator}}{${denominator}}`;
                 });
-            } else if (expr.match(/\\frac\{\d+\}\{\d+\}/)) {  // 添加这个条件
-                // 如果是分数但没有被前面的条件捕获，尝试转换为小数
-                converted = expr.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, (match, num, den) => {
-                    if (!num || !den || parseInt(den) === 0) {
-                        throw new Error('無效的分數格式');
-                    }
-                    return this.calculateDecimalFromFraction(parseInt(num), parseInt(den));
-                });
+            } else if (expr.match(/^\s*\d+\s*$/)) {
+                // 如果是整数，转换为分数形式
+                const num = parseInt(expr.trim());
+                converted = `\\frac{${num}}{1}`;
             } else {
                 throw new Error('無法識別的表達式格式');
             }
 
-            if (!converted || converted === expr) {
-                throw new Error('轉換後的表達式無變化');
-            }
+            console.log('Conversion result:', converted); // 添加日志
 
             // 添加等号部分（如果有）
             return equals ? `${converted}=${equals}` : converted;

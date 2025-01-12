@@ -123,11 +123,14 @@ router.post('/process', (req, res) => {
     try {
         const { latex, operation } = req.body;
         
+        console.log('Received request:', {
+            latex,
+            operation
+        });
+
         if (!latex) {
             return res.status(400).json({ error: '缺少表達式' });
         }
-
-        console.log('Processing operation:', operation, 'with latex:', latex);
 
         let result;
         switch (operation) {
@@ -136,6 +139,7 @@ router.post('/process', (req, res) => {
                 break;
             case 'decimal-fraction':
                 try {
+                    console.log('Processing decimal-fraction conversion for:', latex);
                     result = ExpressionAnalyzer.convertDecimalFraction(latex);
                     console.log('Conversion result:', result);
                 } catch (conversionError) {
@@ -152,17 +156,17 @@ router.post('/process', (req, res) => {
         }
 
         if (!result) {
+            console.error('Empty result for:', latex);
             return res.status(500).json({ error: '處理結果為空' });
         }
 
+        console.log('Final result:', result);
         res.json({ latex: result });
     } catch (error) {
         console.error('Process error:', error);
-        if (error instanceof Error) {
-            res.status(500).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: '處理失敗' });
-        }
+        res.status(500).json({ 
+            error: error instanceof Error ? error.message : '處理失敗'
+        });
     }
 });
 

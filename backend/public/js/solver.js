@@ -185,10 +185,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         btn.addEventListener('click', async () => {
             const operation = btn.dataset.op;
             const expressionHistory = document.querySelector('.expression-history');
-            const lastExpression = expressionHistory.lastElementChild?.querySelector('.math')?.textContent || '';
-            
-            // 如果没有表达式历史，使用生成的内容
-            const content = lastExpression || document.querySelector('.generated-content').textContent;
+            // 直接获取 equation-input 的值
+            const content = document.getElementById('equation-input').value;
             
             if (!content) {
                 alert('請先生成或輸入題目');
@@ -196,15 +194,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             try {
+                const requestData = { 
+                    latex: content,  // 直接使用 equation-input 的值
+                    operation: operation 
+                };
+                console.log('Sending request data:', requestData);
+
                 const response = await fetch('/api/solver/process', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        latex: content,
-                        operation: operation 
-                    })
+                    body: JSON.stringify(requestData)
                 });
 
                 if (!response.ok) {
@@ -212,6 +213,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 const result = await response.json();
+                console.log('Received result:', result);
                 
                 // 清理 LaTeX 字符串以进行比较
                 const cleanContent = content.replace(/\\[[\]]/g, '').trim();
@@ -237,13 +239,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     resultStep.className = 'expression-step';
                     resultStep.innerHTML = `
                         <span class="operation-label">${btn.title}</span>
-                        <div class="math">\\[${result.latex}\\]</div>
+                        <div class="math" data-latex="${result.latex}">\\[${result.latex}\\]</div>
                     `;
                     expressionHistory.appendChild(resultStep);
                 } else {
                     stepElement.innerHTML = `
                         <span class="operation-label">${btn.title}</span>
-                        <div class="math">\\[${result.latex}\\]</div>
+                        <div class="math" data-latex="${result.latex}">\\[${result.latex}\\]</div>
                     `;
                     expressionHistory.appendChild(stepElement);
                 }
@@ -461,4 +463,39 @@ function getTypeText(type) {
         'polynomial': '多項式'
     };
     return typeMap[type] || type;
+}
+
+async function processOperation(operation) {
+    try {
+        // 获取当前实验区的 LaTeX 表达式
+        const latex = getCurrentLatex();  // 这里需要确保获取完整的 LaTeX 格式
+        
+        const response = await fetch('/api/solver/process', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                latex: latex,  // 这里应该包含完整的 LaTeX 格式
+                operation: operation
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('操作失敗');
+        }
+
+        const result = await response.json();
+        updateExperimentArea(result.latex);  // 更新实验区显示
+    } catch (error) {
+        console.error('Operation Error:', error);
+        // 显示错误信息
+    }
+}
+
+// 获取当前实验区的 LaTeX 表达式
+function getCurrentLatex() {
+    const experimentArea = document.querySelector('.experiment-content');
+    // 这里需要确保我们获取的是原始的 LaTeX 格式，而不是渲染后的内容
+    return experimentArea.getAttribute('data-latex') || experimentArea.textContent;
 } 
