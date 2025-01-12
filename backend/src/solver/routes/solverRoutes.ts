@@ -127,28 +127,42 @@ router.post('/process', (req, res) => {
             return res.status(400).json({ error: '缺少表達式' });
         }
 
+        console.log('Processing operation:', operation, 'with latex:', latex);
+
         let result;
         switch (operation) {
             case 'combine':
                 result = ExpressionAnalyzer.combineTerms(latex);
                 break;
             case 'decimal-fraction':
-                if (latex.includes('.')) {
-                    result = ExpressionAnalyzer.convertDecimalToFraction(latex);
-                } else if (latex.includes('\\frac')) {
-                    result = ExpressionAnalyzer.convertFractionToDecimal(latex);
-                } else {
-                    return res.status(400).json({ error: '表達式中沒有小數或分數' });
+                try {
+                    result = ExpressionAnalyzer.convertDecimalFraction(latex);
+                    console.log('Conversion result:', result);
+                } catch (conversionError) {
+                    console.error('Conversion error:', conversionError);
+                    return res.status(400).json({ 
+                        error: conversionError instanceof Error ? 
+                            conversionError.message : 
+                            '轉換失敗'
+                    });
                 }
                 break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }
 
+        if (!result) {
+            return res.status(500).json({ error: '處理結果為空' });
+        }
+
         res.json({ latex: result });
     } catch (error) {
         console.error('Process error:', error);
-        res.status(500).json({ error: '處理失敗' });
+        if (error instanceof Error) {
+            res.status(500).json({ error: error.message });
+        } else {
+            res.status(500).json({ error: '處理失敗' });
+        }
     }
 });
 

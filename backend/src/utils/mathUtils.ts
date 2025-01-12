@@ -492,57 +492,140 @@ export const ExpressionAnalyzer = {
     },
 
     /**
-     * 小數轉分數
+     * 计算循环小数对应的分数
      */
-    convertDecimalToFraction(decimal: string): string {
-        // 移除等号及其后面的内容
-        const [expression, equals] = decimal.split('=');
+    calculateFractionFromRecurring(nonRepeating: string, repeating: string): [number, number] {
+        // 处理非循环部分
+        const nonRepPart = nonRepeating.replace('.', '');
+        const nonRepLen = nonRepeating.includes('.') ? nonRepeating.length - 1 : 0;
         
-        // 处理表达式中的每个数字
-        const converted = expression.replace(/\d+\.\d+/g, (match) => {
-            const num = parseFloat(match);
-            const [numerator, denominator] = this._decimalToFraction(num);
-            return `\\frac{${numerator}}{${denominator}}`;
-        });
-
-        // 添加等号部分（如果有）
-        return equals ? `${converted}=${equals}` : converted;
+        // 计算分子和分母
+        const base = Math.pow(10, nonRepLen);
+        const repLen = repeating.length;
+        const factor = Math.pow(10, repLen) - 1;
+        
+        // 构造分数
+        const numerator = parseInt(repeating) + (nonRepPart ? parseInt(nonRepPart) * factor : 0);
+        const denominator = factor * base;
+        
+        // 约分
+        const gcd = this.gcd(numerator, denominator);
+        return [numerator / gcd, denominator / gcd];
     },
 
     /**
-     * 分數轉小數
+     * 计算分数的小数表示
      */
-    convertFractionToDecimal(fraction: string): string {
-        // 移除等号及其后面的内容
-        const [expression, equals] = fraction.split('=');
+    calculateDecimalFromFraction(numerator: number, denominator: number): string {
+        let dividend = numerator;
+        let quotient = Math.floor(dividend / denominator);
+        let remainders: number[] = [];
+        let decimals: number[] = [];
         
-        // 处理表达式中的分数
-        const converted = expression.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, (_, num, den) => {
-            const decimal = (parseInt(num) / parseInt(den)).toFixed(5);
-            // 移除末尾的0和不必要的小数点
-            return decimal.replace(/\.?0+$/, '');
-        });
-
-        // 添加等号部分（如果有）
-        return equals ? `${converted}=${equals}` : converted;
+        dividend = (dividend % denominator) * 10;
+        
+        while (dividend !== 0 && !remainders.includes(dividend)) {
+            remainders.push(dividend);
+            decimals.push(Math.floor(dividend / denominator));
+            dividend = (dividend % denominator) * 10;
+        }
+        
+        if (dividend === 0) {
+            // 有限小数
+            return quotient + (decimals.length > 0 ? '.' + decimals.join('') : '');
+        } else {
+            // 循环小数
+            const cycleStartIndex = remainders.indexOf(dividend);
+            const nonRepeating = decimals.slice(0, cycleStartIndex).join('');
+            const repeating = decimals.slice(cycleStartIndex).join('');
+            
+            return `${quotient}${nonRepeating.length > 0 ? '.' + nonRepeating : ''}.\\overline{${repeating}}`;
+        }
     },
 
     /**
-     * 將小數轉換為最簡分數
+     * 辅助方法：最大公约数
      */
-    _decimalToFraction(decimal: number): [number, number] {
+    gcd(a: number, b: number): number {
+        return b === 0 ? Math.abs(a) : this.gcd(b, a % b);
+    },
+
+    /**
+     * 将小数转换为分数
+     */
+    decimalToFraction(decimal: number): [number, number] {
         const precision = 1e5; // 5位小数精度
         let numerator = Math.round(decimal * precision);
         let denominator = precision;
         
-        // 使用辗转相除法求最大公约数
-        const gcd = (a: number, b: number): number => {
-            return b === 0 ? a : gcd(b, a % b);
-        };
-        
         // 约分
-        const divisor = gcd(numerator, denominator);
-        return [numerator / divisor, denominator / divisor];
+        const gcd = this.gcd(numerator, denominator);
+        return [numerator / gcd, denominator / gcd];
+    },
+
+    /**
+     * 在小数和分数之间转换
+     */
+    convertDecimalFraction(expression: string): string {
+        try {
+            // 移除等号及其后面的内容
+            const [expr, equals] = expression.split('=');
+            
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
+
+            let converted: string;
+            
+            if (expr.includes('\\frac')) {
+                // 如果是分数，转换为小数
+                converted = expr.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, (match, num, den) => {
+                    if (!num || !den || parseInt(den) === 0) {
+                        throw new Error('無效的分數格式');
+                    }
+                    const decimal = this.calculateDecimalFromFraction(parseInt(num), parseInt(den));
+                    return decimal;
+                });
+            } else if (expr.includes('\\overline')) {
+                // 如果是循环小数，转换为分数
+                converted = expr.replace(/(\d*\.?\d*)?\\overline\{(\d+)\}/g, (_, nonRepeating = '', repeating) => {
+                    if (!repeating) {
+                        throw new Error('無效的循環小數格式');
+                    }
+                    const [numerator, denominator] = this.calculateFractionFromRecurring(nonRepeating, repeating);
+                    return `\\frac{${numerator}}{${denominator}}`;
+                });
+            } else if (expr.match(/\d+\.\d+/)) {  // 修改这里，使用 match 而不是 includes
+                // 如果是普通小数，转换为分数
+                converted = expr.replace(/\d+\.\d+/g, (match) => {
+                    if (isNaN(parseFloat(match))) {
+                        throw new Error('無效的小數格式');
+                    }
+                    const [numerator, denominator] = this.decimalToFraction(parseFloat(match));
+                    return `\\frac{${numerator}}{${denominator}}`;
+                });
+            } else if (expr.match(/\\frac\{\d+\}\{\d+\}/)) {  // 添加这个条件
+                // 如果是分数但没有被前面的条件捕获，尝试转换为小数
+                converted = expr.replace(/\\frac\{(\d+)\}\{(\d+)\}/g, (match, num, den) => {
+                    if (!num || !den || parseInt(den) === 0) {
+                        throw new Error('無效的分數格式');
+                    }
+                    return this.calculateDecimalFromFraction(parseInt(num), parseInt(den));
+                });
+            } else {
+                throw new Error('無法識別的表達式格式');
+            }
+
+            if (!converted || converted === expr) {
+                throw new Error('轉換後的表達式無變化');
+            }
+
+            // 添加等号部分（如果有）
+            return equals ? `${converted}=${equals}` : converted;
+        } catch (error) {
+            console.error('Conversion error:', error);
+            throw error;
+        }
     }
 };
 
