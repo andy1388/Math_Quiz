@@ -159,6 +159,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // 如果输入不是 LaTeX 格式，转换为 LaTeX 格式
         const latexEquation = equation.startsWith('\\') ? equation : convertToLatex(equation);
+        
+        // 清空实验区
+        const expressionHistory = document.querySelector('.expression-history');
+        expressionHistory.innerHTML = '';
+        
+        // 添加用户输入的公式作为初始表达式
+        const initialStep = document.createElement('div');
+        initialStep.className = 'expression-step';
+        initialStep.innerHTML = `<div class="math" data-latex="${latexEquation}">\\[${latexEquation}\\]</div>`;
+        expressionHistory.appendChild(initialStep);
+        
+        // 重新渲染数学公式
+        MathJax.typesetPromise().then(() => {
+            // 更新表达式属性
+            updateExpressionStatus(latexEquation);
+            // 更新操作按钮状态
+            updateOperationButtons(latexEquation);
+        });
+
+        // 继续原有的求解流程
         solveEquation(latexEquation, operationType.value, difficulty.value);
     });
 
