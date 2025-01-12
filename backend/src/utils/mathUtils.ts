@@ -202,7 +202,8 @@ export const ExpressionAnalyzer = {
             termCount: this.countTerms(latex),
             fractionInfo: this.analyzeFraction(latex),
             irrationalInfo: this.analyzeIrrational(latex),
-            variables: this.findVariables(latex)
+            variables: this.findVariables(latex),
+            likeTerms: this.analyzeLikeTerms(latex)
         };
     },
 
@@ -331,6 +332,79 @@ export const ExpressionAnalyzer = {
     _countIrrationalTerms(latex: string): number {
         const irrationalMatches = latex.match(/\\(?:sqrt|pi|e)/g) || [];
         return irrationalMatches.length;
+    },
+
+    /**
+     * 分析同類項
+     */
+    analyzeLikeTerms(latex: string): LikeTermsInfo {
+        const cleanLatex = this._cleanLatex(latex);
+        const terms = this._splitTerms(cleanLatex);
+        const groups = new Map<string, string[]>();
+
+        // 分析每个项
+        terms.forEach(term => {
+            // 提取变量和系数
+            const { variable, coefficient } = this._parseTermParts(term);
+            const key = variable || 'constant'; // 如果没有变量，归类为常数项
+            
+            if (!groups.has(key)) {
+                groups.set(key, []);
+            }
+            groups.get(key)?.push(term);
+        });
+
+        // 构建结果
+        const likeTermGroups = Array.from(groups.entries())
+            .filter(([_, terms]) => terms.length > 1)  // 只保留有同类项的组
+            .map(([variable, terms]) => ({
+                variable: variable === 'constant' ? '常數項' : variable,
+                terms,
+                count: terms.length
+            }));
+
+        return {
+            hasLikeTerms: likeTermGroups.length > 0,
+            groups: likeTermGroups
+        };
+    },
+
+    /**
+     * 分割項
+     */
+    _splitTerms(latex: string): string[] {
+        // 处理第一项可能的正号
+        const normalized = latex.replace(/^\+/, '');
+        return normalized
+            .replace(/\s+/g, '')
+            .split(/(?=[+-])/)
+            .filter(term => term.length > 0)
+            .map(term => term.trim());
+    },
+
+    /**
+     * 解析項的各部分
+     */
+    _parseTermParts(term: string): { coefficient: string; variable: string } {
+        // 移除前导的加号
+        term = term.replace(/^\+/, '');
+        
+        // 匹配系数和变量部分
+        const match = term.match(/^([+-]?\d*)(.*?)$/);
+        if (!match) {
+            return { coefficient: '', variable: term };
+        }
+
+        let [, coefficient, variable] = match;
+        
+        // 处理特殊情况
+        if (coefficient === '' || coefficient === '+') coefficient = '1';
+        if (coefficient === '-') coefficient = '-1';
+        
+        return {
+            coefficient: coefficient,
+            variable: variable.trim()
+        };
     }
 };
 
@@ -343,6 +417,7 @@ export interface ExpressionInfo {
     fractionInfo: FractionInfo;
     irrationalInfo: IrrationalInfo;
     variables: VariableInfo;
+    likeTerms: LikeTermsInfo;
 }
 
 export interface FractionInfo {
@@ -366,6 +441,17 @@ export interface VariableInfo {
     hasVariables: boolean;
     count: number;
     list: string[];
+}
+
+export interface LikeTermsInfo {
+    hasLikeTerms: boolean;
+    groups: LikeTermGroup[];
+}
+
+export interface LikeTermGroup {
+    variable: string;
+    terms: string[];
+    count: number;
 }
 
 /**

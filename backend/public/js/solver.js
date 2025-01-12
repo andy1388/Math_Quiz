@@ -363,6 +363,18 @@ async function updateExpressionStatus(latex) {
         document.getElementById('variable-list').textContent = 
             info.variables.list.length > 0 ? info.variables.list.join(', ') : '-';
 
+        // 更新同类项信息
+        document.getElementById('like-terms-status').textContent = 
+            info.likeTerms.hasLikeTerms ? '有' : '無';
+        
+        // 显示同类项组信息
+        const groupsText = info.likeTerms.groups.map(group => 
+            `${group.variable}: ${group.count}項`
+        ).join(', ');
+        
+        document.getElementById('like-terms-groups').textContent = 
+            groupsText || '-';
+
     } catch (error) {
         console.error('Error:', error);
         // 清空所有状态显示
