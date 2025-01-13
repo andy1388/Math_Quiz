@@ -138,29 +138,19 @@ router.post('/process', (req, res) => {
                 result = ExpressionAnalyzer.combineTerms(latex);
                 break;
             case 'decimal-fraction':
-                try {
-                    console.log('Processing decimal-fraction conversion for:', latex);
-                    result = ExpressionAnalyzer.convertDecimalFraction(latex);
-                    console.log('Conversion result:', result);
-                } catch (conversionError) {
-                    console.error('Conversion error:', conversionError);
-                    return res.status(400).json({ 
-                        error: conversionError instanceof Error ? 
-                            conversionError.message : 
-                            '轉換失敗'
-                    });
-                }
+                result = ExpressionAnalyzer.convertDecimalFraction(latex);
+                break;
+            case 'reduce':
+                result = ExpressionAnalyzer.reduceFraction(latex);
                 break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }
 
         if (!result) {
-            console.error('Empty result for:', latex);
             return res.status(500).json({ error: '處理結果為空' });
         }
 
-        console.log('Final result:', result);
         res.json({ latex: result });
     } catch (error) {
         console.error('Process error:', error);

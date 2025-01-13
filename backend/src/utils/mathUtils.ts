@@ -434,42 +434,94 @@ export const ExpressionAnalyzer = {
     /**
      * 合併同類項
      */
-    combineTerms(latex: string): string {
-        // 移除等号及其后面的内容
-        const [expression, equals] = latex.split('=');
-        const terms = this._splitTerms(expression);
-        const groups = new Map<string, number>();
+    combineTerms(expression: string): string {
+        try {
+            const [expr, equals] = expression.split('=');
+            
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
 
-        // 分组并合并系数
-        terms.forEach(term => {
-            const { coefficient, variable } = this._parseTermParts(term);
-            const key = variable || 'numeric'; // 使用 'numeric' 标识纯数字项
-            // 使用 parseFloat 而不是 parseInt 来处理小数
-            const coef = parseFloat(coefficient) || 1;
-            groups.set(key, (groups.get(key) || 0) + coef);
-        });
+            console.log('Processing expression:', expr);
 
-        // 构建结果
-        let result = Array.from(groups.entries())
-            .filter(([_, coef]) => coef !== 0)  // 移除系数为0的项
-            .map(([variable, coefficient]) => {
-                // 格式化系数，最多保留5位小数
-                const formattedCoef = this._formatCoefficient(coefficient);
-                
-                if (variable === 'numeric') {
-                    return coefficient > 0 ? `+${formattedCoef}` : formattedCoef;
+            // 分离各项（处理 + 和 - 号）
+            const terms = expr.replace(/\s+/g, '')  // 移除空格
+                .replace(/([+-])([a-zA-Z])/g, '$11$2')  // 将单独的变量转换为系数1
+                .replace(/^([a-zA-Z])/g, '1$1')  // 处理开头的单独变量
+                .match(/[+-]?(?:\d*\.?\d*)?[a-zA-Z](?:\^?\d+)?|[+-]?\d+/g)  // 匹配所有项，包括带次方的项
+                ?.filter(term => term !== '');
+
+            if (!terms) {
+                throw new Error('無效的表達式');
+            }
+
+            // 用于存储同类项的系数和
+            const termGroups = new Map<string, number>();
+
+            // 处理每一项
+            terms.forEach(term => {
+                // 分离系数、变量和次方部分
+                const match = term.match(/([+-]?\d*\.?\d*)?([a-zA-Z])(?:\^?(\d+))?/);
+                if (!match) {
+                    // 处理纯数字项
+                    if (/^[+-]?\d+$/.test(term)) {
+                        const num = parseInt(term);
+                        termGroups.set('', (termGroups.get('') || 0) + num);
+                    }
+                    return;
                 }
-                if (coefficient === 1) return `+${variable}`;
-                if (coefficient === -1) return `-${variable}`;
-                return coefficient > 0 ? `+${formattedCoef}${variable}` : `${formattedCoef}${variable}`;
-            })
-            .join('');
 
-        // 处理结果的格式
-        result = result.replace(/^\+/, '');  // 移除开头的加号
-        
-        // 添加等号部分（如果有）
-        return equals ? `${result}=${equals}` : result;
+                let [_, coefficient, variable, exponent] = match;
+                // 处理特殊情况的系数
+                if (!coefficient || coefficient === '+') coefficient = '1';
+                if (coefficient === '-') coefficient = '-1';
+                
+                // 构造变量键，包含次方
+                const varKey = exponent ? `${variable}^${exponent}` : variable;
+                
+                // 累加系数
+                const coef = parseFloat(coefficient);
+                termGroups.set(varKey, (termGroups.get(varKey) || 0) + coef);
+            });
+
+            // 构建结果
+            let result = Array.from(termGroups.entries())
+                .filter(([_, coef]) => coef !== 0)  // 移除系数为0的项
+                .sort(([var1, _1], [var2, _2]) => {
+                    // 按变量和次方排序
+                    if (!var1) return 1;  // 常数项放最后
+                    if (!var2) return -1;
+                    const [base1, exp1 = '1'] = var1.split('^');
+                    const [base2, exp2 = '1'] = var2.split('^');
+                    // 先按次方降序，再按变量名升序
+                    const expDiff = parseInt(exp2) - parseInt(exp1);
+                    return expDiff !== 0 ? expDiff : base1.localeCompare(base2);
+                })
+                .map(([variable, coefficient]) => {
+                    // 格式化系数
+                    if (variable === '') {
+                        return coefficient > 0 ? `+${coefficient}` : `${coefficient}`;
+                    }
+                    if (coefficient === 1) return `+${variable}`;
+                    if (coefficient === -1) return `-${variable}`;
+                    return coefficient > 0 ? `+${coefficient}${variable}` : `${coefficient}${variable}`;
+                })
+                .join('');
+
+            // 处理结果的开头的加号
+            result = result.replace(/^\+/, '');
+            
+            // 如果结果为空（所有项系数都为0），返回0
+            if (!result) result = '0';
+
+            console.log('Combined result:', result);
+
+            // 添加等号部分（如果有）
+            return equals ? `${result}=${equals}` : result;
+        } catch (error) {
+            console.error('Combine terms error:', error);
+            throw error;
+        }
     },
 
     /**
@@ -656,6 +708,58 @@ export const ExpressionAnalyzer = {
             return equals ? `${converted}=${equals}` : converted;
         } catch (error) {
             console.error('Conversion error:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * 约分分数
+     */
+    reduceFraction(expression: string): string {
+        try {
+            const [expr, equals] = expression.split('=');
+            
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
+
+            console.log('Processing fraction reduction:', expr);
+
+            // 匹配分数格式
+            const fractionMatch = expr.match(/\\frac\s*\{(\d+)\}\s*\{(\d+)\}/);
+            if (!fractionMatch) {
+                throw new Error('不是有效的分數格式');
+            }
+
+            const [_, numerator, denominator] = fractionMatch;
+            const num = parseInt(numerator);
+            const den = parseInt(denominator);
+
+            if (den === 0) {
+                throw new Error('分母不能為零');
+            }
+
+            // 计算最大公约数
+            const gcdValue = this.gcd(num, den);
+            
+            // 如果最大公约数为1，分数已经是最简形式
+            if (gcdValue === 1) {
+                return expression; // 返回原表达式
+            }
+
+            // 约分
+            const reducedNum = num / gcdValue;
+            const reducedDen = den / gcdValue;
+
+            // 构造约分后的分数
+            const reduced = `\\frac{${reducedNum}}{${reducedDen}}`;
+            
+            console.log('Reduced fraction:', reduced);
+
+            // 添加等号部分（如果有）
+            return equals ? `${reduced}=${equals}` : reduced;
+        } catch (error) {
+            console.error('Reduction error:', error);
             throw error;
         }
     }
