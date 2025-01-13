@@ -753,38 +753,71 @@ export const ExpressionAnalyzer = {
 
             console.log('Processing fraction reduction:', expr);
 
-            // 匹配分数格式
-            const fractionMatch = expr.match(/\\frac\s*\{(\d+)\}\s*\{(\d+)\}/);
-            if (!fractionMatch) {
-                throw new Error('不是有效的分數格式');
+            let num: number, den: number;
+
+            // 首先尝试匹配 LaTeX 分数格式
+            const fractionMatch = expr.match(/\\frac\s*\{([\d.]+)\}\s*\{([\d.]+)\}/);
+            if (fractionMatch) {
+                // 使用数组解构，跳过第一个元素
+                const [, numerator, denominator] = fractionMatch;
+                num = parseFloat(numerator);
+                den = parseFloat(denominator);
+            } else {
+                // 尝试匹配普通除法格式 (a/b)
+                const divisionMatch = expr.match(/([\d.]+)\s*\/\s*([\d.]+)/);
+                if (divisionMatch) {
+                    // 使用数组解构，跳过第一个元素
+                    const [, numerator, denominator] = divisionMatch;
+                    num = parseFloat(numerator);
+                    den = parseFloat(denominator);
+                } else {
+                    throw new Error('不是有效的分數格式');
+                }
             }
 
-            const [_, numerator, denominator] = fractionMatch;
-            const num = parseInt(numerator);
-            const den = parseInt(denominator);
+            if (isNaN(num) || isNaN(den)) {
+                throw new Error('無效的數字格式');
+            }
 
             if (den === 0) {
                 throw new Error('分母不能為零');
             }
 
+            // 处理小数点
+            const getDecimalPlaces = (n: number): number => {
+                const str = n.toString();
+                const decimalIndex = str.indexOf('.');
+                return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
+            };
+
+            // 获取分子分母中小数位数的最大值
+            const numDecimals = getDecimalPlaces(num);
+            const denDecimals = getDecimalPlaces(den);
+            const maxDecimals = Math.max(numDecimals, denDecimals);
+
+            // 将分子分母同时乘以10的幂次来消除小数
+            if (maxDecimals > 0) {
+                const factor = Math.pow(10, maxDecimals);
+                num *= factor;
+                den *= factor;
+            }
+
+            // 转换为整数
+            num = Math.round(num);
+            den = Math.round(den);
+
             // 计算最大公约数
             const gcdValue = this.gcd(num, den);
             
-            // 如果最大公约数为1，分数已经是最简形式
-            if (gcdValue === 1) {
-                return expression; // 返回原表达式
-            }
-
             // 约分
             const reducedNum = num / gcdValue;
             const reducedDen = den / gcdValue;
 
-            // 构造约分后的分数
+            // 构造约分后的分数（总是返回 LaTeX 格式）
             const reduced = `\\frac{${reducedNum}}{${reducedDen}}`;
             
             console.log('Reduced fraction:', reduced);
 
-            // 添加等号部分（如果有）
             return equals ? `${reduced}=${equals}` : reduced;
         } catch (error) {
             console.error('Reduction error:', error);
