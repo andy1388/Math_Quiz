@@ -495,17 +495,20 @@ export const ExpressionAnalyzer = {
      * 计算循环小数对应的分数
      */
     calculateFractionFromRecurring(nonRepeating: string, repeating: string): [number, number] {
-        // 处理非循环部分
-        const nonRepPart = nonRepeating.replace('.', '');
-        const nonRepLen = nonRepeating.includes('.') ? nonRepeating.length - 1 : 0;
+        // 处理整数部分和小数部分
+        const parts = nonRepeating.split('.');
+        const integerPart = parts[0] || '0';  // 整数部分
+        const decimalPart = parts[1] || '';    // 小数部分
         
         // 计算分子和分母
-        const base = Math.pow(10, nonRepLen);
+        const base = Math.pow(10, decimalPart.length);
         const repLen = repeating.length;
         const factor = Math.pow(10, repLen) - 1;
         
         // 构造分数
-        const numerator = parseInt(repeating) + (nonRepPart ? parseInt(nonRepPart) * factor : 0);
+        const decimal = parseInt(decimalPart || '0');
+        const rep = parseInt(repeating);
+        const numerator = (decimal * factor + rep) + (parseInt(integerPart) * base * factor);
         const denominator = factor * base;
         
         // 约分
