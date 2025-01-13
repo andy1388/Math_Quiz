@@ -448,6 +448,45 @@ export const ExpressionAnalyzer = {
     },
 
     /**
+     * 標準化根式
+     */
+    _standardizeRoot(root: string): string {
+        // 移除空格
+        root = root.replace(/\s+/g, '');
+        // 如果是純數字的根號，保持原樣
+        if (root.match(/^\\sqrt\{\d+\}$/)) {
+            return root;
+        }
+        return root;
+    },
+
+    /**
+     * 標準化函數
+     */
+    _standardizeFunction(term: string): string {
+        // 匹配所有支持的函數
+        const functions = [
+            // 三角函數
+            '\\sin', '\\cos', '\\tan', '\\csc', '\\sec', '\\cot',
+            // 對數函數
+            '\\ln', '\\log'
+        ];
+
+        // 完整匹配函數及其參數
+        for (const func of functions) {
+            if (term.startsWith(func)) {
+                // 提取函數參數
+                const paramMatch = term.match(/^\\[a-z]+\{([^{}]+)\}$/);
+                if (paramMatch) {
+                    const [_, param] = paramMatch;
+                    return `${func}{${param}}`; // 保持完整的函數形式
+                }
+            }
+        }
+        return term;
+    },
+
+    /**
      * 合併同類項
      */
     combineTerms(expression: string): string {
@@ -460,7 +499,7 @@ export const ExpressionAnalyzer = {
 
             console.log('Processing expression:', expr);
 
-            // 首先处理分数
+            // 首先处理分数和根号
             const parts = expr.split(/([+-])/g).filter(part => part.trim());
             let processedExpr = '';
             let currentSign = '+';
@@ -473,8 +512,11 @@ export const ExpressionAnalyzer = {
                     continue;
                 }
 
-                // 处理分数
-                if (part.includes('\\frac')) {
+                // 处理根号
+                if (part.includes('\\sqrt')) {
+                    const standardRoot = this._standardizeRoot(part);
+                    processedExpr += currentSign + standardRoot;
+                } else if (part.includes('\\frac')) {
                     const fractionMatch = part.match(/\\frac\{(\d+)\}\{(\d+)\}/);
                     if (fractionMatch) {
                         const [_, num, den] = fractionMatch;
@@ -491,9 +533,9 @@ export const ExpressionAnalyzer = {
 
             // 分离各项
             const terms = processedExpr.replace(/\s+/g, '')
-                .replace(/([+-])([a-zA-Z])/g, '$11$2')
-                .replace(/^([a-zA-Z])/g, '1$1')
-                .match(/[+-]?(?:\d*\.?\d*)?[a-zA-Z0-9^]+|[+-]?\d+\.?\d*/g)
+                .replace(/([+-])((?:\\sin|\\cos|\\tan|\\csc|\\sec|\\cot|\\ln|\\log|[a-zA-Z\\]))/g, '$11$2')
+                .replace(/^((?:\\sin|\\cos|\\tan|\\csc|\\sec|\\cot|\\ln|\\log|[a-zA-Z\\]))/g, '1$1')
+                .match(/[+-]?(?:\d*\.?\d*)?(?:\\(?:sin|cos|tan|csc|sec|cot|ln|log)\{[^{}]+\}|\\sqrt\{[^{}]+\}|[a-zA-Z0-9^]+)|[+-]?\d+\.?\d*/g)
                 ?.filter(term => term !== '');
 
             if (!terms) {
@@ -512,42 +554,45 @@ export const ExpressionAnalyzer = {
                     return;
                 }
 
-                // 分离系数和变量部分
-                const match = term.match(/([+-]?\d*\.?\d*)?([a-zA-Z][a-zA-Z0-9^]*)/);
+                // 分离系数和变量/根号部分
+                const match = term.match(/([+-]?\d*\.?\d*)?(.+)/);
                 if (!match) return;
 
-                let [_, coefficient, variables] = match;
+                let [_, coefficient, variable] = match;
                 if (!coefficient || coefficient === '+') coefficient = '1';
                 if (coefficient === '-') coefficient = '-1';
 
-                // 标准化变量部分
-                const standardVars = this._standardizeVariables(variables);
+                // 标准化变量或函数部分
+                const standardTerm = 
+                    variable.match(/^\\(?:sin|cos|tan|csc|sec|cot|ln|log)\{[^{}]+\}$/) ? this._standardizeFunction(variable) :
+                    variable.includes('\\sqrt') ? this._standardizeRoot(variable) : 
+                    this._standardizeVariables(variable);
                 
                 // 累加系数
                 const coef = parseFloat(coefficient);
-                termGroups.set(standardVars, (termGroups.get(standardVars) || 0) + coef);
+                termGroups.set(standardTerm, (termGroups.get(standardTerm) || 0) + coef);
             });
 
             // 构建结果
             let result = Array.from(termGroups.entries())
                 .filter(([_, coef]) => Math.abs(coef) > 1e-10)
-                .sort(([var1, _1], [var2, _2]) => {
-                    if (!var1) return 1;
-                    if (!var2) return -1;
-                    // 先按指数排序，再按变量长度，最后按字母顺序
-                    const hasExp1 = var1.includes('^');
-                    const hasExp2 = var2.includes('^');
-                    if (hasExp1 !== hasExp2) return hasExp2 ? 1 : -1;
-                    return var2.length - var1.length || var1.localeCompare(var2);
+                .sort(([term1, _1], [term2, _2]) => {
+                    if (!term1) return 1;
+                    if (!term2) return -1;
+                    // 根号优先
+                    const isRoot1 = term1.startsWith('\\sqrt');
+                    const isRoot2 = term2.startsWith('\\sqrt');
+                    if (isRoot1 !== isRoot2) return isRoot2 ? 1 : -1;
+                    return term1.localeCompare(term2);
                 })
-                .map(([variable, coefficient]) => {
+                .map(([term, coefficient]) => {
                     const formattedCoef = this._formatCoefficient(coefficient);
-                    if (variable === '') {
+                    if (term === '') {
                         return coefficient > 0 ? `+${formattedCoef}` : formattedCoef;
                     }
-                    if (coefficient === 1) return `+${variable}`;
-                    if (coefficient === -1) return `-${variable}`;
-                    return coefficient > 0 ? `+${formattedCoef}${variable}` : `${formattedCoef}${variable}`;
+                    if (coefficient === 1) return `+${term}`;
+                    if (coefficient === -1) return `-${term}`;
+                    return coefficient > 0 ? `+${formattedCoef}${term}` : `${formattedCoef}${term}`;
                 })
                 .join('');
 
