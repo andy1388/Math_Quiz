@@ -444,11 +444,41 @@ export const ExpressionAnalyzer = {
 
             console.log('Processing expression:', expr);
 
+            // 首先处理分数
+            const parts = expr.split(/([+-])/g).filter(part => part.trim());
+            let processedExpr = '';
+            let currentSign = '+';
+
+            for (let i = 0; i < parts.length; i++) {
+                let part = parts[i].trim();
+                
+                if (part === '+' || part === '-') {
+                    currentSign = part;
+                    continue;
+                }
+
+                // 处理分数
+                if (part.includes('\\frac')) {
+                    const fractionMatch = part.match(/\\frac\{(\d+)\}\{(\d+)\}/);
+                    if (fractionMatch) {
+                        const [_, num, den] = fractionMatch;
+                        // 计算分数的小数值
+                        const decimal = parseInt(num) / parseInt(den);
+                        processedExpr += currentSign + decimal;
+                    }
+                } else {
+                    processedExpr += currentSign + part;
+                }
+            }
+
+            // 移除开头的加号
+            processedExpr = processedExpr.replace(/^\+/, '');
+
             // 分离各项（处理 + 和 - 号）
-            const terms = expr.replace(/\s+/g, '')  // 移除空格
+            const terms = processedExpr.replace(/\s+/g, '')  // 移除空格
                 .replace(/([+-])([a-zA-Z])/g, '$11$2')  // 将单独的变量转换为系数1
                 .replace(/^([a-zA-Z])/g, '1$1')  // 处理开头的单独变量
-                .match(/[+-]?(?:\d*\.?\d*)?[a-zA-Z](?:\^?\d+)?|[+-]?\d+/g)  // 匹配所有项，包括带次方的项
+                .match(/[+-]?(?:\d*\.?\d*)?[a-zA-Z](?:\^?\d+)?|[+-]?\d+\.?\d*/g)  // 匹配所有项
                 ?.filter(term => term !== '');
 
             if (!terms) {
@@ -463,9 +493,9 @@ export const ExpressionAnalyzer = {
                 // 分离系数、变量和次方部分
                 const match = term.match(/([+-]?\d*\.?\d*)?([a-zA-Z])(?:\^?(\d+))?/);
                 if (!match) {
-                    // 处理纯数字项
-                    if (/^[+-]?\d+$/.test(term)) {
-                        const num = parseInt(term);
+                    // 处理纯数字项（包括小数）
+                    if (/^[+-]?\d*\.?\d*$/.test(term)) {
+                        const num = parseFloat(term);
                         termGroups.set('', (termGroups.get('') || 0) + num);
                     }
                     return;
@@ -486,37 +516,35 @@ export const ExpressionAnalyzer = {
 
             // 构建结果
             let result = Array.from(termGroups.entries())
-                .filter(([_, coef]) => coef !== 0)  // 移除系数为0的项
+                .filter(([_, coef]) => Math.abs(coef) > 1e-10)  // 移除接近0的项
                 .sort(([var1, _1], [var2, _2]) => {
-                    // 按变量和次方排序
                     if (!var1) return 1;  // 常数项放最后
                     if (!var2) return -1;
                     const [base1, exp1 = '1'] = var1.split('^');
                     const [base2, exp2 = '1'] = var2.split('^');
-                    // 先按次方降序，再按变量名升序
                     const expDiff = parseInt(exp2) - parseInt(exp1);
                     return expDiff !== 0 ? expDiff : base1.localeCompare(base2);
                 })
                 .map(([variable, coefficient]) => {
-                    // 格式化系数
+                    // 格式化系数，处理小数
+                    const formattedCoef = this._formatCoefficient(coefficient);
                     if (variable === '') {
-                        return coefficient > 0 ? `+${coefficient}` : `${coefficient}`;
+                        return coefficient > 0 ? `+${formattedCoef}` : formattedCoef;
                     }
                     if (coefficient === 1) return `+${variable}`;
                     if (coefficient === -1) return `-${variable}`;
-                    return coefficient > 0 ? `+${coefficient}${variable}` : `${coefficient}${variable}`;
+                    return coefficient > 0 ? `+${formattedCoef}${variable}` : `${formattedCoef}${variable}`;
                 })
                 .join('');
 
             // 处理结果的开头的加号
             result = result.replace(/^\+/, '');
             
-            // 如果结果为空（所有项系数都为0），返回0
+            // 如果结果为空，返回0
             if (!result) result = '0';
 
             console.log('Combined result:', result);
 
-            // 添加等号部分（如果有）
             return equals ? `${result}=${equals}` : result;
         } catch (error) {
             console.error('Combine terms error:', error);
