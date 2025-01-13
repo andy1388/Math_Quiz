@@ -432,6 +432,22 @@ export const ExpressionAnalyzer = {
     },
 
     /**
+     * 標準化變量部分
+     */
+    _standardizeVariables(variables: string): string {
+        // 處理指數
+        const parts = variables.split('^');
+        if (parts.length > 1) {
+            // 如果有指數，保持原樣
+            return variables;
+        }
+
+        // 如果沒有指數，按字母排序
+        const chars = variables.split('');
+        return chars.sort().join('');
+    },
+
+    /**
      * 合併同類項
      */
     combineTerms(expression: string): string {
@@ -462,7 +478,6 @@ export const ExpressionAnalyzer = {
                     const fractionMatch = part.match(/\\frac\{(\d+)\}\{(\d+)\}/);
                     if (fractionMatch) {
                         const [_, num, den] = fractionMatch;
-                        // 计算分数的小数值
                         const decimal = parseInt(num) / parseInt(den);
                         processedExpr += currentSign + decimal;
                     }
@@ -474,11 +489,11 @@ export const ExpressionAnalyzer = {
             // 移除开头的加号
             processedExpr = processedExpr.replace(/^\+/, '');
 
-            // 分离各项（处理 + 和 - 号）
-            const terms = processedExpr.replace(/\s+/g, '')  // 移除空格
-                .replace(/([+-])([a-zA-Z])/g, '$11$2')  // 将单独的变量转换为系数1
-                .replace(/^([a-zA-Z])/g, '1$1')  // 处理开头的单独变量
-                .match(/[+-]?(?:\d*\.?\d*)?[a-zA-Z](?:\^?\d+)?|[+-]?\d+\.?\d*/g)  // 匹配所有项
+            // 分离各项
+            const terms = processedExpr.replace(/\s+/g, '')
+                .replace(/([+-])([a-zA-Z])/g, '$11$2')
+                .replace(/^([a-zA-Z])/g, '1$1')
+                .match(/[+-]?(?:\d*\.?\d*)?[a-zA-Z0-9^]+|[+-]?\d+\.?\d*/g)
                 ?.filter(term => term !== '');
 
             if (!terms) {
@@ -490,43 +505,42 @@ export const ExpressionAnalyzer = {
 
             // 处理每一项
             terms.forEach(term => {
-                // 分离系数、变量和次方部分
-                const match = term.match(/([+-]?\d*\.?\d*)?([a-zA-Z])(?:\^?(\d+))?/);
-                if (!match) {
-                    // 处理纯数字项（包括小数）
-                    if (/^[+-]?\d*\.?\d*$/.test(term)) {
-                        const num = parseFloat(term);
-                        termGroups.set('', (termGroups.get('') || 0) + num);
-                    }
+                // 处理纯数字项
+                if (/^[+-]?\d*\.?\d*$/.test(term)) {
+                    const num = parseFloat(term);
+                    termGroups.set('', (termGroups.get('') || 0) + num);
                     return;
                 }
 
-                let [_, coefficient, variable, exponent] = match;
-                // 处理特殊情况的系数
+                // 分离系数和变量部分
+                const match = term.match(/([+-]?\d*\.?\d*)?([a-zA-Z][a-zA-Z0-9^]*)/);
+                if (!match) return;
+
+                let [_, coefficient, variables] = match;
                 if (!coefficient || coefficient === '+') coefficient = '1';
                 if (coefficient === '-') coefficient = '-1';
-                
-                // 构造变量键，包含次方
-                const varKey = exponent ? `${variable}^${exponent}` : variable;
+
+                // 标准化变量部分
+                const standardVars = this._standardizeVariables(variables);
                 
                 // 累加系数
                 const coef = parseFloat(coefficient);
-                termGroups.set(varKey, (termGroups.get(varKey) || 0) + coef);
+                termGroups.set(standardVars, (termGroups.get(standardVars) || 0) + coef);
             });
 
             // 构建结果
             let result = Array.from(termGroups.entries())
-                .filter(([_, coef]) => Math.abs(coef) > 1e-10)  // 移除接近0的项
+                .filter(([_, coef]) => Math.abs(coef) > 1e-10)
                 .sort(([var1, _1], [var2, _2]) => {
-                    if (!var1) return 1;  // 常数项放最后
+                    if (!var1) return 1;
                     if (!var2) return -1;
-                    const [base1, exp1 = '1'] = var1.split('^');
-                    const [base2, exp2 = '1'] = var2.split('^');
-                    const expDiff = parseInt(exp2) - parseInt(exp1);
-                    return expDiff !== 0 ? expDiff : base1.localeCompare(base2);
+                    // 先按指数排序，再按变量长度，最后按字母顺序
+                    const hasExp1 = var1.includes('^');
+                    const hasExp2 = var2.includes('^');
+                    if (hasExp1 !== hasExp2) return hasExp2 ? 1 : -1;
+                    return var2.length - var1.length || var1.localeCompare(var2);
                 })
                 .map(([variable, coefficient]) => {
-                    // 格式化系数，处理小数
                     const formattedCoef = this._formatCoefficient(coefficient);
                     if (variable === '') {
                         return coefficient > 0 ? `+${formattedCoef}` : formattedCoef;
