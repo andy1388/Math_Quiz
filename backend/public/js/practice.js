@@ -1,19 +1,26 @@
+const DEBUG = true;
+
+function log(...args) {
+    if (DEBUG) {
+        console.log(...args);
+    }
+}
+
 let AVAILABLE_GENERATORS = [];
 let isResizing = false;
 let lastWidth = localStorage.getItem('sidebarWidth') || '300px';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        log('Initializing practice page...');
         const response = await fetch('/api/questions/available-generators');
         if (!response.ok) {
             throw new Error('無法獲取生成器列表');
         }
         const structure = await response.json();
         
-        console.log('Raw API response:', structure);
-        console.log('Structure keys:', Object.keys(structure));
-        console.log('First level structure:', structure[Object.keys(structure)[0]]);
-
+        log('Received structure:', structure);
+        
         const sidebarContent = document.querySelector('.topic-nav');
         if (!sidebarContent) {
             throw new Error('找不到側邊欄容器');
@@ -22,21 +29,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const html = renderDirectoryStructure(structure);
         sidebarContent.innerHTML = html;
         
+        log('Directory structure rendered');
+        
         addEventListeners();
+        log('Event listeners added');
         
-        // 添加側邊欄調整功能
         setupSidebarResize();
+        log('Sidebar resize setup complete');
         
-        // 添加難度按鈕事件監聽
         setupDifficultyButtons();
+        log('Difficulty buttons setup complete');
         
     } catch (error) {
         console.error('初始化失败:', error);
-        console.error('Error details:', {
-            name: error.name,
-            message: error.message,
-            stack: error.stack
-        });
     }
 });
 
@@ -62,14 +67,6 @@ function renderDirectoryStructure(structure) {
 
     if (!structure || Object.keys(structure).length === 0) {
         return '<div class="directory-structure"><p>暫無可用的練習題目</p></div>';
-    }
-
-    // 检查数据结构
-    for (const formId in structure) {
-        if (!structure[formId].chapters) {
-            console.error(`Form ${formId} missing chapters property:`, structure[formId]);
-            continue;
-        }
     }
 
     let html = '<div class="directory-structure">';
@@ -108,7 +105,7 @@ function renderDirectoryStructure(structure) {
             
             // 遍历小节
             Object.entries(chapter.sections || {}).forEach(([sectionId, section]) => {
-                if (!section || !section.generators) {
+                if (!section) {
                     console.error(`Invalid section structure for ${sectionId}:`, section);
                     return;
                 }
@@ -121,8 +118,38 @@ function renderDirectoryStructure(structure) {
                         </div>
                         <div class="folder-content">
                 `;
+
+                // 渲染子小节（第4层）
+                if (section.subSections) {
+                    Object.entries(section.subSections).forEach(([subSectionId, subSection]) => {
+                        html += `
+                            <div class="folder subsection">
+                                <div class="folder-title" data-path="${formId}/${chapterId}/${sectionId}/${subSectionId}">
+                                    <span class="icon folder-icon">📁</span>
+                                    <span class="folder-name">${subSection.title}</span>
+                                </div>
+                                <div class="folder-content">
+                        `;
+
+                        // 渲染生成器
+                        (subSection.generators || []).forEach(generator => {
+                            html += `
+                                <div class="generator-item" data-topic="${generator.id}">
+                                    <span class="icon file-icon">📄</span>
+                                    <span class="generator-title">${generator.title}</span>
+                                    <span class="difficulty-badge">${generator.difficulty}</span>
+                                </div>
+                            `;
+                        });
+
+                        html += `
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
                 
-                // 遍历生成器
+                // 渲染当前小节的生成器
                 (section.generators || []).forEach(generator => {
                     html += `
                         <div class="generator-item" data-topic="${generator.id}">
@@ -156,7 +183,7 @@ function renderDirectoryStructure(structure) {
 }
 
 function addEventListeners() {
-    console.log('Adding event listeners...'); // 调试信息
+    console.log('Adding event listeners...');
 
     // 添加文件夹点击事件（展开/折叠）
     document.querySelectorAll('.folder-title').forEach(title => {
@@ -165,34 +192,51 @@ function addEventListeners() {
             const folder = title.parentElement;
             const folderPath = title.dataset.path;
             
-            // 检查是否是第三层文件夹
+            console.log('Clicked folder path:', folderPath); // 调试日志
+            
+            // 检查是否是第三层或第四层文件夹
             const pathParts = folderPath.split('/');
-            if (pathParts.length === 3 && !folder.dataset.loaded) {
+            if ((pathParts.length === 3 || pathParts.length === 4) && !folder.dataset.loaded) {
                 try {
+                    console.log('Loading content for path:', folderPath); // 调试日志
+                    
                     // 加载该文件夹下的生成器
                     const response = await fetch(`/api/questions/folder-content/${folderPath}`);
                     if (!response.ok) {
-                        throw new Error('Failed to load folder content');
+                        throw new Error(`Failed to load folder content: ${response.statusText}`);
                     }
                     const content = await response.json();
                     
-                    // 渲染生成器列表
-                    const generatorList = content.generators.map(gen => `
-                        <div class="generator-item" data-topic="${gen.id}">
-                            <span class="icon file-icon">📄</span>
-                            <span class="generator-title">${gen.title}</span>
-                            <span class="difficulty-badge">${gen.difficulty}</span>
-                        </div>
-                    `).join('');
+                    console.log('Loaded content:', content); // 调试日志
                     
-                    // 更新文件夹内容
-                    folder.querySelector('.folder-content').innerHTML = generatorList;
-                    folder.dataset.loaded = 'true';
-                    
-                    // 为新添加的生成器添加点击事件
-                    addGeneratorEventListeners(folder);
+                    if (content.generators && content.generators.length > 0) {
+                        // 渲染生成器列表
+                        const generatorList = content.generators.map(gen => `
+                            <div class="generator-item" data-topic="${gen.id}">
+                                <span class="icon file-icon">📄</span>
+                                <span class="generator-title">${gen.title}</span>
+                                <span class="difficulty-badge">${gen.difficulty}</span>
+                            </div>
+                        `).join('');
+                        
+                        // 更新文件夹内容
+                        const folderContent = folder.querySelector('.folder-content');
+                        if (folderContent) {
+                            folderContent.innerHTML = generatorList;
+                            folder.dataset.loaded = 'true';
+                            
+                            // 为新添加的生成器添加点击事件
+                            addGeneratorEventListeners(folder);
+                        }
+                    } else {
+                        console.log('No generators found in folder'); // 调试日志
+                    }
                 } catch (error) {
                     console.error('Error loading folder content:', error);
+                    const folderContent = folder.querySelector('.folder-content');
+                    if (folderContent) {
+                        folderContent.innerHTML = `<div class="error-message">加載失敗: ${error.message}</div>`;
+                    }
                 }
             }
             
@@ -201,10 +245,15 @@ function addEventListeners() {
     });
 }
 
+// 修改生成器点击事件处理
 function addGeneratorEventListeners(container) {
     container.querySelectorAll('.generator-item').forEach(item => {
         item.addEventListener('click', async (e) => {
             e.preventDefault();
+            e.stopPropagation(); // 防止事件冒泡
+            
+            console.log('Generator clicked:', item.dataset.topic); // 调试日志
+            
             document.querySelectorAll('.generator-item').forEach(i => 
                 i.classList.remove('active')
             );
@@ -220,6 +269,7 @@ function addGeneratorEventListeners(container) {
                 }
                 
                 const { levelNumber } = await response.json();
+                console.log('Generator levels:', levelNumber); // 调试日志
                 
                 // 更新難度按鈕
                 updateDifficultyButtons(levelNumber);

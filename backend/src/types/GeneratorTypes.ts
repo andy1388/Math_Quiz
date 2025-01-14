@@ -27,6 +27,7 @@ export interface GeneratorList {
 export interface SectionStructure {
     title: string;
     generators: GeneratorList[];
+    subSections?: { [key: string]: SectionStructure };  // 添加子目录支持
 }
 
 // 章节结构

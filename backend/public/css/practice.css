@@ -605,4 +605,18 @@ details[open] > summary::before {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+}
+
+/* 添加子小节的样式 */
+.folder.subsection {
+    margin-left: 1rem;
+}
+
+.folder.subsection .folder-title {
+    font-size: 0.9em;
+    background: rgba(255,255,255,0.05);
+}
+
+.folder.subsection .folder-content {
+    border-left: 1px solid rgba(255,255,255,0.05);
 } 
