@@ -1,7 +1,6 @@
 import express from 'express';
 import { GeneratorScanner } from '../utils/generatorScanner';
 import { DirectoryStructure } from '../types/GeneratorTypes';
-import { QuestionGeneratorFactory } from '../generators/QuestionGeneratorFactory';
 import { MC_Maker } from '../generators/MC_Maker';
 import { Request, Response } from 'express';
 import path from 'path';
