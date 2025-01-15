@@ -666,69 +666,84 @@ async function startPractice(generatorId, difficulty) {
     try {
         console.log('Starting practice with generator:', generatorId, 'difficulty:', difficulty);
         
-        // 顯示載入中的提示
-        const questionArea = document.querySelector('.question-area');
-        questionArea.innerHTML = '<div class="loading">載入題目中...</div>';
+        // 获取生成器信息（包含难度级别数量）
+        const infoResponse = await fetch(`/api/questions/generator-info/${generatorId}`);
+        if (!infoResponse.ok) {
+            throw new Error('Failed to get generator info');
+        }
+        
+        const { levelNumber } = await infoResponse.json();
+        
+        // 显示加载提示，但保持难度按钮
+        const questionBox = document.querySelector('.question-box');
+        if (questionBox) {
+            questionBox.innerHTML = '<div class="loading">載入題目中...</div>';
+        }
         
         const response = await fetch(`/api/questions/generate/${generatorId}?difficulty=${difficulty}`);
-        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const question = await response.json();
-        console.log('Generated question:', question);
+        question.maxDifficulty = parseInt(levelNumber);
+        question.currentDifficulty = difficulty;
         
-        displayQuestion(question);
+        displayQuestion(question, false); // 传入 false 表示不重新生成难度按钮
     } catch (error) {
         console.error('獲取題目失敗:', error);
-        const questionArea = document.querySelector('.question-area');
-        questionArea.innerHTML = `
-            <div class="error-message">
-                <p>此題目類型暫時不可用</p>
-                <p>錯誤信息：${error.message}</p>
-                <button onclick="location.reload()" class="retry-btn">重試</button>
-            </div>
-        `;
+        const questionBox = document.querySelector('.question-box');
+        if (questionBox) {
+            questionBox.innerHTML = `
+                <div class="error-message">
+                    <p>此題目類型暫時不可用</p>
+                    <p>錯誤信息：${error.message}</p>
+                    <button onclick="location.reload()" class="retry-btn">重試</button>
+                </div>
+            `;
+        }
     }
 }
 
-function displayQuestion(question) {
+function displayQuestion(question, isNewGenerator = true) {
     const questionArea = document.querySelector('.question-area');
     if (!questionArea) return;
 
     console.log('Displaying question with difficulty:', question.maxDifficulty);
 
-    let html = `
-        <div class="practice-section">
-            <h2 class="practice-title">練習題目</h2>
-            
-            <div class="difficulty-selector">
-                <span class="difficulty-label">難度：</span>
-                <div class="difficulty-buttons">
-                    ${generateDifficultyButtons(question.maxDifficulty, question.currentDifficulty)}
-                </div>
-            </div>
-
-            <div class="question-box">
-                <div class="question-content">${question.content}</div>
+    if (isNewGenerator) {
+        // 如果是新的生成器，重新生成整个区域
+        let html = `
+            <div class="practice-section">
+                <h2 class="practice-title">練習題目</h2>
                 
-                <div class="options">
-                    ${['A', 'B', 'C', 'D'].map((letter, index) => `
-                        <div class="option" data-index="${index}">
-                            <div class="option-label">${letter}.</div>
-                            <div class="option-content">\\(${question.options[index]}\\)</div>
-                        </div>
-                    `).join('')}
+                <div class="difficulty-selector">
+                    <span class="difficulty-label">難度：</span>
+                    <div class="difficulty-buttons">
+                        ${generateDifficultyButtons(question.maxDifficulty, question.currentDifficulty)}
+                    </div>
+                </div>
+
+                <div class="question-box">
+                    ${generateQuestionContent(question)}
                 </div>
             </div>
-        </div>
-    `;
-
-    questionArea.innerHTML = html;
-
-    // 添加难度按钮点击事件
-    attachDifficultyButtonEvents();
+        `;
+        questionArea.innerHTML = html;
+        attachDifficultyButtonEvents();
+    } else {
+        // 如果只是切换难度，只更新题目内容
+        const questionBox = document.querySelector('.question-box');
+        if (questionBox) {
+            questionBox.innerHTML = generateQuestionContent(question);
+        }
+        
+        // 更新难度按钮状态
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            const btnDifficulty = parseInt(btn.dataset.difficulty);
+            btn.classList.toggle('active', btnDifficulty === question.currentDifficulty);
+        });
+    }
 
     // 确保 MathJax 重新渲染
     if (window.MathJax) {
@@ -736,6 +751,22 @@ function displayQuestion(question) {
             console.error('MathJax rendering failed:', err);
         });
     }
+}
+
+// 生成题目内容的辅助函数
+function generateQuestionContent(question) {
+    return `
+        <div class="question-content">${question.content}</div>
+        
+        <div class="options">
+            ${['A', 'B', 'C', 'D'].map((letter, index) => `
+                <div class="option" data-index="${index}">
+                    <div class="option-label">${letter}.</div>
+                    <div class="option-content">\\(${question.options[index]}\\)</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
 }
 
 // 生成难度按钮的 HTML
