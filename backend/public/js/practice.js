@@ -763,7 +763,9 @@ function generateQuestionContent(question) {
             ${['A', 'B', 'C', 'D'].map((letter, index) => `
                 <div class="option" data-index="${index}">
                     <div class="option-label">${letter}.</div>
-                    <div class="option-content">\\(${question.options[index]}\\)</div>
+                    <div class="option-content">
+                        <div class="option-value">\\(${question.options[index]}\\)</div>
+                    </div>
                 </div>
             `).join('')}
         </div>
