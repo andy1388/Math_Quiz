@@ -187,7 +187,7 @@ function addEventListeners() {
 
     // 添加文件夹点击事件（展开/折叠）
     document.querySelectorAll('.folder-title').forEach(title => {
-        if (title.hasEventListener) return; // 避免重复添加事件监听器
+        if (title.hasEventListener) return;
         
         const clickHandler = async (e) => {
             e.stopPropagation();
@@ -275,6 +275,58 @@ function addEventListeners() {
         title.addEventListener('click', clickHandler);
         title.hasEventListener = true;
     });
+
+    // 为所有生成器项添加点击事件
+    document.querySelectorAll('.generator-item').forEach(item => {
+        if (item.hasEventListener) return;
+        
+        item.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            console.log('Generator clicked:', item.dataset.topic);
+            
+            // 移除其他生成器的活动状态
+            document.querySelectorAll('.generator-item').forEach(i => 
+                i.classList.remove('active')
+            );
+            item.classList.add('active');
+            
+            const generatorId = item.dataset.topic;
+            
+            try {
+                // 获取生成器信息
+                const response = await fetch(`/api/questions/generator-info/${generatorId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to get generator info');
+                }
+                
+                const { levelNumber } = await response.json();
+                console.log('Generator levels:', levelNumber);
+                
+                // 开始练习，传递完整的生成器信息
+                const questionResponse = await fetch(`/api/questions/generate/${generatorId}?difficulty=1`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!questionResponse.ok) {
+                    throw new Error('Failed to generate question');
+                }
+
+                const question = await questionResponse.json();
+                displayQuestion(question);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to load question: ' + error.message);
+            }
+        });
+        
+        item.hasEventListener = true;
+    });
 }
 
 // 修改生成器点击事件处理
@@ -282,9 +334,9 @@ function addGeneratorEventListeners(container) {
     container.querySelectorAll('.generator-item').forEach(item => {
         item.addEventListener('click', async (e) => {
             e.preventDefault();
-            e.stopPropagation(); // 防止事件冒泡
+            e.stopPropagation();
             
-            console.log('Generator clicked:', item.dataset.topic); // 调试日志
+            console.log('Generator clicked:', item.dataset.topic);
             
             document.querySelectorAll('.generator-item').forEach(i => 
                 i.classList.remove('active')
@@ -294,23 +346,36 @@ function addGeneratorEventListeners(container) {
             const generatorId = item.dataset.topic;
             
             try {
-                // 獲取生成器的難度等級數量
+                // 获取生成器信息
                 const response = await fetch(`/api/questions/generator-info/${generatorId}`);
                 if (!response.ok) {
                     throw new Error('Failed to get generator info');
                 }
                 
                 const { levelNumber } = await response.json();
-                console.log('Generator levels:', levelNumber); // 调试日志
+                console.log('Generator levels:', levelNumber);
                 
-                // 更新難度按鈕
+                // 更新难度按钮
                 updateDifficultyButtons(levelNumber);
                 
-                // 使用難度1開始練習
-                startPractice(generatorId, 1);
+                // 开始练习，传递完整的生成器信息
+                const questionResponse = await fetch(`/api/questions/generate/${generatorId}?difficulty=1`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!questionResponse.ok) {
+                    throw new Error('Failed to generate question');
+                }
+
+                const question = await questionResponse.json();
+                displayQuestion(question);
+                
             } catch (error) {
                 console.error('Error:', error);
-                // 使用默認5個難度
+                // 使用默认设置
                 updateDifficultyButtons(5);
                 startPractice(generatorId, 1);
             }
@@ -634,79 +699,38 @@ async function startPractice(generatorId, difficulty) {
 
 function displayQuestion(question) {
     const questionArea = document.querySelector('.question-area');
-    if (!question || !question.content) {
-        console.error('Invalid question format:', question);
-        questionArea.innerHTML = `
-            <div class="error-message">
-                <p>題目格式錯誤</p>
-                <button onclick="location.reload()" class="retry-btn">重試</button>
+    if (!questionArea) return;
+
+    let html = `
+        <div class="question-container">
+            <div class="question-content">${question.content}</div>
+            <div class="options-container">
+    `;
+
+    question.options.forEach((option, index) => {
+        html += `
+            <div class="option">
+                <input type="radio" name="answer" id="option${index}" value="${index}">
+                <label for="option${index}">${option}</label>
             </div>
         `;
-        return;
-    }
-    
-    // 將內容轉換為 LaTeX 格式
-    const latexContent = question.content;
-    
-    // 檢查是否有選項
-    const options = question.wrongAnswers 
-        ? [question.correctAnswer, ...question.wrongAnswers]
-        : [];
-        
-    // 隨機打亂選項順序
-    const shuffledOptions = options.length > 0 
-        ? shuffleArray([...options])
-        : [];
-        
-    // 找出正確答案的新位置
-    const correctIndex = shuffledOptions.indexOf(question.correctAnswer);
-    
-    let html = `
-        <div class="question-content">
-            <h3>題目：</h3>
-            <p>${latexContent}</p>
-            
-            ${options.length > 0 ? `
-                <div class="options">
-                    ${shuffledOptions.map((option, index) => `
-                        <label class="option">
-                            <input type="radio" name="answer" value="${index}">
-                            <div class="option-content">
-                                <span class="option-label">${String.fromCharCode(65 + index)}.</span>
-                                <span class="option-value">\\[${option}\\]</span>
-                            </div>
-                        </label>
-                    `).join('')}
-                </div>
-            ` : ''}
-            
+    });
+
+    html += `
+            </div>
             <div class="explanation" style="display: none;">
-                <h4>解題步驟：</h4>
-                ${question.explanation.split('\n').map(step => `<p>${step}</p>`).join('')}
-                <div class="next-question-container">
-                    <button onclick="nextQuestion()" class="next-btn">
-                        下一題 <span class="arrow">→</span>
-                    </button>
-                </div>
+                ${question.explanation}
+            </div>
+            <div class="next-question-container">
+                <button class="next-btn">
+                    Next Question
+                    <span class="arrow">→</span>
+                </button>
             </div>
         </div>
     `;
-    
+
     questionArea.innerHTML = html;
-    
-    // 添加選項點擊事件
-    if (options.length > 0) {
-        document.querySelectorAll('input[name="answer"]').forEach(input => {
-            input.addEventListener('change', () => {
-                checkAnswer(correctIndex, parseInt(input.value));
-            });
-        });
-    }
-    
-    // 重新渲染數學公式
-    if (window.MathJax) {
-        MathJax.typesetPromise && MathJax.typesetPromise();
-    }
 }
 
 // 輔助函數：打亂數組順序

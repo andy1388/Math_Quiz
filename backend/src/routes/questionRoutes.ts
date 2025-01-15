@@ -31,26 +31,18 @@ router.get('/generate/:generatorId', async (req, res) => {
         
         console.log('Generating question for:', generatorId, 'difficulty:', difficulty);
         
-        // 構建生成器路徑
-        const generatorPath = path.join(
-            __dirname,
-            '../generators',
-            'F1',
-            'F1_L3_Linear_Equations',
-            'F1L3.1_Equation_without_Fraction',
-            `${generatorId}.ts`
-        );
+        // 使用新方法获取生成器路径
+        const generatorPath = await scanner.getGeneratorPath(generatorId);
         
-        // 檢查文件是否存在
-        if (!fs.existsSync(generatorPath)) {
-            throw new Error(`Generator not found: ${generatorId}`);
-        }
-        
-        // 動態導入生成器
+        // 动态导入生成器
         const Generator = (await import(generatorPath)).default;
-        
         const generator = new Generator(difficulty);
-        const question = generator.generate();
+        
+        // 生成问题
+        const rawOutput = generator.generate();
+        
+        // 使用 MC_Maker 创建多选题
+        const question = MC_Maker.createQuestion(rawOutput, difficulty);
         
         res.json(question);
     } catch (error: any) {

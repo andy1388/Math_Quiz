@@ -308,4 +308,33 @@ export class GeneratorScanner {
             generators
         };
     }
+
+    // 添加新的公共方法来获取生成器文件路径
+    public async getGeneratorPath(generatorId: string): Promise<string> {
+        // 搜索生成器文件
+        const searchDir = async (dirPath: string): Promise<string | null> => {
+            const items = await fs.promises.readdir(dirPath);
+            
+            for (const item of items) {
+                const fullPath = path.join(dirPath, item);
+                const stat = await fs.promises.stat(fullPath);
+                
+                if (stat.isDirectory()) {
+                    const result = await searchDir(fullPath);
+                    if (result) return result;
+                } else if (item === `${generatorId}.ts`) {
+                    return fullPath;
+                }
+            }
+            
+            return null;
+        };
+        
+        const generatorPath = await searchDir(this.GENERATORS_PATH);
+        if (!generatorPath) {
+            throw new Error(`Generator not found: ${generatorId}`);
+        }
+        
+        return generatorPath;
+    }
 } 
