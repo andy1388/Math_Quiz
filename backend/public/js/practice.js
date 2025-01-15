@@ -702,35 +702,52 @@ function displayQuestion(question) {
     if (!questionArea) return;
 
     let html = `
-        <div class="question-container">
-            <div class="question-content">${question.content}</div>
-            <div class="options-container">
-    `;
-
-    question.options.forEach((option, index) => {
-        html += `
-            <div class="option">
-                <input type="radio" name="answer" id="option${index}" value="${index}">
-                <label for="option${index}">${option}</label>
-            </div>
-        `;
-    });
-
-    html += `
-            </div>
-            <div class="explanation" style="display: none;">
-                ${question.explanation}
-            </div>
-            <div class="next-question-container">
-                <button class="next-btn">
-                    Next Question
-                    <span class="arrow">→</span>
-                </button>
+        <div class="practice-section">
+            <div class="question-box">
+                <div class="question-title">題目：</div>
+                <div class="question-content">${question.content}</div>
+                
+                <div class="options">
+                    ${['A', 'B', 'C', 'D'].map((letter, index) => `
+                        <div class="option" data-index="${index}">
+                            <div class="option-label">${letter}.</div>
+                            <div class="option-content">\\(${question.options[index]}\\)</div>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
         </div>
     `;
 
     questionArea.innerHTML = html;
+
+    // 确保 MathJax 重新渲染
+    if (window.MathJax) {
+        MathJax.typesetPromise([questionArea]).catch((err) => {
+            console.error('MathJax rendering failed:', err);
+        });
+    }
+
+    // 添加选项点击事件
+    document.querySelectorAll('.option').forEach(option => {
+        option.addEventListener('click', () => {
+            if (option.classList.contains('disabled')) return;
+            
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            option.classList.add('selected');
+            
+            const selectedIndex = parseInt(option.dataset.index);
+            
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.add('disabled');
+            });
+            
+            checkAnswer(question.correctIndex, selectedIndex);
+        });
+    });
 }
 
 // 輔助函數：打亂數組順序
