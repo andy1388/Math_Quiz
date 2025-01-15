@@ -66,11 +66,11 @@ router.get('/generate/:generatorId', async (req, res) => {
 router.get('/folder-content/:path(*)', async (req, res) => {
     try {
         const folderPath = req.params.path;
-        const generators = await scanner.scanFolderGenerators(folderPath);
-        res.json({ generators });
+        const content = await scanner.getFolderContent(folderPath);
+        res.json(content);
     } catch (error) {
-        console.error('Error loading folder content:', error);
-        res.status(500).json({ error: 'Failed to load folder content' });
+        console.error('Error scanning folder:', error);
+        res.status(500).json({ error: 'Failed to scan folder' });
     }
 });
 

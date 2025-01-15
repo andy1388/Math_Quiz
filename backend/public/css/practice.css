@@ -496,9 +496,8 @@ details[open] > summary::before {
 
 .folder-content {
     display: none;
-    margin-left: 20px;
-    border-left: 1px solid #ddd;
-    padding-left: 10px;
+    padding-left: 20px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .folder.expanded > .folder-content {
@@ -618,5 +617,19 @@ details[open] > summary::before {
 }
 
 .folder.subsection .folder-content {
+    display: none;
     border-left: 1px solid rgba(255,255,255,0.05);
+}
+
+.folder.subsection.expanded > .folder-content {
+    display: block;
+}
+
+.folder.subsection .folder-content {
+    display: none;
+    border-left: 1px solid rgba(255,255,255,0.05);
+}
+
+.folder.subsection.expanded > .folder-content {
+    display: block;
 } 

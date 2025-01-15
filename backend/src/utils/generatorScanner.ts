@@ -134,7 +134,8 @@ export class GeneratorScanner {
                 const generators = await this.scanGeneratorsInPath(subSectionPath);
                 subSections[item] = {
                     title: item,
-                    generators: generators
+                    generators: generators,
+                    path: subSectionPath
                 };
             }
         }
@@ -254,5 +255,57 @@ export class GeneratorScanner {
     // 清除缓存的方法（如果需要）
     static clearCache() {
         GeneratorScanner.structureCache = null;
+    }
+
+    // 添加新的公共方法
+    public async getFolderContent(folderPath: string) {
+        const fullPath = path.join(this.GENERATORS_PATH, folderPath);
+        
+        if (!fs.existsSync(fullPath)) {
+            throw new Error('Folder not found');
+        }
+        
+        // 读取文件夹内容
+        const items = await fs.promises.readdir(fullPath);
+        const subFolders = [];
+        const generators = [];
+        
+        for (const item of items) {
+            const itemPath = path.join(fullPath, item);
+            const stat = await fs.promises.stat(itemPath);
+            
+            if (stat.isDirectory()) {
+                // 不再分割名称，保持完整路径名
+                subFolders.push({
+                    id: item,
+                    title: item,  // 保持完整名称
+                    path: path.join(folderPath, item)  // 保持完整路径
+                });
+            } else if (item.endsWith('_MQ.ts')) {
+                const descPath = itemPath.replace('.ts', '.desc.txt');
+                let title = item;
+                let difficulty = '1';
+                
+                if (fs.existsSync(descPath)) {
+                    const content = fs.readFileSync(descPath, 'utf-8');
+                    const lines = content.split('\n');
+                    if (lines.length >= 2) {
+                        difficulty = lines[0].trim();
+                        title = lines[1].trim();
+                    }
+                }
+                
+                generators.push({
+                    id: path.basename(item, '.ts'),
+                    title,
+                    difficulty
+                });
+            }
+        }
+        
+        return {
+            subFolders,
+            generators
+        };
     }
 } 

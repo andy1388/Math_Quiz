@@ -187,49 +187,68 @@ function addEventListeners() {
 
     // 添加文件夹点击事件（展开/折叠）
     document.querySelectorAll('.folder-title').forEach(title => {
-        title.addEventListener('click', async (e) => {
+        if (title.hasEventListener) return; // 避免重复添加事件监听器
+        
+        const clickHandler = async (e) => {
             e.stopPropagation();
             const folder = title.parentElement;
             const folderPath = title.dataset.path;
             
-            console.log('Clicked folder path:', folderPath); // 调试日志
+            console.log('Clicked folder path:', folderPath);
             
-            // 检查是否是第三层或第四层文件夹
-            const pathParts = folderPath.split('/');
+            // 检查是否是第三层或第四层文件夹，并且还未加载内容
+            const pathParts = folderPath.split(/[\/\\]/); // 同时处理 / 和 \ 分隔符
             if ((pathParts.length === 3 || pathParts.length === 4) && !folder.dataset.loaded) {
                 try {
-                    console.log('Loading content for path:', folderPath); // 调试日志
+                    console.log('Loading content for path:', folderPath);
                     
-                    // 加载该文件夹下的生成器
+                    // 加载该文件夹下的所有内容
                     const response = await fetch(`/api/questions/folder-content/${folderPath}`);
                     if (!response.ok) {
                         throw new Error(`Failed to load folder content: ${response.statusText}`);
                     }
                     const content = await response.json();
                     
-                    console.log('Loaded content:', content); // 调试日志
+                    console.log('Loaded content:', content);
                     
-                    if (content.generators && content.generators.length > 0) {
-                        // 渲染生成器列表
-                        const generatorList = content.generators.map(gen => `
-                            <div class="generator-item" data-topic="${gen.id}">
-                                <span class="icon file-icon">📄</span>
-                                <span class="generator-title">${gen.title}</span>
-                                <span class="difficulty-badge">${gen.difficulty}</span>
-                            </div>
-                        `).join('');
+                    const folderContent = folder.querySelector('.folder-content');
+                    if (folderContent) {
+                        let contentHtml = '';
+                        
+                        // 先添加子文件夹
+                        if (content.subFolders && content.subFolders.length > 0) {
+                            content.subFolders.forEach(subFolder => {
+                                contentHtml += `
+                                    <div class="folder subsection">
+                                        <div class="folder-title" data-path="${subFolder.path.replace(/\\/g, '/')}">
+                                            <span class="icon folder-icon">📁</span>
+                                            <span class="folder-name">${subFolder.title}</span>
+                                        </div>
+                                        <div class="folder-content"></div>
+                                    </div>
+                                `;
+                            });
+                        }
+                        
+                        // 然后添加生成器文件
+                        if (content.generators && content.generators.length > 0) {
+                            content.generators.forEach(gen => {
+                                contentHtml += `
+                                    <div class="generator-item" data-topic="${gen.id}">
+                                        <span class="icon file-icon">📄</span>
+                                        <span class="generator-title">${gen.title}</span>
+                                        <span class="difficulty-badge">${gen.difficulty}</span>
+                                    </div>
+                                `;
+                            });
+                        }
                         
                         // 更新文件夹内容
-                        const folderContent = folder.querySelector('.folder-content');
-                        if (folderContent) {
-                            folderContent.innerHTML = generatorList;
-                            folder.dataset.loaded = 'true';
-                            
-                            // 为新添加的生成器添加点击事件
-                            addGeneratorEventListeners(folder);
-                        }
-                    } else {
-                        console.log('No generators found in folder'); // 调试日志
+                        folderContent.innerHTML = contentHtml;
+                        folder.dataset.loaded = 'true';
+                        
+                        // 为新添加的元素添加事件监听器
+                        addEventListeners();
                     }
                 } catch (error) {
                     console.error('Error loading folder content:', error);
@@ -240,8 +259,21 @@ function addEventListeners() {
                 }
             }
             
+            // 切换展开状态
             folder.classList.toggle('expanded');
-        });
+            
+            // 确保父文件夹也是展开状态
+            let parent = folder.parentElement;
+            while (parent) {
+                if (parent.classList.contains('folder')) {
+                    parent.classList.add('expanded');
+                }
+                parent = parent.parentElement;
+            }
+        };
+
+        title.addEventListener('click', clickHandler);
+        title.hasEventListener = true;
     });
 }
 

@@ -28,6 +28,7 @@ export interface SectionStructure {
     title: string;
     generators: GeneratorList[];
     subSections?: { [key: string]: SectionStructure };  // 添加子目录支持
+    path?: string;  // 添加路径属性
 }
 
 // 章节结构
