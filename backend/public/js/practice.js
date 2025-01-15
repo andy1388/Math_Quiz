@@ -715,8 +715,6 @@ function displayQuestion(question, isNewGenerator = true) {
         // 如果是新的生成器，重新生成整个区域
         let html = `
             <div class="practice-section">
-                <h2 class="practice-title">練習題目</h2>
-                
                 <div class="difficulty-selector">
                     <span class="difficulty-label">難度：</span>
                     <div class="difficulty-buttons">
@@ -745,6 +743,9 @@ function displayQuestion(question, isNewGenerator = true) {
         });
     }
 
+    // 添加选项点击事件
+    attachOptionEvents(question);
+
     // 确保 MathJax 重新渲染
     if (window.MathJax) {
         MathJax.typesetPromise([questionArea]).catch((err) => {
@@ -767,6 +768,76 @@ function generateQuestionContent(question) {
             `).join('')}
         </div>
     `;
+}
+
+// 添加选项点击事件
+function attachOptionEvents(question) {
+    document.querySelectorAll('.option').forEach(option => {
+        option.addEventListener('click', () => {
+            if (option.classList.contains('disabled')) return;
+            
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            option.classList.add('selected');
+            
+            const selectedIndex = parseInt(option.dataset.index);
+            
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.add('disabled');
+            });
+            
+            checkAnswer(question.correctIndex, selectedIndex, question);
+        });
+    });
+}
+
+// 检查答案函数
+function checkAnswer(correctIndex, selectedIndex, question) {
+    const options = document.querySelectorAll('.option');
+    
+    // 添加正确/错误样式
+    options.forEach((option, index) => {
+        if (index === correctIndex) {
+            option.classList.add('correct');
+        } else if (index === selectedIndex && selectedIndex !== correctIndex) {
+            option.classList.add('wrong');
+        }
+    });
+    
+    // 获取当前题目的解释
+    const questionBox = document.querySelector('.question-box');
+    if (!questionBox) return;
+    
+    // 移除已存在的解释区域（如果有）
+    const existingExplanation = questionBox.querySelector('.explanation');
+    if (existingExplanation) {
+        existingExplanation.remove();
+    }
+    
+    // 添加解释区域
+    const explanationDiv = document.createElement('div');
+    explanationDiv.className = 'explanation active';
+    explanationDiv.innerHTML = `
+        <h4>解題步驟：</h4>
+        <div class="explanation-content">${question.explanation}</div>
+        <div class="next-question">
+            <button class="next-btn" onclick="nextQuestion()">
+                下一題 <span class="arrow">→</span>
+            </button>
+        </div>
+    `;
+    
+    // 将解释添加到题目框下方
+    questionBox.appendChild(explanationDiv);
+    
+    // 重新渲染 LaTeX
+    if (window.MathJax) {
+        MathJax.typesetPromise([explanationDiv]).catch((err) => {
+            console.error('MathJax rendering failed:', err);
+        });
+    }
 }
 
 // 生成难度按钮的 HTML
@@ -805,53 +876,6 @@ function shuffleArray(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
-}
-
-// 修改檢查答案函數以支持 LaTeX
-function checkAnswer(correctIndex, selectedIndex, question) {
-    const options = document.querySelectorAll('.option');
-    
-    // 添加正确/错误样式
-    options.forEach((option, index) => {
-        if (index === correctIndex) {
-            option.classList.add('correct');
-        } else if (index === selectedIndex && selectedIndex !== correctIndex) {
-            option.classList.add('wrong');
-        }
-    });
-    
-    // 获取当前题目的解释
-    const questionBox = document.querySelector('.question-box');
-    if (!questionBox) return;
-    
-    // 移除已存在的解释区域（如果有）
-    const existingExplanation = questionBox.querySelector('.explanation');
-    if (existingExplanation) {
-        existingExplanation.remove();
-    }
-    
-    // 添加解释区域
-    const explanationDiv = document.createElement('div');
-    explanationDiv.className = 'explanation active'; // 添加 active 类
-    explanationDiv.innerHTML = `
-        <h4>解題步驟：</h4>
-        <div class="explanation-content">${question.explanation}</div>
-        <div class="next-question">
-            <button class="next-btn" onclick="nextQuestion()">
-                下一題 <span class="arrow">→</span>
-            </button>
-        </div>
-    `;
-    
-    // 将解释添加到题目框下方
-    questionBox.appendChild(explanationDiv);
-    
-    // 重新渲染 LaTeX
-    if (window.MathJax) {
-        MathJax.typesetPromise([explanationDiv]).catch((err) => {
-            console.error('MathJax rendering failed:', err);
-        });
-    }
 }
 
 // 標準化答案格式
