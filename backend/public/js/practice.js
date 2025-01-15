@@ -745,7 +745,7 @@ function displayQuestion(question) {
                 opt.classList.add('disabled');
             });
             
-            checkAnswer(question.correctIndex, selectedIndex);
+            checkAnswer(question.correctIndex, selectedIndex, question);
         });
     });
 }
@@ -760,29 +760,50 @@ function shuffleArray(array) {
 }
 
 // 修改檢查答案函數以支持 LaTeX
-function checkAnswer(correctIndex, selectedIndex) {
-    const explanation = document.querySelector('.explanation');
+function checkAnswer(correctIndex, selectedIndex, question) {
     const options = document.querySelectorAll('.option');
     
-    // 添加正確/錯誤樣式
+    // 添加正确/错误样式
     options.forEach((option, index) => {
         if (index === correctIndex) {
             option.classList.add('correct');
-        } else if (index === selectedIndex) {
+        } else if (index === selectedIndex && selectedIndex !== correctIndex) {
             option.classList.add('wrong');
         }
     });
     
-    // 顯示解釋
-    explanation.style.display = 'block';
+    // 获取当前题目的解释
+    const questionBox = document.querySelector('.question-box');
+    if (!questionBox) return;
     
-    // 禁用所有選項
-    document.querySelectorAll('input[name="answer"]').forEach(input => {
-        input.disabled = true;
-    });
+    // 移除已存在的解释区域（如果有）
+    const existingExplanation = questionBox.querySelector('.explanation');
+    if (existingExplanation) {
+        existingExplanation.remove();
+    }
     
-    // 重新渲染數學公式
-    MathJax.typesetPromise();
+    // 添加解释区域
+    const explanationDiv = document.createElement('div');
+    explanationDiv.className = 'explanation active'; // 添加 active 类
+    explanationDiv.innerHTML = `
+        <h4>解題步驟：</h4>
+        <div class="explanation-content">${question.explanation}</div>
+        <div class="next-question">
+            <button class="next-btn" onclick="nextQuestion()">
+                下一題 <span class="arrow">→</span>
+            </button>
+        </div>
+    `;
+    
+    // 将解释添加到题目框下方
+    questionBox.appendChild(explanationDiv);
+    
+    // 重新渲染 LaTeX
+    if (window.MathJax) {
+        MathJax.typesetPromise([explanationDiv]).catch((err) => {
+            console.error('MathJax rendering failed:', err);
+        });
+    }
 }
 
 // 標準化答案格式
