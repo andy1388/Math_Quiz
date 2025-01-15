@@ -295,28 +295,28 @@ function addEventListeners() {
             const generatorId = item.dataset.topic;
             
             try {
-                // 获取生成器信息
-                const response = await fetch(`/api/questions/generator-info/${generatorId}`);
-                if (!response.ok) {
+                // 获取生成器信息（包含难度级别数量）
+                const infoResponse = await fetch(`/api/questions/generator-info/${generatorId}`);
+                if (!infoResponse.ok) {
                     throw new Error('Failed to get generator info');
                 }
                 
-                const { levelNumber } = await response.json();
+                const { levelNumber } = await infoResponse.json();
                 console.log('Generator levels:', levelNumber);
                 
-                // 开始练习，传递完整的生成器信息
-                const questionResponse = await fetch(`/api/questions/generate/${generatorId}?difficulty=1`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
+                // 生成题目
+                const questionResponse = await fetch(`/api/questions/generate/${generatorId}?difficulty=1`);
                 if (!questionResponse.ok) {
                     throw new Error('Failed to generate question');
                 }
 
                 const question = await questionResponse.json();
+                
+                // 添加难度信息
+                question.maxDifficulty = parseInt(levelNumber);
+                question.currentDifficulty = 1;
+                
+                console.log('Question with difficulty info:', question);
                 displayQuestion(question);
                 
             } catch (error) {
@@ -338,6 +338,7 @@ function addGeneratorEventListeners(container) {
             
             console.log('Generator clicked:', item.dataset.topic);
             
+            // 移除其他生成器的活动状态
             document.querySelectorAll('.generator-item').forEach(i => 
                 i.classList.remove('active')
             );
@@ -346,38 +347,33 @@ function addGeneratorEventListeners(container) {
             const generatorId = item.dataset.topic;
             
             try {
-                // 获取生成器信息
-                const response = await fetch(`/api/questions/generator-info/${generatorId}`);
-                if (!response.ok) {
+                // 获取生成器信息（包含难度级别数量）
+                const infoResponse = await fetch(`/api/questions/generator-info/${generatorId}`);
+                if (!infoResponse.ok) {
                     throw new Error('Failed to get generator info');
                 }
                 
-                const { levelNumber } = await response.json();
+                const { levelNumber } = await infoResponse.json();
                 console.log('Generator levels:', levelNumber);
                 
-                // 更新难度按钮
-                updateDifficultyButtons(levelNumber);
-                
-                // 开始练习，传递完整的生成器信息
-                const questionResponse = await fetch(`/api/questions/generate/${generatorId}?difficulty=1`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
+                // 生成题目
+                const questionResponse = await fetch(`/api/questions/generate/${generatorId}?difficulty=1`);
                 if (!questionResponse.ok) {
                     throw new Error('Failed to generate question');
                 }
 
                 const question = await questionResponse.json();
+                
+                // 添加难度信息
+                question.maxDifficulty = parseInt(levelNumber);
+                question.currentDifficulty = 1;
+                
+                console.log('Question with difficulty info:', question);
                 displayQuestion(question);
                 
             } catch (error) {
                 console.error('Error:', error);
-                // 使用默认设置
-                updateDifficultyButtons(5);
-                startPractice(generatorId, 1);
+                alert('Failed to load question: ' + error.message);
             }
         });
     });
@@ -701,10 +697,20 @@ function displayQuestion(question) {
     const questionArea = document.querySelector('.question-area');
     if (!questionArea) return;
 
+    console.log('Displaying question with difficulty:', question.maxDifficulty);
+
     let html = `
         <div class="practice-section">
+            <h2 class="practice-title">練習題目</h2>
+            
+            <div class="difficulty-selector">
+                <span class="difficulty-label">難度：</span>
+                <div class="difficulty-buttons">
+                    ${generateDifficultyButtons(question.maxDifficulty, question.currentDifficulty)}
+                </div>
+            </div>
+
             <div class="question-box">
-                <div class="question-title">題目：</div>
                 <div class="question-content">${question.content}</div>
                 
                 <div class="options">
@@ -721,31 +727,42 @@ function displayQuestion(question) {
 
     questionArea.innerHTML = html;
 
+    // 添加难度按钮点击事件
+    attachDifficultyButtonEvents();
+
     // 确保 MathJax 重新渲染
     if (window.MathJax) {
         MathJax.typesetPromise([questionArea]).catch((err) => {
             console.error('MathJax rendering failed:', err);
         });
     }
+}
 
-    // 添加选项点击事件
-    document.querySelectorAll('.option').forEach(option => {
-        option.addEventListener('click', () => {
-            if (option.classList.contains('disabled')) return;
+// 生成难度按钮的 HTML
+function generateDifficultyButtons(maxDifficulty, currentDifficulty) {
+    console.log('Generating buttons for max difficulty:', maxDifficulty);
+    return Array.from({ length: maxDifficulty }, (_, i) => i + 1)
+        .map(level => `
+            <button class="diff-btn ${level === currentDifficulty ? 'active' : ''}" 
+                    data-difficulty="${level}">${level}</button>
+        `).join('');
+}
+
+// 添加难度按钮点击事件
+function attachDifficultyButtonEvents() {
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const difficulty = parseInt(btn.dataset.difficulty);
+            const activeGenerator = document.querySelector('.generator-item.active');
+            if (activeGenerator) {
+                startPractice(activeGenerator.dataset.topic, difficulty);
+            }
             
-            document.querySelectorAll('.option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            
-            option.classList.add('selected');
-            
-            const selectedIndex = parseInt(option.dataset.index);
-            
-            document.querySelectorAll('.option').forEach(opt => {
-                opt.classList.add('disabled');
-            });
-            
-            checkAnswer(question.correctIndex, selectedIndex, question);
+            // 更新按钮状态
+            document.querySelectorAll('.diff-btn').forEach(b => 
+                b.classList.remove('active')
+            );
+            btn.classList.add('active');
         });
     });
 }
