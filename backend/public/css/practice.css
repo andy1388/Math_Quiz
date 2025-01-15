@@ -147,46 +147,51 @@
 .difficulty-selector {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
     margin: 20px 0;
 }
 
 .difficulty-label {
-    color: #666;
-    font-size: 16px;
-    white-space: nowrap;  /* 防止文字换行 */
+    color: #333;
+    font-size: 20px;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 .difficulty-buttons {
     display: flex;
-    gap: 8px;
-    flex-wrap: nowrap;  /* 防止按钮换行 */
+    gap: 10px;
+    flex-wrap: nowrap;
 }
 
 .diff-btn {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border: 2px solid #33ccff;
     border-radius: 50%;
     background: white;
-    color: #33ccff;
+    color: #333;
     font-weight: bold;
+    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    flex-shrink: 0;  /* 防止按钮被压缩 */
+    flex-shrink: 0;
 }
 
 .diff-btn:hover {
     transform: scale(1.1);
+    border-color: #33ccff;
+    background: rgba(51, 204, 255, 0.1);
 }
 
 .diff-btn.active {
     background: #33ccff;
     color: white;
+    border-color: #33ccff;
 }
 
 /* 問題區域的調整 */
@@ -243,19 +248,24 @@
 .question-content {
     max-width: 800px;
     margin: 0 auto;
+    text-align: center;
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 30px;
+    padding: 20px 0;
 }
 
-/* 題目文字的樣式 */
-.question-content h3 {
-    color: #2c3e50;
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
+/* LaTeX 公式样式调整 */
+.question-content .MathJax {
+    font-size: 130% !important;
 }
 
-.question-content p {
-    font-size: 1.3rem;
-    margin-bottom: 2rem;
-    color: #2c3e50;
+/* 题目标题样式 */
+.question-title {
+    font-size: 20px;
+    color: #333;
+    font-weight: bold;
+    margin-bottom: 20px;
 }
 
 /* 選項區域的調整 */
@@ -362,7 +372,7 @@
     background: #f8f9fa;
     border-radius: 8px;
     border-left: 4px solid #33ccff;
-    opacity: 0;  /* 初始透明 */
+    opacity: 0;
     transform: translateY(-10px);
     transition: all 0.3s ease;
 }
@@ -375,12 +385,14 @@
 .explanation h4 {
     color: #333;
     margin-bottom: 15px;
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: 500;
 }
 
 .explanation-content {
-    color: #666;
+    color: #333;
     line-height: 1.6;
+    font-size: 16px;
 }
 
 .next-question {
