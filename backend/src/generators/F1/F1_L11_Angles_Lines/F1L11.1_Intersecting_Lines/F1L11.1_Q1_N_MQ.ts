@@ -15,7 +15,7 @@ interface IntersectingLines {
 
 export default class F1L11_1_Q1_N_MQ extends QuestionGenerator {
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1/F1_L11_Angles_Lines/F1L11.1_Intersecting_Lines/F1L11.1_Q1_N_MQ');
+        super(difficulty, 'F1L11.1_Q1_N_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -147,55 +147,85 @@ export default class F1L11_1_Q1_N_MQ extends QuestionGenerator {
     }
 
     private formatExpression(lines: IntersectingLines): string {
-        // 使用 TikZ 生成图形的 LaTeX 代码
-        let tikzCode = '\\begin{tikzpicture}[scale=1.5]\n';
+        let expression = '';
         
-        // 绘制相交线
-        if (lines.isVertical) {
-            // 垂直相交的情况
-            tikzCode += '  \\draw[thick] (-2,0) -- (2,0);\n';  // 水平线
-            tikzCode += '  \\draw[thick] (0,-2) -- (0,2);\n';  // 垂直线
-        } else {
-            // 非垂直相交的情况
-            tikzCode += '  \\draw[thick] (-2,0) -- (2,0);\n';  // 水平线
-            tikzCode += '  \\draw[thick] (-1.5,1.5) -- (1.5,-1.5);\n';  // 倾斜线
-        }
+        // 添加 SVG 图形
+        expression += `
+<div style="text-align: center; margin: 20px 0;">
+<svg width="300" height="300" viewBox="-150 -150 300 300" style="background: white;">
+    <!-- 绘制相交线 -->
+    <line x1="-120" y1="0" x2="120" y2="0" 
+          stroke="black" stroke-width="2"/>
+    ${lines.isVertical ? 
+        `<line x1="0" y1="-120" x2="0" y2="120" 
+               stroke="black" stroke-width="2"/>` :
+        `<line x1="-90" y1="90" x2="90" y2="-90" 
+               stroke="black" stroke-width="2"/>`
+    }
+    
+    <!-- 绘制角度弧线 -->
+    ${lines.angles.map(angle => {
+        const pos = this.getAnglePosition(angle.position, lines.isVertical);
+        const arcPath = this.getAngleArc(pos.x * 100, pos.y * 100, 20, angle.position);
+        return `
+            <path d="${arcPath}" 
+                  fill="none" 
+                  stroke="black" 
+                  stroke-width="1"/>
+            <text x="${pos.x * 100}" y="${pos.y * 100}" 
+                  text-anchor="middle" 
+                  alignment-baseline="middle"
+                  style="font-size: 16px;">
+                  ${angle.label}${angle.label !== 'x' ? '°' : ''}
+            </text>`;
+    }).join('\n')}
+</svg>
+</div>
+`;
         
-        // 标注点
-        const pointCoords: {[key: string]: [number, number]} = {
-            'A': [-2, 0],
-            'B': [2, 0],
-            'O': [0, 0],
-            'C': lines.isVertical ? [0, 2] : [1.5, -1.5],
-            'D': lines.isVertical ? [0, -2] : [-1.5, 1.5]
-        };
-        
-        lines.points.forEach(point => {
-            const [x, y] = pointCoords[point] || [0, 0];
-            tikzCode += `  \\node[point] at (${x},${y}) {${point}};\n`;
-        });
-        
-        // 标注角度
-        lines.angles.forEach(angle => {
-            const pos = this.getAnglePosition(angle.position, lines.isVertical);
-            tikzCode += `  \\node at (${pos.x},${pos.y}) {${angle.label}${angle.label !== 'x' ? '°' : ''}};\n`;
-        });
-        
-        tikzCode += '\\end{tikzpicture}';
-        
-        return tikzCode;
+        // 添加问题文本
+        expression += `求角 x 的值。`;
+
+        return expression;
     }
 
     private getAnglePosition(position: string, isVertical: boolean = false): {x: number, y: number} {
-        // 根据角度位置返回标注坐标
+        // SVG 坐标系中的位置（值范围从-1到1）
         const positions: {[key: string]: {x: number, y: number}} = {
-            'AOB': {x: -0.3, y: 0.3},
-            'BOC': {x: 0.3, y: 0.3},
-            'COD': {x: 0.3, y: -0.3},
-            'DOE': {x: -0.3, y: -0.3}
+            'AOB': {x: -0.6, y: -0.3},
+            'BOC': {x: 0.6, y: -0.3},
+            'COD': {x: 0.6, y: 0.3},
+            'DOE': {x: -0.6, y: 0.3}
         };
         
         return positions[position] || {x: 0, y: 0};
+    }
+
+    private getAngleArc(x: number, y: number, radius: number, position: string): string {
+        // 定义角度位置类型
+        type AnglePosition = 'AOB' | 'BOC' | 'COD' | 'DOE';
+        
+        // 根据角度位置确定弧线的起始和结束角度
+        const angles: Record<AnglePosition, { start: number; end: number }> = {
+            'AOB': { start: 180, end: 270 },
+            'BOC': { start: 270, end: 360 },
+            'COD': { start: 0, end: 90 },
+            'DOE': { start: 90, end: 180 }
+        };
+
+        // 类型断言确保 position 是有效的角度位置
+        const angle = angles[position as AnglePosition] || { start: 0, end: 90 };
+        
+        // 计算弧线路径
+        const startAngle = angle.start * Math.PI / 180;
+        const endAngle = angle.end * Math.PI / 180;
+        
+        const x1 = x + radius * Math.cos(startAngle);
+        const y1 = y + radius * Math.sin(startAngle);
+        const x2 = x + radius * Math.cos(endAngle);
+        const y2 = y + radius * Math.sin(endAngle);
+        
+        return `M ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2}`;
     }
 
     private getAnswer(lines: IntersectingLines): number {
