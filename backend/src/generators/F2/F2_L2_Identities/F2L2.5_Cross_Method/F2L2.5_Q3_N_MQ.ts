@@ -328,30 +328,37 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
     private generateSteps(p: number, q: number, factors: Factor): string {
         const { a, b, c, d, e } = factors;
         
-        let steps = `解題步驟：\n`;
-        steps += `1. 觀察二次項：\n`;
-        steps += `   \\[${this.formatExpression(p, q, factors)}\\]\n\n`;
+        let steps = `解題步驟：<br><br>`;
+        steps += `1. 觀察二次項：<br>`;
+        steps += `\\[${this.formatExpression(p, q, factors)}\\]<br><br>`;
         
         if (this.difficulty >= 3) {
-            steps += `2. 提取公因數：\n`;
-            if (this.difficulty === 3) {
-                steps += `   \\[${e}(\\quad)\\]\n`;
+            steps += `2. 提取公因數：<br>`;
+            if (this.difficulty === 3 || this.difficulty === 4) {
+                // 对于难度3和4，直接使用整数
+                steps += `\\[${e}(\\quad)\\]<br><br>`;
             } else {
-                steps += `   \\[\\frac{${p}}{${q}}(\\quad)\\]\n`;
+                // 只有难度5才使用分数
+                const [numerator, denominator] = e as [number, number];
+                steps += `\\[\\frac{${numerator}}{${denominator}}(\\quad)\\]<br><br>`;
             }
         }
         
-        steps += `${this.difficulty >= 3 ? '3' : '2'}. 找出兩個因式：\n`;
-        steps += `   - 第一個因式：\\[${a}x ${b >= 0 ? '+' : ''}${b}\\]\n`;
-        
+        steps += `${this.difficulty >= 3 ? '3' : '2'}. 找出兩個因式：<br>`;
         if (this.difficulty === 1) {
-            steps += `   - 第二個因式：\\[x ${d >= 0 ? '+' : ''}${d}\\]\n`;
+            steps += `第一個因式：<br>`;
+            steps += `\\[${a}x ${b >= 0 ? '+' : ''}${b}\\]<br>`;
+            steps += `第二個因式：<br>`;
+            steps += `\\[x ${d >= 0 ? '+' : ''}${d}\\]<br><br>`;
         } else {
-            steps += `   - 第二個因式：\\[${c}x ${d >= 0 ? '+' : ''}${d}\\]\n`;
+            steps += `第一個因式：<br>`;
+            steps += `\\[${a}x ${b >= 0 ? '+' : ''}${b}\\]<br>`;
+            steps += `第二個因式：<br>`;
+            steps += `\\[${c}x ${d >= 0 ? '+' : ''}${d}\\]<br><br>`;
         }
         
-        steps += `\n${this.difficulty >= 3 ? '4' : '3'}. 最終答案：\n`;
-        steps += `   \\[${this.formatAnswer(factors)}\\]`;
+        steps += `${this.difficulty >= 3 ? '4' : '3'}. 最終答案：<br>`;
+        steps += `\\[${this.formatAnswer(factors)}\\]`;
         
         return steps;
     }
