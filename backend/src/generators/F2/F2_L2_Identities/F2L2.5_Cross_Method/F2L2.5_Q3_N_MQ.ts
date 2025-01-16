@@ -1,5 +1,5 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
-import { FractionUtils } from '../../../../utils/FractionUtils';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
+import { FractionUtils } from '@/utils/FractionUtils';
 
 interface Factor {
     a: number;  // 第一个因式的x系数
@@ -9,9 +9,18 @@ interface Factor {
     e?: number | [number, number];  // 整体系数（难度3用整数，难度4用分数[分子,分母]）
 }
 
-export default class F2L2_5_Generator_Q3_N_MQ extends QuestionGenerator {
+export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F2L2.5');
+        super(difficulty, 'F2L2.5_Q3_N_MQ');
+    }
+
+    private shuffleArray<T>(array: T[]): T[] {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
     }
 
     private gcd(a: number, b: number): number {
@@ -43,20 +52,18 @@ export default class F2L2_5_Generator_Q3_N_MQ extends QuestionGenerator {
         // 生成错误选项
         const wrongAnswers = this.generateWrongAnswers(factors);
         
-        // 随机打乱选项并记录正确答案的位置
-        const options = [answer, ...wrongAnswers];
-        const shuffledOptions = this.shuffleArray([...options]);
-        const correctIndex = shuffledOptions.indexOf(answer);
-
         // 生成解题步骤
         const steps = this.generateSteps(p, q, factors);
 
         return {
-            content: expression,
+            content: `\\[${expression}\\]`,
             correctAnswer: answer,
-            options: shuffledOptions,
-            correctIndex: correctIndex,
-            explanation: steps
+            wrongAnswers,
+            explanation: steps,
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
         };
     }
 
