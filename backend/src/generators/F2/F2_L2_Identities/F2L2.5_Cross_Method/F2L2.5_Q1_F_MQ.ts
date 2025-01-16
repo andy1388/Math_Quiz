@@ -1,4 +1,5 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
+import { LaTeX } from '@/utils/mathUtils';
 
 interface Factor {
     m: number;  // 第一个因子
@@ -6,9 +7,9 @@ interface Factor {
     type?: 'difference' | 'plusSquare' | 'minusSquare';  // 难度5的类型
 }
 
-export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
+export default class F2L2_5_Q1_F_MQ extends QuestionGenerator {
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F2L2.5');
+        super(difficulty, 'F2L2.5_Q1_F_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -23,25 +24,23 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
         const expression = this.formatExpression(b, c);
         
         // 生成正确答案
-        const answer = this.formatAnswer(factors);
+        const correctAnswer = this.formatAnswer(factors);
         
         // 生成错误选项
         const wrongAnswers = this.generateWrongAnswers(factors);
         
-        // 随机打乱选项并记录正确答案的位置
-        const options = [answer, ...wrongAnswers];
-        const shuffledOptions = this.shuffleArray([...options]);
-        const correctIndex = shuffledOptions.indexOf(answer);
-
         // 生成解题步骤
-        const steps = this.generateSteps(b, c, factors);
+        const explanation = this.generateSteps(b, c, factors);
 
         return {
-            content: expression,
-            correctAnswer: answer,
-            options: shuffledOptions,
-            correctIndex: correctIndex,
-            explanation: steps
+            content: `\\[${expression}\\]`,
+            correctAnswer,
+            wrongAnswers,
+            explanation,
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
         };
     }
 
@@ -121,14 +120,33 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
     }
 
     private formatExpression(b: number, c: number): string {
-        const bTerm = b === 0 ? '' : 
-                     b === 1 ? '+ x' :
-                     b === -1 ? '- x' :
-                     b > 0 ? `+ ${b}x` : `${b}x`;
-        const cTerm = c === 0 ? '' :
-                     c > 0 ? `+ ${c}` : `${c}`;
-        
-        return `x^2 ${bTerm} ${cTerm}`;
+        // 一次项处理
+        let bTerm;
+        if (b === 0) {
+            bTerm = '';
+        } else if (b === 1) {
+            bTerm = '+x';  // 确保显示加号
+        } else if (b === -1) {
+            bTerm = '-x';
+        } else if (b > 0) {
+            bTerm = `+${b}x`;  // 确保显示加号
+        } else {
+            bTerm = `${b}x`;  // 负数会自动带负号
+        }
+
+        // 常数项处理
+        let cTerm;
+        if (c === 0) {
+            cTerm = '';
+        } else if (c > 0) {
+            cTerm = `+${c}`;  // 确保显示加号
+        } else {
+            cTerm = `${c}`;  // 负数会自动带负号
+        }
+
+        // 移除开头的加号（如果存在）
+        const expression = `x^2${bTerm}${cTerm}`;
+        return expression.replace(/^\+/, '');  // 移除表达式开头的加号
     }
 
     private formatAnswer(factors: Factor): string {
@@ -224,8 +242,20 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
             });
         }
 
-        // 确保只返回3个不同的错误答案
-        return Array.from(wrongAnswers).slice(0, 3);
+        // 确保返回恰好3个错误答案
+        const result = Array.from(wrongAnswers).slice(0, 3);
+        while (result.length < 3) {
+            // 如果错误答案不够，添加一些基本的变体
+            const variation = this.formatAnswer({
+                m: m + result.length + 1,
+                n: n - result.length - 1
+            });
+            if (!result.includes(variation)) {
+                result.push(variation);
+            }
+        }
+
+        return result;
     }
 
     private generateSteps(b: number, c: number, factors: Factor): string {
@@ -235,7 +265,7 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
             switch (type) {
                 case 'difference':
                     return `解題步驟：
-1. 觀察二次項：\\[x^2 ${c >= 0 ? '+' : ''}${c}\\]
+1. 觀察二次項：\\[x^2 ${LaTeX.formatConstant(c)}\\]
 2. 發現這是完全平方差的形式：\\[x^2 - ${m * m}\\]
 3. 因式分解：
    - 可以寫成 \\[x^2 - (${m})^2\\] 的形式
@@ -244,7 +274,7 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
 
                 case 'plusSquare':
                     return `解題步驟：
-1. 觀察二次項：\\[x^2 ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}\\]
+1. 觀察二次項：\\[x^2 ${LaTeX.formatLinearTerm(b, 'x')} ${LaTeX.formatConstant(c)}\\]
 2. 發現這是完全平方式：\\[x^2 + 2(${m})x + ${m}^2\\]
 3. 因式分解：
    - 一次項係數為 ${2*m}，是常數項 ${m*m} 的平方根的2倍
@@ -253,7 +283,7 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
 
                 case 'minusSquare':
                     return `解題步驟：
-1. 觀察二次項：\\[x^2 ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}\\]
+1. 觀察二次項：\\[x^2 ${LaTeX.formatLinearTerm(b, 'x')} ${LaTeX.formatConstant(c)}\\]
 2. 發現這是完全平方式：\\[x^2 - 2(${m})x + ${m}^2\\]
 3. 因式分解：
    - 一次項係數為 ${-2*m}，是常數項 ${m*m} 的平方根的-2倍
@@ -264,7 +294,7 @@ export default class F2L2_5_Generator_Q1_F_MQ extends QuestionGenerator {
 
         // 其他难度的解题步骤
         return `解題步驟：
-1. 觀察二次項：\\[x^2 ${b >= 0 ? '+' : ''}${b}x ${c >= 0 ? '+' : ''}${c}\\]
+1. 觀察二次項：\\[x^2 ${LaTeX.formatLinearTerm(b, 'x')} ${LaTeX.formatConstant(c)}\\]
 2. 找出兩個數：
    - 它們的和為一次項係數的相反數：\\[${m} + ${n} = ${-b}\\]
    - 它們的積為常數項：\\[${m} \\times ${n} = ${c}\\]
