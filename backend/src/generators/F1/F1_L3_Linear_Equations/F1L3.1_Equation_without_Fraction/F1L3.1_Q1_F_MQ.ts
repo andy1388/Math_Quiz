@@ -175,14 +175,31 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
         
         if (this.difficulty <= 2) {
             // Level 1-2: ax + b = c
-            const [leftSide, rightSide] = [equation.leftSide, equation.rightSide];
-            steps.push(
-                '1. 移項：將常數項移到等號右邊',
-                `\\[${leftSide} = ${rightSide}\\]`,
-                `\\[x = ${rightSide} ${formatNumber(-parseInt(rightSide))}\\]`,
-                '2. 計算：解出變量的值',
-                `\\[x = ${equation.solution}\\]`
-            );
+            const matches = equation.leftSide.match(/-?\d+/g)?.map(Number);
+            const c = parseInt(equation.rightSide);
+            
+            if (this.difficulty === 1) {
+                // x + b = c 形式
+                const b = matches?.[0] || 0;
+                steps.push(
+                    '1. 移項：將常數項移到等號右邊',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                    `\\[x = ${c} ${formatNumber(-b)}\\]`,
+                    '2. 計算：解出變量的值',
+                    `\\[x = ${equation.solution}\\]`
+                );
+            } else {
+                // ax + b = c 形式
+                const [a, b] = matches || [1, 0];
+                steps.push(
+                    '1. 移項：將常數項移到等號右邊',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                    `\\[${LaTeX.formatLinearTerm(a, 'x')} = ${c} ${formatNumber(-b)}\\]`,
+                    '2. 計算：解出變量的值',
+                    `\\[x = \\frac{${c - b}}{${a}}\\]`,
+                    `\\[x = ${equation.solution}\\]`
+                );
+            }
         } else if (this.difficulty === 3) {
             // Level 3: ax + bx = c
             const [a, b] = equation.leftSide.match(/-?\d+/g)?.map(Number) || [0, 0];
@@ -190,49 +207,46 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
             steps.push(
                 '1. 合併同類項：將變量項合併',
                 `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
-                `\\[${a}x ${b >= 0 ? '+' : ''}${b}x = ${c}\\]`,
                 `\\[${a + b}x = ${c}\\]`,
                 '2. 求解：得到變量的值',
-                `\\[x = ${c} \\div ${a + b}\\]`,
+                `\\[x = \\frac{${c}}{${a + b}}\\]`,
                 `\\[x = ${equation.solution}\\]`
             );
         } else if (this.difficulty === 4) {
             // Level 4: ax + b = cx + d
-            const matches = equation.leftSide.match(/-?\d+/g)?.map(Number);
+            const leftMatches = equation.leftSide.match(/-?\d+/g)?.map(Number);
             const rightMatches = equation.rightSide.match(/-?\d+/g)?.map(Number);
-            if (matches && rightMatches) {
-                const [a, b] = matches;
+            if (leftMatches && rightMatches) {
+                const [a, b] = leftMatches;
                 const [c, d] = rightMatches;
                 steps.push(
-                    '1. 移項：將所有變量項移到等號左邊',
+                    '1. 移項：將含x的項移到等號左邊，常數項移到等號右邊',
                     `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
-                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]`,
+                    `\\[${a}x ${formatNumber(b)} = ${LaTeX.formatLinearTerm(c, 'x')} ${formatNumber(d)}\\]`,
+                    `\\[${a}x ${formatNumber(-c)}x = ${d} ${formatNumber(-b)}\\]`,
                     '2. 合併同類項',
-                    `\\[${a - c}x ${formatNumber(b)} = ${d}\\]`,
-                    '3. 移項：將常數項移到等號右邊',
-                    `\\[${a - c}x = ${d} ${formatNumber(-b)}\\]`,
-                    '4. 求解：得到變量的值',
-                    `\\[x = ${d - b} \\div ${a - c}\\]`,
+                    `\\[${a - c}x = ${d - b}\\]`,
+                    '3. 求解：得到變量的值',
+                    `\\[x = \\frac{${d - b}}{${a - c}}\\]`,
                     `\\[x = ${equation.solution}\\]`
                 );
             }
         } else {
             // Level 5: 小數係數
-            const matches = equation.leftSide.match(/-?\d+\.?\d*/g)?.map(Number);
+            const leftMatches = equation.leftSide.match(/-?\d+\.?\d*/g)?.map(Number);
             const rightMatches = equation.rightSide.match(/-?\d+\.?\d*/g)?.map(Number);
-            if (matches && rightMatches) {
-                const [a, b] = matches;
+            if (leftMatches && rightMatches) {
+                const [a, b] = leftMatches;
                 const [c, d] = rightMatches;
                 steps.push(
-                    '1. 移項：將所有變量項移到等號左邊',
+                    '1. 移項：將含x的項移到等號左邊，常數項移到等號右邊',
                     `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
-                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]`,
+                    `\\[${a}x ${formatNumber(b)} = ${LaTeX.formatLinearTerm(c, 'x')} ${formatNumber(d)}\\]`,
+                    `\\[${a}x ${formatNumber(-c)}x = ${d} ${formatNumber(-b)}\\]`,
                     '2. 合併同類項（注意小數計算）',
-                    `\\[${(a - c).toFixed(1)}x ${formatNumber(b)} = ${d}\\]`,
-                    '3. 移項：將常數項移到等號右邊',
-                    `\\[${(a - c).toFixed(1)}x = ${d} ${formatNumber(-b)}\\]`,
-                    '4. 求解：得到變量的值',
-                    `\\[x = ${(d - b).toFixed(1)} \\div ${(a - c).toFixed(1)}\\]`,
+                    `\\[${(a - c).toFixed(1)}x = ${(d - b).toFixed(1)}\\]`,
+                    '3. 求解：得到變量的值',
+                    `\\[x = \\frac{${(d - b).toFixed(1)}}{${(a - c).toFixed(1)}}\\]`,
                     `\\[x = ${equation.solution}\\]`
                 );
             }
