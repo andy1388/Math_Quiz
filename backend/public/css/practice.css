@@ -279,12 +279,48 @@
 .option {
     display: flex;
     align-items: center;
-    padding: 15px;
-    border: 1px solid #ddd;
+    padding: 15px 20px;
+    position: relative;
+    border: 2px solid #ddd;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.2s ease;
     min-height: 60px;
+    background: white;
+}
+
+/* 修改答案图标的基础样式 */
+.option::after {
+    content: '';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* 正确答案的绿色对勾 */
+.option.correct.selected::after {
+    content: '✓';
+    opacity: 1;
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+/* 错误答案的红色叉号 */
+.option.wrong.selected::after {
+    content: '✕';
+    opacity: 1;
+    color: #f44336;
+    font-weight: bold;
 }
 
 .option-label {
@@ -295,15 +331,11 @@
 
 .option-content {
     flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.option-value {
+    margin-right: 34px;
     text-align: center;
 }
 
+/* 选项状态样式 */
 .option:hover {
     border-color: #33ccff;
     background: rgba(51, 204, 255, 0.05);
@@ -739,4 +771,49 @@ details[open] > summary::before {
 
 .folder.subsection.expanded > .folder-content {
     display: block;
+}
+
+/* 修改答案图标的基础样式 */
+.option::after {
+    content: '';
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    margin-left: 10px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* 正确答案的绿色对勾 */
+.option.correct.selected::after {
+    content: '✓';
+    opacity: 1;
+    color: #4CAF50;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* 移除错误答案的叉号样式 */
+.option.wrong::after {
+    content: '';
+    opacity: 0;
+}
+
+/* 调整选项内容的布局 */
+.option {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    position: relative;
+}
+
+.option-content {
+    flex: 1;
+    margin-right: 34px;
 } 
