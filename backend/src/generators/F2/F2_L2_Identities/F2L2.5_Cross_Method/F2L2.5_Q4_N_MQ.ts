@@ -190,19 +190,27 @@ export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
         
         // var1var2项
         if (var1var2Coeff !== 0) {
-            if (var1var2Coeff > 0) {
-                expression += `+${var1var2Coeff}${var1}${var2}`;
+            if (var1var2Coeff === 1) {
+                expression += `+${var1}${var2}`;
+            } else if (var1var2Coeff === -1) {
+                expression += `-${var1}${var2}`;
             } else {
-                expression += `${var1var2Coeff}${var1}${var2}`;
+                expression += var1var2Coeff > 0 ? 
+                    `+${var1var2Coeff}${var1}${var2}` : 
+                    `${var1var2Coeff}${var1}${var2}`;
             }
         }
         
         // var2²项
         if (var2_2Coeff !== 0) {
-            if (var2_2Coeff > 0) {
-                expression += `+${var2_2Coeff}${var2}^2`;
+            if (var2_2Coeff === 1) {
+                expression += `+${var2}^2`;
+            } else if (var2_2Coeff === -1) {
+                expression += `-${var2}^2`;
             } else {
-                expression += `${var2_2Coeff}${var2}^2`;
+                expression += var2_2Coeff > 0 ? 
+                    `+${var2_2Coeff}${var2}^2` : 
+                    `${var2_2Coeff}${var2}^2`;
             }
         }
         
@@ -216,15 +224,21 @@ export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
         const firstTerm = b === 0 ? 
             (a === 1 ? var1 : `${a}${var1}`) :
             b > 0 ? 
-                (a === 1 ? `(${var1} + ${b}${var2})` : `(${a}${var1} + ${b}${var2})`) : 
-                (a === 1 ? `(${var1} ${b}${var2})` : `(${a}${var1} ${b}${var2})`);
+                (a === 1 ? `(${var1} + ${b === 1 ? '' : b}${var2})` : `(${a}${var1} + ${b === 1 ? '' : b}${var2})`) : 
+                (a === 1 ? `(${var1} ${b === -1 ? '-' : b}${var2})` : `(${a}${var1} ${b === -1 ? '-' : b}${var2})`);
         
         // 格式化第二个因式
         const secondTerm = this.difficulty === 1 ?
-            (d > 0 ? `(${var1} + ${d}${var2})` : `(${var1} ${d}${var2})`) :
             (d > 0 ? 
-                (c === 1 ? `(${var1} + ${d}${var2})` : `(${c}${var1} + ${d}${var2})`) : 
-                (c === 1 ? `(${var1} ${d}${var2})` : `(${c}${var1} ${d}${var2})`));
+                `(${var1} + ${d === 1 ? '' : d}${var2})` : 
+                `(${var1} ${d === -1 ? '-' : d}${var2})`) :
+            (d > 0 ? 
+                (c === 1 ? 
+                    `(${var1} + ${d === 1 ? '' : d}${var2})` : 
+                    `(${c}${var1} + ${d === 1 ? '' : d}${var2})`) : 
+                (c === 1 ? 
+                    `(${var1} ${d === -1 ? '-' : d}${var2})` : 
+                    `(${c}${var1} ${d === -1 ? '-' : d}${var2})`));
         
         // 根据难度添加系数
         if (this.difficulty <= 2) {
@@ -327,7 +341,21 @@ export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
             }
         }
         
-        steps += `${this.difficulty >= 3 ? '3' : '2'}. 找出兩個因式：<br>`;
+        steps += `${this.difficulty >= 3 ? '3' : '2'}. 分析係數：<br>`;
+        steps += `\\[${var1}^2\\]項係數：${a * c}　　`;
+        steps += `\\[${var1}${var2}\\]項係數：${a * d + b * c}　　`;
+        steps += `\\[${var2}^2\\]項係數：${b * d}<br><br>`;
+        
+        steps += `${this.difficulty >= 3 ? '4' : '3'}. 找出兩個因式：<br>`;
+        steps += `觀察可知：<br>`;
+        steps += `- 第一個因式係數為 ${a} 和 ${b}<br>`;
+        steps += `- 第二個因式係數為 ${this.difficulty === 1 ? '1' : c} 和 ${d}<br>`;
+        steps += `- 相乘後：<br>`;
+        steps += `  * \\[${var1}^2\\] 項：${a} \\times ${this.difficulty === 1 ? '1' : c} = ${a * c}<br>`;
+        steps += `  * \\[${var1}${var2}\\] 項：${a} \\times ${d} + ${b} \\times ${this.difficulty === 1 ? '1' : c} = ${a * d + b * c}<br>`;
+        steps += `  * \\[${var2}^2\\] 項：${b} \\times ${d} = ${b * d}<br><br>`;
+        
+        steps += `因此：<br>`;
         steps += `第一個因式：<br>`;
         steps += `\\[${a === 1 ? var1 : a + var1} ${b >= 0 ? '+' : ''}${b}${var2}\\]<br>`;
         steps += `第二個因式：<br>`;
@@ -337,7 +365,7 @@ export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
             steps += `\\[${c === 1 ? var1 : c + var1} ${d >= 0 ? '+' : ''}${d}${var2}\\]<br><br>`;
         }
         
-        steps += `${this.difficulty >= 3 ? '4' : '3'}. 最終答案：<br>`;
+        steps += `${this.difficulty >= 3 ? '5' : '4'}. 最終答案：<br>`;
         steps += `\\[${this.formatAnswer(factors)}\\]`;
         
         return steps;
