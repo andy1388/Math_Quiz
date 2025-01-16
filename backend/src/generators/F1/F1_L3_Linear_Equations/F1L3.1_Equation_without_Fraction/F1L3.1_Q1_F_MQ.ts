@@ -1,4 +1,4 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
 import {
     getRandomInt,
     getRandomDecimal,
@@ -7,7 +7,7 @@ import {
     DifficultyUtils,
     DEFAULT_CONFIG,
     getNonZeroRandomInt
-} from '../../../../utils/mathUtils';
+} from '@/utils/mathUtils';
 
 interface LinearEquation {
     leftSide: string;
