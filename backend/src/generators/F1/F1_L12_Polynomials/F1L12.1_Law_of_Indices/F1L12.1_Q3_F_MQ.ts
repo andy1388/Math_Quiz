@@ -1,4 +1,5 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
+import { LaTeX } from '@/utils/mathUtils';
 
 interface Term {
     coefficient: number;
@@ -39,13 +40,16 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
         const [question, answer, steps] = this.formatQuestion(terms);
         const wrongAnswers = this.generateWrongAnswers(answer, this.difficulty);
         
-        return {
+        return this.getGeneratorOutput({
             content: question,
             correctAnswer: answer,
-            options: [answer, ...wrongAnswers],
-            correctIndex: 0,
-            explanation: steps
-        };
+            wrongAnswers: wrongAnswers,
+            explanation: steps,
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
+        });
     }
 
     protected generateLevel1(): Term[] {
@@ -194,7 +198,6 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
                 const exp = term.variables.get(variable) || 0;
                 finalExp = index === 0 ? exp : finalExp - exp;
             });
-            // 只有當最終指數不為 0 時才加入結果
             if (finalExp !== 0) {
                 result.variables.set(variable, finalExp);
             }
@@ -206,12 +209,10 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
                 .sort(([a], [b]) => a.localeCompare(b));
             
             const varPart = sortedVars.map(([variable, exp]) => {
-                // 當指數為 1 時不顯示指數
-                return exp === 1 ? variable : variable + '^{' + exp + '}';
+                return exp === 1 ? variable : `${variable}^{${exp}}`;
             }).join('');
 
-            // 當係數為 1 時不顯示係數
-            return term.coefficient === 1 ? varPart : term.coefficient + varPart;
+            return term.coefficient === 1 ? varPart : `${term.coefficient}${varPart}`;
         });
 
         // 格式化答案
@@ -219,27 +220,25 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
             .sort(([a], [b]) => a.localeCompare(b));
         
         const varPart = sortedResultVars.map(([variable, exp]) => {
-            // 當指數為 1 時不顯示指數
-            return exp === 1 ? variable : variable + '^{' + exp + '}';
+            return exp === 1 ? variable : `${variable}^{${exp}}`;
         }).join('');
 
-        // 當係數為 1 時不顯示係數
-        const answer = result.coefficient === 1 ? varPart : result.coefficient + varPart;
+        const answer = result.coefficient === 1 ? varPart : `${result.coefficient}${varPart}`;
 
-        // 生成解題步驟，使用 LaTeX 格式
-        const steps = `解題步驟：
-1. 係數相除：
-   \\(${terms.map(t => t.coefficient).join(' \\div ')} = ${result.coefficient}\\)
+        // 生成解題步驟
+        const steps = `1. 係數相除：<br>` +
+            `\\[${terms.map(t => t.coefficient).join(' \\div ')} = ${result.coefficient}\\]<br>` +
+            `2. 同類項指數相減：<br>` +
+            `${Array.from(allVars).sort().map(v => {
+                const exps = terms.map(t => t.variables.get(v) || 0);
+                return `\\[${v}: ${exps.join(' - ')} = ${result.variables.get(v) || 0}\\]`;
+            }).join('<br>')}<br>` +
+            `3. 最終答案：\\[${answer}\\]`;
 
-2. 同類項指數相減：
-${Array.from(allVars).sort().map(v => {
-    const exps = terms.map(t => t.variables.get(v) || 0);
-    return `   \\(${v}: ${exps.join(' - ')} = ${result.variables.get(v) || 0}\\)`;
-}).join('\n')}
+        // 將題目轉換為 LaTeX 格式
+        const question = `\\[${questionParts.join(' \\div ')}\\]`;
 
-3. 最終答案：\\(${answer}\\)`;
-
-        return [questionParts.join(' \\div '), answer, steps];
+        return [question, answer, steps];
     }
 
     protected generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
