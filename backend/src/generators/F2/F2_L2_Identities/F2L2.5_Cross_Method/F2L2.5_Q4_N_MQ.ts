@@ -1,17 +1,19 @@
 import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
-import { FractionUtils } from '@/utils/FractionUtils';
+import { VARIABLE_NAMES } from '@/utils/mathUtils';
 
 interface Factor {
-    a: number;  // 第一个因式的x系数
-    b: number;  // 第一个因式的常数项
-    c: number;  // 第二个因式的x系数（难度1时为1）
-    d: number;  // 第二个因式的常数项
-    e?: number | [number, number];  // 整体系数（难度3用整数，难度4用分数[分子,分母]）
+    a: number;  // 第一个因式的第一个变量系数
+    b: number;  // 第一个因式的第二个变量系数
+    c: number;  // 第二个因式的第一个变量系数
+    d: number;  // 第二个因式的第二个变量系数
+    e?: number | [number, number];  // 整体系数
+    var1: string;  // 第一个变量
+    var2: string;  // 第二个变量
 }
 
-export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
+export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F2L2.5_Q3_N_MQ');
+        super(difficulty, 'F2L2.5_Q4_N_MQ');
     }
 
     private shuffleArray<T>(array: T[]): T[] {
@@ -21,19 +23,6 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
             [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
         return shuffled;
-    }
-
-    private gcd(a: number, b: number): number {
-        a = Math.abs(a);
-        b = Math.abs(b);
-        while (b) {
-            [a, b] = [b, a % b];
-        }
-        return a;
-    }
-
-    private areCoprime(a: number, b: number): boolean {
-        return this.gcd(a, b) === 1;
     }
 
     generate(): IGeneratorOutput {
@@ -51,7 +40,7 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         
         // 生成错误选项
         const wrongAnswers = this.generateWrongAnswers(factors);
-        
+
         // 生成解题步骤
         const steps = this.generateSteps(p, q, factors);
 
@@ -67,31 +56,62 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         };
     }
 
-    private generateFactors(): Factor {
-        // 初始化所有变量
-        let a = 1;
-        let b = 1;
-        let c = 1;
-        let d = 1;
-        let e: number | [number, number] | undefined;
+    private gcd(a: number, b: number): number {
+        a = Math.abs(a);
+        b = Math.abs(b);
+        while (b) {
+            [a, b] = [b, a % b];
+        }
+        return a;
+    }
+
+    private canBeFactorized(a: number, b: number, c: number, d: number): boolean {
+        // 计算展开式系数
+        const x2Coeff = a * c;     // x²的系数
+        const xyCoeff = a * d + b * c;  // xy的系数
+        const y2Coeff = b * d;     // y²的系数
         
+        // 检查这些系数是否有公因数
+        const gcd1 = this.gcd(x2Coeff, xyCoeff);
+        const gcd2 = this.gcd(xyCoeff, y2Coeff);
+        const gcd3 = this.gcd(x2Coeff, y2Coeff);
+        
+        // 如果所有系数都有大于1的公因数，说明可以继续因式分解
+        return gcd1 > 1 && gcd2 > 1 && gcd3 > 1;
+    }
+
+    private generateFactors(): Factor {
+        let a = 1, b = 1, c = 1, d = 1;
+        let e: number | [number, number] | undefined;
+        let var1: string, var2: string;
+        
+        // 对于难度1-2，使用固定的x和y
+        if (this.difficulty <= 2) {
+            var1 = 'x';
+            var2 = 'y';
+        } else {
+            // 对于难度3-5，随机选择两个不同的变量
+            const variables = this.shuffleArray([...VARIABLE_NAMES]);
+            [var1, var2] = variables.slice(0, 2);
+        }
+
         do {
             switch (this.difficulty) {
-                case 1: // (ax+b)(x+c)
+                case 1: // (ax+by)(x+dy)
                     a = Math.floor(Math.random() * 4) + 2;  // 2 到 5
                     b = Math.floor(Math.random() * 19) - 9; // -9 到 9
-                    d = Math.floor(Math.random() * 19) - 9; // -9 到 9，这里先给d赋值
                     c = 1;  // 第二个因式的x系数为1
+                    d = Math.floor(Math.random() * 19) - 9; // -9 到 9
                     break;
 
-                case 2: // (ax+b)(cx+d)
+                case 2: // (ax+by)(cx+dy)
                     a = Math.floor(Math.random() * 4) + 2;  // 2 到 5
                     b = Math.floor(Math.random() * 19) - 9; // -9 到 9
                     c = Math.floor(Math.random() * 4) + 2;  // 2 到 5
                     d = Math.floor(Math.random() * 19) - 9; // -9 到 9
                     break;
 
-                case 3: // e(ax+b)(cx+d)
+                case 3: // e(ax+by)(cx+dy)
                     e = Math.floor(Math.random() * 4) + 2;  // 2 到 5
                     a = Math.floor(Math.random() * 4) + 2;
                     b = Math.floor(Math.random() * 19) - 9;
@@ -99,7 +119,7 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
                     d = Math.floor(Math.random() * 19) - 9;
                     break;
 
-                case 4: // e(ax+b)(cx+d)，e为负整数
+                case 4: // e(ax+by)(cx+dy)，e为负整数
                     e = -(Math.floor(Math.random() * 4) + 2);  // -5 到 -2
                     a = Math.floor(Math.random() * 4) + 2;
                     b = Math.floor(Math.random() * 19) - 9;
@@ -107,7 +127,7 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
                     d = Math.floor(Math.random() * 19) - 9;
                     break;
 
-                case 5: // (p/q)(ax+b)(cx+d)
+                case 5: // (p/q)(ax+by)(cx+dy)
                     const fractions: [number, number][] = [
                         [1, 2], [1, 3], [2, 3], [3, 2], [3, 4], [2, 5]
                     ];
@@ -117,22 +137,20 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
                     c = Math.floor(Math.random() * 4) + 2;
                     d = Math.floor(Math.random() * 19) - 9;
                     break;
-
-                default:
-                    // 默认情况，避免变量未初始化
-                    a = 2;
-                    b = 1;
-                    c = 2;
-                    d = 1;
-                    break;
             }
             
-            // 确保 b 和 d 不为0，且系数互质
+            // 确保系数不为0
             b = b === 0 ? 1 : b;
             d = d === 0 ? 1 : d;
-        } while (!this.areCoprime(a, b) || !this.areCoprime(c, d));
 
-        return { a, b, c, d, e };
+            // 确保展开式不能被进一步因式分解
+        } while (
+            b === 0 || d === 0 || // 避免系数为0
+            (this.difficulty <= 2 && this.canBeFactorized(a, b, c, d)) || // 检查是否可以继续因式分解
+            (this.difficulty === 1 && Math.abs(b) === Math.abs(d)) // 对于难度1，避免系数相等的情况
+        );
+
+        return { a, b, c, d, e, var1, var2 };
     }
 
     private calculateExpandedCoefficients(factors: Factor): [number, number] {
@@ -147,99 +165,66 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         }
         
         // 难度5：分数系数
-        return e as [number, number];  // 返回分子分母
+        return e as [number, number];
     }
 
     private formatExpression(p: number, q: number, factors: Factor): string {
-        const { a, b, c, d } = factors;
+        const { a, b, c, d, var1, var2 } = factors;
         
         // 计算展开式的系数
-        const x2Coeff: number = (p * a * c) / q;
-        const xCoeff: number = (p * (a * d + b * c)) / q;
-        const constTerm: number = (p * b * d) / q;
+        const var1_2Coeff = (p * a * c) / q;  // var1²项系数
+        const var1var2Coeff = (p * (a * d + b * c)) / q;  // var1var2项系数
+        const var2_2Coeff = (p * b * d) / q;  // var2²项系数
 
-        // 辅助函数：检查是否需要使用分数表示（超过2位小数）
-        const needsFraction = (num: number): boolean => {
-            const decimalParts = num.toString().split('.');
-            if (decimalParts.length < 2) {
-                return false;  // 整数不需要转换为分数
+        // 构建表达式
+        let expression = '';
+        
+        // var1²项
+        if (var1_2Coeff === 1) {
+            expression += `${var1}^2`;
+        } else if (var1_2Coeff === -1) {
+            expression += `-${var1}^2`;
+        } else {
+            expression += `${var1_2Coeff}${var1}^2`;
+        }
+        
+        // var1var2项
+        if (var1var2Coeff !== 0) {
+            if (var1var2Coeff > 0) {
+                expression += `+${var1var2Coeff}${var1}${var2}`;
+            } else {
+                expression += `${var1var2Coeff}${var1}${var2}`;
             }
-            const decimalPlaces = decimalParts[1].length;
-            const roundedNum = Number(num.toFixed(2));
-            const originalNum = Number(num.toFixed(10));
-            
-            return Math.abs(roundedNum - originalNum) > 1e-10;  // 比较是否有效差异
-        };
-
-        // 辅助函数：将数字转换为分数表示
-        const toFraction = (num: number): string => {
-            // 处理负数，将负号放在分数前面
-            const sign = num < 0 ? '-' : '';
-            const absNum = Math.abs(num);
-            
-            // 将数字乘以分母q，得到分子
-            const numerator = Math.round(absNum * q);
-            return `${sign}\\frac{${numerator}}{${q}}`;
-        };
-
-        // 格式化x²项
-        let x2Term: string;
-        if (x2Coeff === 1) {
-            x2Term = 'x^2';
-        } else if (x2Coeff === -1) {
-            x2Term = '-x^2';
-        } else {
-            x2Term = needsFraction(x2Coeff) ? 
-                `${toFraction(x2Coeff)}x^2` : 
-                `${x2Coeff}x^2`;
         }
-
-        // 格式化x项
-        let xTerm: string;
-        if (xCoeff === 0) {
-            xTerm = '';
-        } else if (xCoeff === 1) {
-            xTerm = '+ x';
-        } else if (xCoeff === -1) {
-            xTerm = '- x';
-        } else {
-            const coeffStr = needsFraction(xCoeff) ? 
-                toFraction(xCoeff) : 
-                xCoeff.toString();
-            xTerm = xCoeff > 0 ? `+ ${coeffStr}x` : `${coeffStr}x`;
+        
+        // var2²项
+        if (var2_2Coeff !== 0) {
+            if (var2_2Coeff > 0) {
+                expression += `+${var2_2Coeff}${var2}^2`;
+            } else {
+                expression += `${var2_2Coeff}${var2}^2`;
+            }
         }
-
-        // 格式化常数项
-        let constantTerm: string;
-        if (constTerm === 0) {
-            constantTerm = '';
-        } else {
-            const termStr = needsFraction(constTerm) ? 
-                toFraction(constTerm) : 
-                constTerm.toString();
-            constantTerm = constTerm > 0 ? `+ ${termStr}` : termStr;
-        }
-
-        // 移除多余的空格并返回结果
-        return `${x2Term} ${xTerm} ${constantTerm}`.trim();
+        
+        return expression;
     }
 
     private formatAnswer(factors: Factor): string {
-        const { a, b, c, d, e } = factors;
+        const { a, b, c, d, e, var1, var2 } = factors;
         
         // 格式化第一个因式
         const firstTerm = b === 0 ? 
-            (a === 1 ? 'x' : `${a}x`) :
+            (a === 1 ? var1 : `${a}${var1}`) :
             b > 0 ? 
-                (a === 1 ? `(x + ${b})` : `(${a}x + ${b})`) : 
-                (a === 1 ? `(x ${b})` : `(${a}x ${b})`);
+                (a === 1 ? `(${var1} + ${b}${var2})` : `(${a}${var1} + ${b}${var2})`) : 
+                (a === 1 ? `(${var1} ${b}${var2})` : `(${a}${var1} ${b}${var2})`);
         
         // 格式化第二个因式
         const secondTerm = this.difficulty === 1 ?
-            (d > 0 ? `(x + ${d})` : `(x ${d})`) :
+            (d > 0 ? `(${var1} + ${d}${var2})` : `(${var1} ${d}${var2})`) :
             (d > 0 ? 
-                (c === 1 ? `(x + ${d})` : `(${c}x + ${d})`) : 
-                (c === 1 ? `(x ${d})` : `(${c}x ${d})`));
+                (c === 1 ? `(${var1} + ${d}${var2})` : `(${c}${var1} + ${d}${var2})`) : 
+                (c === 1 ? `(${var1} ${d}${var2})` : `(${c}${var1} ${d}${var2})`));
         
         // 根据难度添加系数
         if (this.difficulty <= 2) {
@@ -257,7 +242,7 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
 
     private generateWrongAnswers(factors: Factor): string[] {
         const wrongAnswers = new Set<string>();
-        const { a, b, c, d, e } = factors;
+        const { a, b, c, d, e, var1, var2 } = factors;
         
         // 生成错误答案的策略
         let wrongChoices: Factor[] = [];
@@ -280,47 +265,28 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         } else {
             // 难度3-5的错误答案策略
             if (this.difficulty === 3) {
-                // 保持括号内容不变，改变外部系数
                 wrongChoices = [
                     { ...factors, e: (e as number) + 1 },
                     { ...factors, e: (e as number) - 1 },
                     { ...factors, e: (e as number) * 2 }
                 ];
             } else if (this.difficulty === 4) {
-                // 保持括号内容不变，改变外部负系数
                 wrongChoices = [
                     { ...factors, e: (e as number) + 1 },
                     { ...factors, e: (e as number) - 1 },
-                    { ...factors, e: -(e as number) }  // 变号
+                    { ...factors, e: -(e as number) }
                 ];
-            } else {  // 难度5
+            } else {
                 const [p, q] = e as [number, number];
-                // 保持括号内容不变，改变分数
                 wrongChoices = [
                     { ...factors, e: [p + 1, q] as [number, number] },
                     { ...factors, e: [p, q + 1] as [number, number] },
-                    { ...factors, e: [q, p] as [number, number] }  // 分子分母互换
+                    { ...factors, e: [q, p] as [number, number] }
                 ];
             }
-            
-            // 再添加一些改变括号内容的选项
-            wrongChoices.push(
-                { ...factors, a: a + 1, c: c - 1 },
-                { ...factors, a: a - 1, c: c + 1 },
-                { ...factors, b: -b, d: -d }
-            );
         }
         
-        // 打乱错误选项顺序
-        wrongChoices = this.shuffleArray(wrongChoices);
-        
-        // 确保至少有一个只改变外部系数的错误答案
-        if (this.difficulty >= 3) {
-            const firstChoice = wrongChoices[0];
-            wrongAnswers.add(this.formatAnswer(firstChoice));
-        }
-        
-        // 添加其他错误答案直到有3个
+        // 确保至少有3个错误答案
         for (const wrong of wrongChoices) {
             if (wrongAnswers.size < 3) {
                 wrongAnswers.add(this.formatAnswer(wrong));
@@ -331,7 +297,7 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
     }
 
     private generateSteps(p: number, q: number, factors: Factor): string {
-        const { a, b, c, d, e } = factors;
+        const { a, b, c, d, e, var1, var2 } = factors;
         
         let steps = `解題步驟：<br><br>`;
         steps += `1. 觀察二次項：<br>`;
@@ -340,17 +306,17 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         if (this.difficulty >= 3) {
             steps += `2. 提取公因數：<br>`;
             // 计算括号内的系数
-            const x2Coeff = a * c;  // x²的系数
-            const xCoeff = a * d + b * c;  // x的系数
-            const constTerm = b * d;  // 常数项
+            const var1_2Coeff = a * c;  // var1²的系数
+            const var1var2Coeff = a * d + b * c;  // var1var2的系数
+            const var2_2Coeff = b * d;  // var2²的系数
             
             // 格式化括号内的表达式
-            let innerExp = `${x2Coeff}x^2`;
-            if (xCoeff !== 0) {
-                innerExp += xCoeff > 0 ? `+${xCoeff}x` : `${xCoeff}x`;
+            let innerExp = `${var1_2Coeff}${var1}^2`;
+            if (var1var2Coeff !== 0) {
+                innerExp += var1var2Coeff > 0 ? `+${var1var2Coeff}${var1}${var2}` : `${var1var2Coeff}${var1}${var2}`;
             }
-            if (constTerm !== 0) {
-                innerExp += constTerm > 0 ? `+${constTerm}` : `${constTerm}`;
+            if (var2_2Coeff !== 0) {
+                innerExp += var2_2Coeff > 0 ? `+${var2_2Coeff}${var2}^2` : `${var2_2Coeff}${var2}^2`;
             }
             
             if (this.difficulty === 3 || this.difficulty === 4) {
@@ -362,42 +328,18 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         }
         
         steps += `${this.difficulty >= 3 ? '3' : '2'}. 找出兩個因式：<br>`;
+        steps += `第一個因式：<br>`;
+        steps += `\\[${a === 1 ? var1 : a + var1} ${b >= 0 ? '+' : ''}${b}${var2}\\]<br>`;
+        steps += `第二個因式：<br>`;
         if (this.difficulty === 1) {
-            steps += `第一個因式：<br>`;
-            steps += `\\[${a === 1 ? 'x' : a + 'x'} ${b >= 0 ? '+' : ''}${b}\\]<br>`;
-            steps += `第二個因式：<br>`;
-            steps += `\\[x ${d >= 0 ? '+' : ''}${d}\\]<br><br>`;
+            steps += `\\[${var1} ${d >= 0 ? '+' : ''}${d}${var2}\\]<br><br>`;
         } else {
-            steps += `第一個因式：<br>`;
-            steps += `\\[${a === 1 ? 'x' : a + 'x'} ${b >= 0 ? '+' : ''}${b}\\]<br>`;
-            steps += `第二個因式：<br>`;
-            steps += `\\[${c === 1 ? 'x' : c + 'x'} ${d >= 0 ? '+' : ''}${d}\\]<br><br>`;
+            steps += `\\[${c === 1 ? var1 : c + var1} ${d >= 0 ? '+' : ''}${d}${var2}\\]<br><br>`;
         }
         
         steps += `${this.difficulty >= 3 ? '4' : '3'}. 最終答案：<br>`;
         steps += `\\[${this.formatAnswer(factors)}\\]`;
         
         return steps;
-    }
-
-    // 新增方法来格式化括号内的表达式
-    private formatInnerExpression(factors: Factor): string {
-        const { a, b, c, d } = factors;
-        
-        // 格式化第一个因式
-        const firstTerm = b === 0 ? 
-            (a === 1 ? 'x' : `${a}x`) :
-            b > 0 ? 
-                (a === 1 ? `(x + ${b})` : `(${a}x + ${b})`) : 
-                (a === 1 ? `(x ${b})` : `(${a}x ${b})`);
-        
-        // 格式化第二个因式
-        const secondTerm = this.difficulty === 1 ?
-            (d > 0 ? `(x + ${d})` : `(x ${d})`) :
-            (d > 0 ? 
-                (c === 1 ? `(x + ${d})` : `(${c}x + ${d})`) : 
-                (c === 1 ? `(x ${d})` : `(${c}x ${d})`));
-        
-        return `${firstTerm}${secondTerm}`;
     }
 } 
