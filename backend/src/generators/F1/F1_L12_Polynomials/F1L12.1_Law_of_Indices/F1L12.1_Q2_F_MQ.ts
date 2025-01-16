@@ -13,7 +13,7 @@ export default class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
     protected missingExponent: number = 0;  // 記錄缺失的指數值
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+        super(difficulty, 'F1L12.1_Q2_F_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -212,31 +212,48 @@ export default class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
     }
 
     protected formatQuestion(terms: Term[], result: Term): [string, string, string] {
-        // 格式化題目，使用 LaTeX 格式
+        // 格式化题目
         const questionParts = terms.map(term => {
             let termStr = '';
             if (term.coefficient !== 1) {
-                termStr += LaTeX.formatConstant(term.coefficient);
+                // 移除正数前的 "+" 号
+                termStr += term.coefficient > 0 ? 
+                    term.coefficient.toString() : 
+                    LaTeX.formatConstant(term.coefficient);
             }
-            term.variables.forEach((exp, variable) => {
+            
+            const sortedVars = Array.from(term.variables.entries())
+                .sort(([a], [b]) => a.localeCompare(b));
+            
+            sortedVars.forEach(([variable, exp]) => {
                 if (term.hasMissing && variable === term.missingVar) {
-                    // 使用 LaTeX 的方框符號
                     termStr += `${variable}^{\\Box}`;
                 } else {
-                    termStr += `${variable}^{${exp}}`;
+                    termStr += variable + (exp !== 1 ? `^{${exp}}` : '');
                 }
             });
+
             return termStr;
         });
 
-        // 格式化結果
+        // 格式化结果
         let resultStr = '';
         if (result.coefficient !== 1) {
-            resultStr += LaTeX.formatConstant(result.coefficient);
+            // 移除正数前的 "+" 号
+            resultStr += result.coefficient > 0 ? 
+                result.coefficient.toString() : 
+                LaTeX.formatConstant(result.coefficient);
         }
-        result.variables.forEach((exp, variable) => {
-            resultStr += `${variable}^{${exp}}`;
+        
+        const sortedResultVars = Array.from(result.variables.entries())
+            .sort(([a], [b]) => a.localeCompare(b));
+        
+        sortedResultVars.forEach(([variable, exp]) => {
+            resultStr += variable + (exp !== 1 ? `^{${exp}}` : '');
         });
+
+        // 生成完整的等式
+        const equation = `\\[${questionParts.join(' \\times ')} = ${resultStr}\\]`;
 
         // 获取第一个变量和指数
         const firstTermEntries = Array.from(terms[0].variables.entries());
@@ -251,10 +268,7 @@ export default class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
             `3. 利用指數加法原理，求出缺少的指數：` +
             `   \\(${terms[1].missingVar}^{\\Box} = ${this.missingExponent}\\)`;
 
-        // 将整个问题转换为 LaTeX 格式
-        const question = `\\(${questionParts.join(' \\times ')} = ${resultStr}\\)`;
-
-        return [question, this.missingExponent.toString(), steps];
+        return [equation, this.missingExponent.toString(), steps];
     }
 
     protected shuffleArray<T>(array: T[]): T[] {

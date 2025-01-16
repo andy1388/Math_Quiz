@@ -11,7 +11,7 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
     protected readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+        super(difficulty, 'F1L12.1_Q3_F_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -235,8 +235,8 @@ export default class F1L12_1_Generator_Q3_F_MQ extends QuestionGenerator {
             }).join('<br>')}<br>` +
             `3. 最終答案：\\[${answer}\\]`;
 
-        // 將題目轉換為 LaTeX 格式
-        const question = `\\[${questionParts.join(' \\div ')}\\]`;
+        // 將題目轉換為 LaTeX 格式，添加 "=?"
+        const question = `\\[${questionParts.join(' \\div ')} = \\text{?}\\]`;
 
         return [question, answer, steps];
     }

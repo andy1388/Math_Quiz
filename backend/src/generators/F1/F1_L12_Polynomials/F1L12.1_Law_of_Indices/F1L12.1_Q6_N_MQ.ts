@@ -12,7 +12,7 @@ export default class F1L12_1_Generator_Q6_N_MQ extends QuestionGenerator {
     protected readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+        super(difficulty, 'F1L12.1_Q6_N_MQ');
     }
 
     generate(): IGeneratorOutput {

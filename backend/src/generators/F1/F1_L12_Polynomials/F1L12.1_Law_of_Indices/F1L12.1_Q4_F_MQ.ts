@@ -14,7 +14,7 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
     protected missingExponent: number = 0;
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+        super(difficulty, 'F1L12.1_Q4_F_MQ');
     }
 
     generate(): IGeneratorOutput {

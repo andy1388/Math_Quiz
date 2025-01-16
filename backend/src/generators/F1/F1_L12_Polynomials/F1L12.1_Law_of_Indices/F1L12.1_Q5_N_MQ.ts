@@ -4,6 +4,7 @@ import { LaTeX } from '@/utils/mathUtils';
 interface Term {
     coefficient: number;
     variables: Map<string, number>;
+    operation?: string;
 }
 
 export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
@@ -11,7 +12,7 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
     protected readonly EASY_COEFFICIENTS = [2, 3, 4, 6, 8, 9, 12, 15, 16, 18, 20];
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+        super(difficulty, 'F1L12.1_Q5_N_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -55,7 +56,8 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
     protected formatQuestion(terms: Term[]): [string, string, string] {
         // 計算結果
         const result: Term = {
-            coefficient: terms.reduce((acc, term) => acc * term.coefficient, 1),
+            coefficient: terms.reduce((acc, term) => 
+                term.operation === 'divide' ? acc / term.coefficient : acc * term.coefficient, 1),
             variables: new Map()
         };
 
@@ -64,15 +66,20 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
         terms.forEach(term => term.variables.forEach((_, v) => allVars.add(v)));
 
         allVars.forEach(variable => {
-            const finalExp = terms.reduce((acc, term) => 
-                acc + (term.variables.get(variable) || 0), 0);
+            let finalExp = 0;
+            terms.forEach(term => {
+                const exp = term.variables.get(variable) || 0;
+                finalExp = term.operation === 'divide' ? 
+                    finalExp - exp : 
+                    finalExp + exp;
+            });
             if (finalExp !== 0) {
                 result.variables.set(variable, finalExp);
             }
         });
 
         // 格式化題目
-        const questionParts = terms.map(term => {
+        const questionParts = terms.map((term, index) => {
             const sortedVars = Array.from(term.variables.entries())
                 .sort(([a], [b]) => a.localeCompare(b));
             
@@ -80,7 +87,10 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
                 return exp === 1 ? variable : `${variable}^{${exp}}`;
             }).join('');
 
-            return term.coefficient === 1 ? varPart : `${term.coefficient}${varPart}`;
+            const termStr = term.coefficient === 1 ? varPart : `${term.coefficient}${varPart}`;
+            
+            return index === 0 ? termStr : 
+                (term.operation === 'divide' ? ' \\div ' + termStr : ' \\times ' + termStr);
         });
 
         // 格式化答案
@@ -94,162 +104,175 @@ export default class F1L12_1_Generator_Q5_N_MQ extends QuestionGenerator {
         const answer = result.coefficient === 1 ? varPart : `${result.coefficient}${varPart}`;
 
         // 生成解題步驟
-        const steps = `1. 係數相乘：<br>` +
-            `\\[${terms.map(t => t.coefficient).join(' \\times ')} = ${result.coefficient}\\]<br>` +
-            `2. 同類項指數相加：<br>` +
+        const steps = `1. 係數計算：<br>` +
+            `\\[${terms.map((t, i) => 
+                i === 0 ? t.coefficient : 
+                (t.operation === 'divide' ? '\\div ' + t.coefficient : '\\times ' + t.coefficient)
+            ).join(' ')} = ${result.coefficient}\\]<br>` +
+            `2. 同類項指數計算：<br>` +
             `${Array.from(allVars).sort().map(v => {
-                const exps = terms.map(t => t.variables.get(v) || 0);
-                return `\\[${v}: ${exps.join(' + ')} = ${result.variables.get(v) || 0}\\]`;
+                const exps = terms.map((t, i) => {
+                    const exp = t.variables.get(v) || 0;
+                    return i === 0 ? exp : (t.operation === 'divide' ? `-${exp}` : `+${exp}`);
+                });
+                return `\\[${v}: ${exps.join(' ')} = ${result.variables.get(v) || 0}\\]`;
             }).join('<br>')}<br>` +
             `3. 最終答案：\\[${answer}\\]`;
 
-        // 將題目轉換為 LaTeX 格式
-        const question = `\\[${questionParts.join(' \\times ')}\\]`;
+        // 將題目轉換為 LaTeX 格式，添加 "=?"
+        const question = `\\[${questionParts.join('')} = \\text{?}\\]`;
 
         return [question, answer, steps];
     }
 
     protected generateLevel1(): Term[] {
-        const variable = this.VARIABLES[Math.floor(Math.random() * 3)]; // 只使用 x, y, z
-        const exp1 = Math.floor(Math.random() * 3) + 2; // 2-4
-        const exp2 = Math.floor(Math.random() * 3) + 2; // 2-4
-        const exp3 = Math.floor(Math.random() * 3) + 2; // 2-4
-
+        // 簡單：兩步運算，單一變量 (如 x³ × x⁴ ÷ x²)
+        const variable = this.VARIABLES[0]; // 使用 x
         return [
-            { coefficient: 1, variables: new Map([[variable, exp1]]) },
-            { coefficient: 1, variables: new Map([[variable, exp2]]) },
-            { coefficient: 1, variables: new Map([[variable, exp3]]) }
+            { 
+                coefficient: 1,
+                variables: new Map([[variable, Math.floor(Math.random() * 3) + 3]]), // 3-5
+                operation: 'multiply'
+            },
+            { 
+                coefficient: 1,
+                variables: new Map([[variable, Math.floor(Math.random() * 3) + 2]]), // 2-4
+                operation: 'multiply'
+            },
+            { 
+                coefficient: 1,
+                variables: new Map([[variable, Math.floor(Math.random() * 2) + 1]]), // 1-2
+                operation: 'divide'
+            }
         ];
     }
 
     protected generateLevel2(): Term[] {
-        const variable = this.VARIABLES[Math.floor(Math.random() * 3)];
-        const exp1 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp2 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp3 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp4 = Math.floor(Math.random() * 4) + 2; // 2-5
-
+        // 中等：三步運算，單一變量 (如 x⁵ × x³ ÷ x² × x⁴)
+        const variable = this.VARIABLES[0]; // 使用 x
         return [
-            { coefficient: 1, variables: new Map([[variable, exp1]]) },
-            { coefficient: 1, variables: new Map([[variable, exp2]]) },
-            { coefficient: 1, variables: new Map([[variable, exp3]]) },
-            { coefficient: 1, variables: new Map([[variable, exp4]]) }
+            { 
+                coefficient: 1,
+                variables: new Map([[variable, Math.floor(Math.random() * 3) + 3]]), // 3-5
+                operation: 'multiply'
+            },
+            { 
+                coefficient: 1,
+                variables: new Map([[variable, Math.floor(Math.random() * 3) + 2]]), // 2-4
+                operation: 'multiply'
+            },
+            { 
+                coefficient: 1,
+                variables: new Map([[variable, Math.floor(Math.random() * 2) + 1]]), // 1-2
+                operation: 'divide'
+            },
+            { 
+                coefficient: 1,
+                variables: new Map([[variable, Math.floor(Math.random() * 3) + 2]]), // 2-4
+                operation: 'multiply'
+            }
         ];
     }
 
     protected generateLevel3(): Term[] {
-        const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
-        const [var1, var2] = vars;
-        
-        const exp1_1 = Math.floor(Math.random() * 3) + 2; // 2-4
-        const exp1_2 = Math.floor(Math.random() * 3) + 2; // 2-4
-        const exp2_1 = Math.floor(Math.random() * 3) + 2; // 2-4
-        const exp2_2 = Math.floor(Math.random() * 3) + 2; // 2-4
-        const exp3_1 = Math.floor(Math.random() * 3) + 2; // 2-4
-        const exp3_2 = Math.floor(Math.random() * 3) + 2; // 2-4
-
+        // 較難：兩步運算，雙變量 (如 x³y⁴ × x²y² ÷ xy³)
+        const [var1, var2] = this.VARIABLES.slice(0, 2); // 使用 x, y
         return [
             { 
-                coefficient: 1, 
+                coefficient: 1,
                 variables: new Map([
-                    [var1, exp1_1],
-                    [var2, exp1_2]
-                ]) 
+                    [var1, Math.floor(Math.random() * 3) + 3], // 3-5
+                    [var2, Math.floor(Math.random() * 3) + 2]  // 2-4
+                ]),
+                operation: 'multiply'
             },
             { 
-                coefficient: 1, 
+                coefficient: 1,
                 variables: new Map([
-                    [var1, exp2_1],
-                    [var2, exp2_2]
-                ]) 
+                    [var1, Math.floor(Math.random() * 3) + 2], // 2-4
+                    [var2, Math.floor(Math.random() * 3) + 2]  // 2-4
+                ]),
+                operation: 'multiply'
             },
             { 
-                coefficient: 1, 
+                coefficient: 1,
                 variables: new Map([
-                    [var1, exp3_1],
-                    [var2, exp3_2]
-                ]) 
+                    [var1, 1],                                // 1
+                    [var2, Math.floor(Math.random() * 3) + 2] // 2-4
+                ]),
+                operation: 'divide'
             }
         ];
     }
 
     protected generateLevel4(): Term[] {
-        const vars = this.shuffleArray(this.VARIABLES.slice(0, 3)).slice(0, 2);
-        const [var1, var2] = vars;
-
-        const exp1_1 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp1_2 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp2_1 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp2_2 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp3_1 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp3_2 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp4_1 = Math.floor(Math.random() * 4) + 2; // 2-5
-        const exp4_2 = Math.floor(Math.random() * 4) + 2; // 2-5
-
+        // 進階：三步運算，雙變量 (如 x⁵y³ × x²y⁴ ÷ xy² × y)
+        const [var1, var2] = this.VARIABLES.slice(0, 2); // 使用 x, y
         return [
             { 
-                coefficient: 1, 
+                coefficient: 1,
                 variables: new Map([
-                    [var1, exp1_1],
-                    [var2, exp1_2]
-                ]) 
+                    [var1, Math.floor(Math.random() * 3) + 3], // 3-5
+                    [var2, Math.floor(Math.random() * 3) + 2]  // 2-4
+                ]),
+                operation: 'multiply'
             },
             { 
-                coefficient: 1, 
+                coefficient: 1,
                 variables: new Map([
-                    [var1, exp2_1],
-                    [var2, exp2_2]
-                ]) 
+                    [var1, Math.floor(Math.random() * 3) + 2], // 2-4
+                    [var2, Math.floor(Math.random() * 3) + 2]  // 2-4
+                ]),
+                operation: 'multiply'
             },
             { 
-                coefficient: 1, 
+                coefficient: 1,
                 variables: new Map([
-                    [var1, exp3_1],
-                    [var2, exp3_2]
-                ]) 
+                    [var1, 1],                                // 1
+                    [var2, Math.floor(Math.random() * 2) + 1] // 1-2
+                ]),
+                operation: 'divide'
             },
             { 
-                coefficient: 1, 
+                coefficient: 1,
                 variables: new Map([
-                    [var1, exp4_1],
-                    [var2, exp4_2]
-                ]) 
+                    [var2, 1]                                // 1
+                ]),
+                operation: 'multiply'
             }
         ];
     }
 
     protected generateLevel5(): Term[] {
-        const vars = this.shuffleArray(this.VARIABLES.slice(0, 3));
-        const [var1, var2, var3] = vars;
-        
-        const coef1 = this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)];
-        const coef2 = this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)];
-        const coef3 = this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)];
-
+        // 挑戰：多步運算，多變量和係數 (如 2x³y⁴z × 3xy²z³ ÷ 2y³z²)
+        const [var1, var2, var3] = this.VARIABLES.slice(0, 3); // 使用 x, y, z
         return [
             {
-                coefficient: coef1,
+                coefficient: this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)],
                 variables: new Map([
-                    [var1, Math.floor(Math.random() * 4) + 2],
-                    [var2, Math.floor(Math.random() * 4) + 2],
-                    [var3, Math.floor(Math.random() * 4) + 2]
-                ])
+                    [var1, Math.floor(Math.random() * 3) + 3], // 3-5
+                    [var2, Math.floor(Math.random() * 3) + 2], // 2-4
+                    [var3, Math.floor(Math.random() * 3) + 2]  // 2-4
+                ]),
+                operation: 'multiply'
             },
             {
-                coefficient: coef2,
+                coefficient: this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)],
                 variables: new Map([
-                    [var1, Math.floor(Math.random() * 4) + 2],
-                    [var2, Math.floor(Math.random() * 4) + 2],
-                    [var3, Math.floor(Math.random() * 4) + 2]
-                ])
+                    [var1, Math.floor(Math.random() * 2) + 1], // 1-2
+                    [var2, Math.floor(Math.random() * 2) + 1], // 1-2
+                    [var3, Math.floor(Math.random() * 3) + 2]  // 2-4
+                ]),
+                operation: 'multiply'
             },
             {
-                coefficient: coef3,
+                coefficient: this.EASY_COEFFICIENTS[Math.floor(Math.random() * this.EASY_COEFFICIENTS.length)],
                 variables: new Map([
-                    [var1, Math.floor(Math.random() * 4) + 2],
-                    [var2, Math.floor(Math.random() * 4) + 2],
-                    [var3, Math.floor(Math.random() * 4) + 2]
-                ])
+                    [var1, 1],                                 // 1
+                    [var2, Math.floor(Math.random() * 3) + 2], // 2-4
+                    [var3, Math.floor(Math.random() * 2) + 1]  // 1-2
+                ]),
+                operation: 'divide'
             }
         ];
     }
