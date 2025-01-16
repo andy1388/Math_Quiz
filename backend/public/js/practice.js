@@ -1,5 +1,10 @@
 const DEBUG = true;
 
+// 声明音频变量
+let correctSound;
+let wrongSound;
+let isMuted = false;
+
 function log(...args) {
     if (DEBUG) {
         console.log(...args);
@@ -12,6 +17,14 @@ let lastWidth = localStorage.getItem('sidebarWidth') || '300px';
 
 document.addEventListener('DOMContentLoaded', async () => {
     try {
+        // 初始化音频元素
+        correctSound = document.getElementById('correctSound');
+        wrongSound = document.getElementById('wrongSound');
+        
+        // 预加载音频
+        correctSound?.load();
+        wrongSound?.load();
+        
         log('Initializing practice page...');
         const response = await fetch('/api/questions/available-generators');
         if (!response.ok) {
@@ -39,6 +52,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         setupDifficultyButtons();
         log('Difficulty buttons setup complete');
+        
+        // 初始化静音按钮
+        setupMuteButton();
         
     } catch (error) {
         console.error('初始化失败:', error);
@@ -795,9 +811,34 @@ function attachOptionEvents(question) {
     });
 }
 
-// 检查答案函数
+// 修改播放音效函数，添加静音检查
+function playSound(isCorrect) {
+    if (isMuted) return; // 如果已静音，直接返回
+    
+    try {
+        const sound = isCorrect ? correctSound : wrongSound;
+        if (sound && sound.readyState >= 2) {  // 确保音频已加载
+            sound.currentTime = 0;
+            const playPromise = sound.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.error('播放音效失败:', error);
+                });
+            }
+        } else {
+            console.warn('音频未完全加载');
+        }
+    } catch (error) {
+        console.error('播放音效失败:', error);
+    }
+}
+
+// 修改检查答案函数，添加音效
 function checkAnswer(correctIndex, selectedIndex, question) {
     const options = document.querySelectorAll('.option');
+    
+    // 播放音效
+    playSound(selectedIndex === correctIndex);
     
     // 添加正确/错误样式
     options.forEach((option, index) => {
@@ -989,4 +1030,43 @@ function setupDifficultyButtons() {
             }
         });
     });
+}
+
+// 添加测试函数
+function testSounds() {
+    console.log('测试正确音效');
+    playSound(true);
+    
+    setTimeout(() => {
+        console.log('测试错误音效');
+        playSound(false);
+    }, 1000);
+}
+
+// 在浏览器控制台中运行 testSounds() 来测试 
+
+// 添加静音按钮设置函数
+function setupMuteButton() {
+    const muteButton = document.getElementById('muteButton');
+    const muteIcon = muteButton.querySelector('.mute-icon');
+    
+    // 从 localStorage 读取静音状态
+    isMuted = localStorage.getItem('isMuted') === 'true';
+    updateMuteButtonState();
+    
+    muteButton.addEventListener('click', () => {
+        isMuted = !isMuted;
+        // 保存静音状态到 localStorage
+        localStorage.setItem('isMuted', isMuted);
+        updateMuteButtonState();
+    });
+    
+    function updateMuteButtonState() {
+        muteIcon.textContent = isMuted ? '🔇' : '🔊';
+        muteButton.classList.toggle('muted', isMuted);
+        
+        // 更新音频元素的静音状态
+        if (correctSound) correctSound.muted = isMuted;
+        if (wrongSound) wrongSound.muted = isMuted;
+    }
 } 

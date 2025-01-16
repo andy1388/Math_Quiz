@@ -816,4 +816,64 @@ details[open] > summary::before {
 .option-content {
     flex: 1;
     margin-right: 34px;
+}
+
+/* 静音按钮样式 */
+.mute-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    width: 40px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.mute-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.mute-button .mute-icon {
+    font-size: 20px;
+    color: white;
+}
+
+.mute-button.muted .mute-icon {
+    opacity: 0.7;
+}
+
+/* 修改导航栏样式 */
+nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 60px;
+    background-color: #33ccff;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.nav-links a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-links a.active {
+    background-color: rgba(255, 255, 255, 0.2);
 } 

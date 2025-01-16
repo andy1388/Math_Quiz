@@ -6,41 +6,50 @@
     <title>練習 - AI_QB</title>
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/practice.css">
-    <script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <!-- 添加回 header -->
     <header>
         <nav>
             <a href="/" class="logo">AI_QB</a>
             <div class="nav-links">
                 <a href="/practice.html" class="active">練習</a>
                 <a href="/solver.html">求解器</a>
+                <button id="muteButton" class="mute-button">
+                    <span class="mute-icon">🔊</span>
+                </button>
             </div>
         </nav>
     </header>
 
     <div class="practice-layout">
-        <!-- 侧边栏 -->
         <div class="sidebar">
             <div class="topic-nav">
                 <!-- 这里会被 JavaScript 填充目录结构 -->
             </div>
         </div>
-
-        <!-- 主要内容区 -->
+        
         <div class="main-content">
-            <h1>練習題目</h1>
-            <div class="difficulty-filter" style="display: none;">
-                <!-- 難度按鈕會動態生成 -->
-            </div>
             <div class="question-area">
-                <p>請從左側選擇練習題目</p>
+                <div class="placeholder-message">
+                    請從左側選擇練習題目
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- 添加音频元素 -->
+    <audio id="correctSound" preload="auto">
+        <source src="/sounds/correct.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="wrongSound" preload="auto">
+        <source src="/sounds/wrong.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- 加载 MathJax -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <!-- 加载应用脚本 -->
     <script src="/js/practice.js"></script>
 </body>
 </html> 
