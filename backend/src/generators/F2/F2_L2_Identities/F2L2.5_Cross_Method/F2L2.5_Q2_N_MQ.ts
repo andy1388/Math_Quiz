@@ -1,4 +1,5 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
+import { LaTeX } from '@/utils/mathUtils';
 
 interface Factor {
     m: number;  // 第一个因子的系数
@@ -8,11 +9,11 @@ interface Factor {
     var2?: string;  // 第二个变量（默认为y）
 }
 
-export default class F2L2_5_Generator_Q2_N_MQ extends QuestionGenerator {
+export default class F2L2_5_Q2_N_MQ extends QuestionGenerator {
     private readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'p', 'q', 'r', 's', 't'];
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F2L2.5');
+        super(difficulty, 'F2L2.5_Q2_N_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -27,26 +28,52 @@ export default class F2L2_5_Generator_Q2_N_MQ extends QuestionGenerator {
         const expression = this.formatExpression(b, c, factors.var1, factors.var2);
         
         // 生成正确答案
-        const answer = this.formatAnswer(factors);
+        const correctAnswer = this.formatAnswer(factors);
         
         // 生成错误选项
         const wrongAnswers = this.generateWrongAnswers(factors);
         
-        // 随机打乱选项并记录正确答案的位置
-        const options = [answer, ...wrongAnswers];
-        const shuffledOptions = this.shuffleArray([...options]);
-        const correctIndex = shuffledOptions.indexOf(answer);
-
         // 生成解题步骤
-        const steps = this.generateSteps(b, c, factors);
+        const explanation = this.generateSteps(b, c, factors);
 
         return {
-            content: expression,
-            correctAnswer: answer,
-            options: shuffledOptions,
-            correctIndex: correctIndex,
-            explanation: steps
+            content: `\\[${expression}\\]`,
+            correctAnswer,
+            wrongAnswers,
+            explanation,
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
         };
+    }
+
+    private formatExpression(b: number, c: number, var1: string = 'x', var2: string = 'y'): string {
+        // 一次项处理
+        let bTerm;
+        if (b === 0) {
+            bTerm = '';
+        } else if (b === 1) {
+            bTerm = `+${var1}${var2}`;
+        } else if (b === -1) {
+            bTerm = `-${var1}${var2}`;
+        } else if (b > 0) {
+            bTerm = `+${b}${var1}${var2}`;
+        } else {
+            bTerm = `${b}${var1}${var2}`;
+        }
+
+        // y²项处理
+        let cTerm;
+        if (c === 0) {
+            cTerm = '';
+        } else if (c > 0) {
+            cTerm = `+${c}${var2}^2`;
+        } else {
+            cTerm = `${c}${var2}^2`;
+        }
+
+        return `${var1}^2${bTerm}${cTerm}`;
     }
 
     private generateFactors(): Factor {
@@ -80,8 +107,9 @@ export default class F2L2_5_Generator_Q2_N_MQ extends QuestionGenerator {
 
             case 4: // 进阶：其他变量组合
                 // 随机选择两个不同的变量
-                const vars = this.shuffleArray([...this.VARIABLES]);
-                [var1, var2] = vars.slice(0, 2);
+                const availableVars = [...this.VARIABLES];
+                const var1 = availableVars.splice(Math.floor(Math.random() * availableVars.length), 1)[0];
+                const var2 = availableVars[Math.floor(Math.random() * availableVars.length)];
                 
                 const generateNumber = () => {
                     const num = Math.floor(Math.random() * 25) - 7;  // -7 到 17
@@ -116,18 +144,6 @@ export default class F2L2_5_Generator_Q2_N_MQ extends QuestionGenerator {
         }
         
         return { m, n, type, var1, var2 };
-    }
-
-    private formatExpression(b: number, c: number, var1: string = 'x', var2: string = 'y'): string {
-        const bTerm = b === 0 ? '' : 
-                     b === 1 ? `+ ${var1}${var2}` :
-                     b === -1 ? `- ${var1}${var2}` :
-                     b > 0 ? `+ ${b}${var1}${var2}` : `${b}${var1}${var2}`;
-        const cTerm = c === 0 ? '' :
-                     c > 0 ? `+ ${c}${var2}^2` : `${c}${var2}^2`;
-        
-        // 使用 LaTeX 格式
-        return `${var1}^2 ${bTerm} ${cTerm}`;
     }
 
     private formatAnswer(factors: Factor): string {
@@ -232,52 +248,49 @@ export default class F2L2_5_Generator_Q2_N_MQ extends QuestionGenerator {
         if (this.difficulty === 5) {
             switch (type) {
                 case 'difference':
-                    return `解題步驟：
-1. 觀察二次項：\\[${var1}^2 ${c >= 0 ? '+' : ''}${c}${var2}^2\\]
-2. 發現這是完全平方差的形式：\\[${var1}^2 - (${m}${var2})^2\\]
-3. 因式分解：
-   - 可以寫成 \\[${var1}^2 - (${m}${var2})^2\\] 的形式
-   - 使用公式：\\[a^2 - b^2 = (a + b)(a - b)\\]
-4. 最終答案：\\[(${var1} + ${m}${var2})(${var1} - ${m}${var2})\\]`;
+                    return `解題步驟：<br><br>` +
+                        `1. 觀察二次項：<br>` +
+                        `\\[${var1}^2 - ${m}^2${var2}^2\\]<br><br>` +
+                        `2. 因式分解：<br>` +
+                        `\\[${var1}^2 - ${m}^2${var2}^2 = (${var1} + ${m}${var2})(${var1} - ${m}${var2})\\]<br><br>` +
+                        `3. 最終答案：<br>` +
+                        `\\[(${var1} + ${m}${var2})(${var1} - ${m}${var2})\\]`;
 
                 case 'plusSquare':
-                    return `解題步驟：
-1. 觀察二次項：\\[${var1}^2 ${b >= 0 ? '+' : ''}${b}${var1}${var2} ${c >= 0 ? '+' : ''}${c}${var2}^2\\]
-2. 發現這是完全平方式：\\[${var1}^2 + 2(${m}${var2})${var1} + (${m}${var2})^2\\]
-3. 因式分解：
-   - ${var1}${var2}項係數為 ${2*m}，是${var2}^2項係數 ${m*m} 的平方根的2倍
-   - 這是 \\[(${var1} + ${m}${var2})\\] 的完全平方式
-4. 最終答案：\\[(${var1} + ${m}${var2})^2\\]`;
+                    return `解題步驟：<br><br>` +
+                        `1. 觀察二次項：<br>` +
+                        `\\[${var1}^2 + 2(${m}${var2})${var1} + ${m}^2${var2}^2\\]<br><br>` +
+                        `2. 發現這是完全平方式：<br>` +
+                        `\\[${var1}^2 + 2(${m}${var2})${var1} + ${m}^2${var2}^2 = (${var1} + ${m}${var2})^2\\]<br><br>` +
+                        `3. 最終答案：<br>` +
+                        `\\[(${var1} + ${m}${var2})^2\\]`;
 
                 case 'minusSquare':
-                    return `解題步驟：
-1. 觀察二次項：\\[${var1}^2 ${b >= 0 ? '+' : ''}${b}${var1}${var2} ${c >= 0 ? '+' : ''}${c}${var2}^2\\]
-2. 發現這是完全平方式：\\[${var1}^2 - 2(${m}${var2})${var1} + (${m}${var2})^2\\]
-3. 因式分解：
-   - ${var1}${var2}項係數為 ${-2*m}，是${var2}^2項係數 ${m*m} 的平方根的-2倍
-   - 這是 \\[(${var1} - ${m}${var2})\\] 的完全平方式
-4. 最終答案：\\[(${var1} - ${m}${var2})^2\\]`;
+                    return `解題步驟：<br><br>` +
+                        `1. 觀察二次項：<br>` +
+                        `\\[${var1}^2 - 2(${m}${var2})${var1} + ${m}^2${var2}^2\\]<br><br>` +
+                        `2. 發現這是完全平方式：<br>` +
+                        `\\[${var1}^2 - 2(${m}${var2})${var1} + ${m}^2${var2}^2 = (${var1} - ${m}${var2})^2\\]<br><br>` +
+                        `3. 最終答案：<br>` +
+                        `\\[(${var1} - ${m}${var2})^2\\]`;
             }
         }
 
         // 其他难度的解题步骤
-        return `解題步驟：
-1. 觀察二次項：
-   \\[${var1}^2 ${b >= 0 ? '+' : ''}${b}${var1}${var2} ${c >= 0 ? '+' : ''}${c}${var2}^2\\]
-
-2. 找出兩個數：
-   - 它們的和為${var1}${var2}項係數的相反數：
-     \\[${m} + ${n} = ${-b}\\]
-   - 它們的積為${var2}^2項係數：
-     \\[${m} \\times ${n} = ${c}\\]
-
-3. 因式分解：
-   - 第一個因式：
-     \\[(${var1} ${m >= 0 ? '- ' + m : '+ ' + (-m)}${var2})\\]
-   - 第二個因式：
-     \\[(${var1} ${n >= 0 ? '- ' + n : '+ ' + (-n)}${var2})\\]
-
-4. 最終答案：
-   \\[(${var1} ${m >= 0 ? '- ' + m : '+ ' + (-m)}${var2})(${var1} ${n >= 0 ? '- ' + n : '+ ' + (-n)}${var2})\\]`;
+        return `解題步驟：<br><br>` +
+            `1. 觀察二次項：<br>` +
+            `\\[${var1}^2${b > 0 ? '+' : ''}${b}${var1}${var2}${c > 0 ? '+' : ''}${c}${var2}^2\\]<br><br>` +
+            `2. 找出兩個數：<br>` +
+            `它們的和為 \\[${var1}${var2}\\] 項係數的相反數：<br>` +
+            `\\[${m} + ${n} = ${-b}\\]<br>` +
+            `它們的積為 \\[${var2}^2\\] 項係數：<br>` +
+            `\\[${m} \\times ${n} = ${c}\\]<br><br>` +
+            `3. 因式分解：<br>` +
+            `第一個因式：<br>` +
+            `\\[(${var1} ${m >= 0 ? '-' : '+'}${Math.abs(m)}${var2})\\]<br>` +
+            `第二個因式：<br>` +
+            `\\[(${var1} ${n >= 0 ? '-' : '+'}${Math.abs(n)}${var2})\\]<br><br>` +
+            `4. 最終答案：<br>` +
+            `\\[(${var1} ${m >= 0 ? '-' : '+'}${Math.abs(m)}${var2})(${var1} ${n >= 0 ? '-' : '+'}${Math.abs(n)}${var2})\\]`;
     }
-} 
+}

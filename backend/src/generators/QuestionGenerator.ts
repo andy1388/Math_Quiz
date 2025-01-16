@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 export type GeneratorClass = new (difficulty: number) => QuestionGenerator;
 export type GeneratorMap = { [key: string]: GeneratorClass };
 
@@ -38,14 +40,7 @@ export abstract class QuestionGenerator {
 
     private readMaxDifficultyFromDesc(): number {
         try {
-            const parts = this.generatorId.split('_');
-            const formFolder = parts[0].substring(0, 2);
-            const lessonMatch = parts[0].match(/F1L(\d+)/);
-            const lessonNumber = lessonMatch ? lessonMatch[1] : '3';
-            const sectionMatch = parts[0].match(/F1L\d+\.(\d+)/);
-            const sectionNumber = sectionMatch ? sectionMatch[1] : '1';
-
-            const descPath = `${__dirname}/F1/F1_L${lessonNumber}_Linear_Equations/F1L${lessonNumber}.${sectionNumber}_Equation_without_Fraction/${this.generatorId}.desc.txt`;
+            const descPath = path.join(__dirname, 'F2', 'F2_L2_Identities', 'F2L2.5_Cross_Method', `${this.generatorId}.desc.txt`);
             
             console.log('Reading desc file from:', descPath);
             const descContent = require('fs').readFileSync(descPath, 'utf8');
