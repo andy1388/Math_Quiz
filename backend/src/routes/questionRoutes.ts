@@ -71,19 +71,18 @@ router.get('/generator-info/:generatorId', async (req, res) => {
     try {
         const { generatorId } = req.params;
         
-        // 構建 .desc.txt 文件路徑
-        const descPath = path.join(
-            __dirname,
-            '../generators/F1/F1_L3_Linear_Equations/F1L3.1_Equation_without_Fraction',
-            `${generatorId}.desc.txt`
-        );
+        // 使用 scanner 获取生成器路径
+        const generatorPath = await scanner.getGeneratorPath(generatorId);
         
-        // 檢查文件是否存在
+        // 从生成器路径获取描述文件路径
+        const descPath = generatorPath.replace('.ts', '.desc.txt');
+        
+        // 检查文件是否存在
         if (!fs.existsSync(descPath)) {
             throw new Error(`Description file not found: ${generatorId}`);
         }
         
-        // 讀取文件內容
+        // 读取文件内容
         const content = await fsPromises.readFile(descPath, 'utf-8');
         
         // 解析 Level number
