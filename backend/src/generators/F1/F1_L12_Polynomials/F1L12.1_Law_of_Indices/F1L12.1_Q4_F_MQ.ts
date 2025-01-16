@@ -1,4 +1,5 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
+import { LaTeX } from '@/utils/mathUtils';
 
 interface Term {
     coefficient: number;
@@ -43,13 +44,16 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
         const [question, answer, steps] = this.formatQuestion(terms, result);
         const wrongAnswers = this.generateWrongAnswers(this.missingExponent, this.difficulty);
         
-        return {
+        return this.getGeneratorOutput({
             content: question,
             correctAnswer: answer,
-            options: this.shuffleArray([answer, ...wrongAnswers]),
-            correctIndex: 0,
-            explanation: steps
-        };
+            wrongAnswers: wrongAnswers,
+            explanation: steps,
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
+        });
     }
 
     protected generateLevel1(): [Term[], Term] {
@@ -263,12 +267,12 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
             
             const varPart = sortedVars.map(([variable, exp]) => {
                 if (term.hasMissing && variable === term.missingVar) {
-                    return variable + '^{\\Box}';
+                    return `${variable}^{\\Box}`;
                 }
-                return exp === 1 ? variable : variable + '^{' + exp + '}';
+                return exp === 1 ? variable : `${variable}^{${exp}}`;
             }).join('');
 
-            return term.coefficient === 1 ? varPart : term.coefficient + varPart;
+            return term.coefficient === 1 ? varPart : `${term.coefficient}${varPart}`;
         });
 
         // 格式化答案
@@ -276,28 +280,25 @@ export default class F1L12_1_Generator_Q4_F_MQ extends QuestionGenerator {
             .sort(([a], [b]) => a.localeCompare(b));
         
         const varPart = sortedResultVars.map(([variable, exp]) => {
-            return exp === 1 ? variable : variable + '^{' + exp + '}';
+            return exp === 1 ? variable : `${variable}^{${exp}}`;
         }).join('');
 
-        const answer = result.coefficient === 1 ? varPart : result.coefficient + varPart;
+        const answer = result.coefficient === 1 ? varPart : `${result.coefficient}${varPart}`;
 
         // 生成完整的等式
-        const equation = `${questionParts.join(' \\div ')} = ${answer}`;
+        const equation = `\\[${questionParts.join(' \\div ')} = ${answer}\\]`;
 
-        // 生成解題步驟，使用 LaTeX 格式
-        const steps = `解題步驟：
-1. 找出已知的指數：
-${Array.from(terms[0].variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${e}\\)`)
-    .join('\n')}
-
-2. 觀察最終答案中的指數：
-${Array.from(result.variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${e}\\)`)
-    .join('\n')}
-
-3. 利用指數減法原理，求出缺少的指數：
-   \\(${terms[1].missingVar}^{\\Box} = ${this.missingExponent}\\)`;
+        // 生成解題步驟
+        const steps = `1. 找出已知的指數：<br>` +
+            `${Array.from(terms[0].variables.entries())
+                .map(([v, e]) => `\\[${v}: ${e}\\]`)
+                .join('<br>')}<br>` +
+            `2. 觀察最終答案中的指數：<br>` +
+            `${Array.from(result.variables.entries())
+                .map(([v, e]) => `\\[${v}: ${e}\\]`)
+                .join('<br>')}<br>` +
+            `3. 利用指數減法原理，求出缺少的指數：<br>` +
+            `\\[${terms[1].missingVar}^{\\Box} = ${this.missingExponent}\\]`;
 
         return [equation, this.missingExponent.toString(), steps];
     }
