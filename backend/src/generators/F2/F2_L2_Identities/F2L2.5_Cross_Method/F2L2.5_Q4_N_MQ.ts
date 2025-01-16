@@ -1,5 +1,6 @@
 import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
 import { VARIABLE_NAMES } from '@/utils/mathUtils';
+import { FractionUtils } from '@/utils/FractionUtils';
 
 interface Factor {
     a: number;  // 第一个因式的第一个变量系数
@@ -132,10 +133,10 @@ export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
                         [1, 2], [1, 3], [2, 3], [3, 2], [3, 4], [2, 5]
                     ];
                     e = fractions[Math.floor(Math.random() * fractions.length)];
-                    a = Math.floor(Math.random() * 4) + 2;
-                    b = Math.floor(Math.random() * 19) - 9;
-                    c = Math.floor(Math.random() * 4) + 2;
-                    d = Math.floor(Math.random() * 19) - 9;
+                    a = Math.floor(Math.random() * 4) + 2;  // 2 到 5
+                    b = Math.floor(Math.random() * 19) - 9; // -9 到 9
+                    c = Math.floor(Math.random() * 4) + 2;  // 2 到 5
+                    d = Math.floor(Math.random() * 19) - 9; // -9 到 9
                     break;
             }
             
@@ -172,45 +173,49 @@ export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
         const { a, b, c, d, var1, var2 } = factors;
         
         // 计算展开式的系数
-        const var1_2Coeff = (p * a * c) / q;  // var1²项系数
-        const var1var2Coeff = (p * (a * d + b * c)) / q;  // var1var2项系数
-        const var2_2Coeff = (p * b * d) / q;  // var2²项系数
+        const var1_2Coeff = p * a * c;  // var1²项系数
+        const var1var2Coeff = p * (a * d + b * c);  // var1var2项系数
+        const var2_2Coeff = p * b * d;  // var2²项系数
+
+        // 检查除法结果是否有多位小数
+        const needsFraction = (num: number): boolean => {
+            const decimal = num / q;
+            return Math.abs(decimal - Math.round(decimal * 100) / 100) > 0.001;
+        };
 
         // 构建表达式
         let expression = '';
         
         // var1²项
-        if (var1_2Coeff === 1) {
-            expression += `${var1}^2`;
-        } else if (var1_2Coeff === -1) {
-            expression += `-${var1}^2`;
+        if (this.difficulty === 5 && needsFraction(var1_2Coeff)) {
+            expression += `\\frac{${var1_2Coeff}}{${q}}${var1}^2`;
         } else {
-            expression += `${var1_2Coeff}${var1}^2`;
+            expression += `${var1_2Coeff/q}${var1}^2`;
         }
         
         // var1var2项
         if (var1var2Coeff !== 0) {
-            if (var1var2Coeff === 1) {
-                expression += `+${var1}${var2}`;
-            } else if (var1var2Coeff === -1) {
-                expression += `-${var1}${var2}`;
+            if (this.difficulty === 5 && needsFraction(var1var2Coeff)) {
+                expression += var1var2Coeff > 0 ? 
+                    `+\\frac{${var1var2Coeff}}{${q}}${var1}${var2}` : 
+                    `\\frac{${var1var2Coeff}}{${q}}${var1}${var2}`;
             } else {
                 expression += var1var2Coeff > 0 ? 
-                    `+${var1var2Coeff}${var1}${var2}` : 
-                    `${var1var2Coeff}${var1}${var2}`;
+                    `+${var1var2Coeff/q}${var1}${var2}` : 
+                    `${var1var2Coeff/q}${var1}${var2}`;
             }
         }
         
         // var2²项
         if (var2_2Coeff !== 0) {
-            if (var2_2Coeff === 1) {
-                expression += `+${var2}^2`;
-            } else if (var2_2Coeff === -1) {
-                expression += `-${var2}^2`;
+            if (this.difficulty === 5 && needsFraction(var2_2Coeff)) {
+                expression += var2_2Coeff > 0 ? 
+                    `+\\frac{${var2_2Coeff}}{${q}}${var2}^2` : 
+                    `\\frac{${var2_2Coeff}}{${q}}${var2}^2`;
             } else {
                 expression += var2_2Coeff > 0 ? 
-                    `+${var2_2Coeff}${var2}^2` : 
-                    `${var2_2Coeff}${var2}^2`;
+                    `+${var2_2Coeff/q}${var2}^2` : 
+                    `${var2_2Coeff/q}${var2}^2`;
             }
         }
         
@@ -319,25 +324,33 @@ export default class F2L2_5_Q4_N_MQ extends QuestionGenerator {
         
         if (this.difficulty >= 3) {
             steps += `2. 提取公因數：<br>`;
-            // 计算括号内的系数
-            const var1_2Coeff = a * c;  // var1²的系数
-            const var1var2Coeff = a * d + b * c;  // var1var2的系数
-            const var2_2Coeff = b * d;  // var2²的系数
-            
-            // 格式化括号内的表达式
-            let innerExp = `${var1_2Coeff}${var1}^2`;
-            if (var1var2Coeff !== 0) {
-                innerExp += var1var2Coeff > 0 ? `+${var1var2Coeff}${var1}${var2}` : `${var1var2Coeff}${var1}${var2}`;
-            }
-            if (var2_2Coeff !== 0) {
-                innerExp += var2_2Coeff > 0 ? `+${var2_2Coeff}${var2}^2` : `${var2_2Coeff}${var2}^2`;
-            }
-            
             if (this.difficulty === 3 || this.difficulty === 4) {
-                steps += `\\[${e}(${innerExp})\\]<br><br>`;
+                steps += `\\[${e}(${a * c}${var1}^2`;
+                if (a * d + b * c > 0) {
+                    steps += `+${a * d + b * c}${var1}${var2}`;
+                } else {
+                    steps += `${a * d + b * c}${var1}${var2}`;
+                }
+                if (b * d > 0) {
+                    steps += `+${b * d}${var2}^2`;
+                } else {
+                    steps += `${b * d}${var2}^2`;
+                }
+                steps += `)\\]<br><br>`;
             } else {
                 const [numerator, denominator] = e as [number, number];
-                steps += `\\[\\frac{${numerator}}{${denominator}}(${innerExp})\\]<br><br>`;
+                steps += `\\[\\frac{${numerator}}{${denominator}}(${a * c}${var1}^2`;
+                if (a * d + b * c > 0) {
+                    steps += `+${a * d + b * c}${var1}${var2}`;
+                } else {
+                    steps += `${a * d + b * c}${var1}${var2}`;
+                }
+                if (b * d > 0) {
+                    steps += `+${b * d}${var2}^2`;
+                } else {
+                    steps += `${b * d}${var2}^2`;
+                }
+                steps += `)\\]<br><br>`;
             }
         }
         
