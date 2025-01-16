@@ -224,27 +224,40 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
 
         // 生成解題步驟
         const steps = terms.every(t => t.coefficient === 1) 
-            ? `解題步驟：
-1. 同類項指數相加：
-${Array.from(result.variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\)`)
-    .join('\n')}
-最終答案：\\(${
-    result.coefficient !== 1 ? LaTeX.formatConstant(result.coefficient) : ''
-}${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\)`
-            : `解題步驟：
-1. 係數相乘：\\(${terms.map(t => LaTeX.formatConstant(t.coefficient)).join(' \\times ')} = ${result.coefficient}\\)
-2. 同類項指數相加：
-${Array.from(result.variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\)`)
-    .join('\n')}
-3. 最終答案：\\(${
-    result.coefficient !== 1 ? LaTeX.formatConstant(result.coefficient) : ''
-}${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\)`;
+            ? `1. 同類項指數相加：<br>` +
+              `${Array.from(result.variables.entries())
+                  .map(([v, e]) => `\\[${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\]`)
+                  .join('<br>')}<br>` +
+              `最終答案：\\[${
+                  result.coefficient !== 1 ? LaTeX.formatConstant(result.coefficient) : ''
+              }${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\]`
+            : `解題步驟：<br>` +
+              `1. 係數相乘：\\[${terms.map(t => LaTeX.formatConstant(t.coefficient)).join(' \\times ')} = ${result.coefficient}\\]<br>` +
+              `2. 同類項指數相加：<br>` +
+              `${Array.from(result.variables.entries())
+                  .map(([v, e]) => `\\[${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\]`)
+                  .join('<br>')}<br>` +
+              `3. 最終答案：\\[${
+                  result.coefficient !== 1 ? LaTeX.formatConstant(result.coefficient) : ''
+              }${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\]`;
 
         // 将题目转换为 LaTeX 格式
         const question = `\\(${questionParts.join(' \\times ')}\\)`;
 
         return [question, answer, steps];
+    }
+
+    private generateExplanation(question: string, answer: number): string {
+        const steps: string[] = [];
+        
+        steps.push(
+            '1. 找出已知的指數<br>',
+            `\\[${question}\\]<br>`,
+            '2. 觀察運算符號為乘法，使用指數加法原理<br>',
+            '3. 計算指數相加<br>',
+            `\\[y^1 \\times y^3 = y^{1+3} = y^4\\]`
+        );
+
+        return steps.join('');
     }
 } 
