@@ -2,15 +2,15 @@ import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenera
 import { LaTeX } from '@/utils/mathUtils';
 
 interface Angle {
-    value: number;      // 角度值
-    label?: string;     // 角度标签（如 'x' 或具体数值）
-    position: string;   // 角的位置标识（如 'AOB', 'BOC' 等）
+    value: number;
+    label: string;
+    position: 'AOB' | 'BOC' | 'COD' | 'DOE';
 }
 
 interface IntersectingLines {
-    angles: Angle[];           // 所有角度
-    points: string[];         // 点的标识（如 ['A', 'O', 'B', 'C']）
-    isVertical?: boolean;     // 是否为垂直线（用于难度3）
+    angles: Angle[];
+    points: string[];
+    isVertical?: boolean;
 }
 
 export default class F1L11_1_Q1_N_MQ extends QuestionGenerator {
@@ -19,58 +19,47 @@ export default class F1L11_1_Q1_N_MQ extends QuestionGenerator {
     }
 
     generate(): IGeneratorOutput {
-        // 生成相交线和角度
-        const lines = this.generateLines();
-        
-        // 生成问题表达式（包含图形的LaTeX代码）
-        const expression = this.formatExpression(lines);
-        
-        // 获取正确答案
-        const correctAnswer = this.getAnswer(lines);
-        
-        // 生成错误选项
-        const wrongAnswers = this.generateWrongAnswers(lines);
-        
-        // 生成解题步骤
-        const explanation = this.generateSteps(lines);
-
-        return {
-            content: expression,
-            correctAnswer: correctAnswer.toString(),
-            wrongAnswers,
-            explanation,
-            type: 'text',
-            displayOptions: {
-                latex: true
+        // 根据难度生成不同的相交线问题
+        const lines = (() => {
+            switch (this.difficulty) {
+                case 1:
+                    return this.generateDifficulty1();
+                case 2:
+                    return this.generateDifficulty2();
+                case 3:
+                    return this.generateDifficulty3();
+                case 4:
+                    return this.generateDifficulty4();
+                case 5:
+                    return this.generateDifficulty5();
+                default:
+                    return this.generateDifficulty1();
             }
-        };
-    }
+        })();
 
-    private generateLines(): IntersectingLines {
-        switch (this.difficulty) {
-            case 1:
-                return this.generateDifficulty1();
-            case 2:
-                return this.generateDifficulty2();
-            case 3:
-                return this.generateDifficulty3();
-            case 4:
-                return this.generateDifficulty4();
-            case 5:
-                return this.generateDifficulty5();
-            default:
-                return this.generateDifficulty1();
-        }
+        // 生成问题内容
+        const expression = this.formatExpression(lines);
+        const answer = this.getAnswer(lines);
+        const wrongAnswers = this.generateWrongAnswers(lines);
+        const steps = this.generateSteps(lines);
+
+        return this.getGeneratorOutput({
+            content: expression,
+            correctAnswer: answer.toString(),
+            wrongAnswers: wrongAnswers,
+            explanation: steps
+        });
     }
 
     private generateDifficulty1(): IntersectingLines {
-        // 生成一个基本角度（20°到160°之间）
-        const knownAngle = Math.floor(Math.random() * 141) + 20;
+        // 生成一个已知角度
+        const angle1 = Math.floor(Math.random() * 71) + 20;  // 20°到90°
+        const angleX = 180 - angle1;  // 补角
         
         return {
             angles: [
-                { value: knownAngle, label: knownAngle.toString(), position: 'AOB' },
-                { value: 180 - knownAngle, label: 'x', position: 'BOC' }
+                { value: angle1, label: angle1.toString(), position: 'AOB' },
+                { value: angleX, label: 'x', position: 'BOC' }
             ],
             points: ['A', 'O', 'B', 'C']
         };
@@ -149,29 +138,39 @@ export default class F1L11_1_Q1_N_MQ extends QuestionGenerator {
     private formatExpression(lines: IntersectingLines): string {
         let expression = '';
         
-        // 添加 SVG 图形
+        // 从第一个已知角度获取斜线角度
+        const knownAngle = lines.angles.find(angle => angle.label !== 'x');
+        const slopeAngle = knownAngle ? knownAngle.value : 45;
+        
         expression += `
 <div style="text-align: center; margin: 20px 0;">
 <svg width="300" height="300" viewBox="-150 -150 300 300" style="background: white;">
-    <!-- 绘制相交线 -->
+    <!-- 定义裁剪区域：只显示水平线上方的部分 -->
+    <defs>
+        <clipPath id="aboveHorizontal">
+            <rect x="-150" y="-150" width="300" height="150" />
+        </clipPath>
+    </defs>
+
+    <!-- 绘制水平线 -->
     <line x1="-120" y1="0" x2="120" y2="0" 
           stroke="black" stroke-width="2"/>
-    ${lines.isVertical ? 
-        `<line x1="0" y1="-120" x2="0" y2="120" 
-               stroke="black" stroke-width="2"/>` :
-        `<line x1="-90" y1="90" x2="90" y2="-90" 
-               stroke="black" stroke-width="2"/>`
-    }
     
-    <!-- 绘制角度弧线 -->
+    <!-- 绘制斜线，使用实际角度 -->
+    <line x1="-120" y1="${120 * Math.tan((90 - slopeAngle) * Math.PI / 180)}" 
+          x2="120" y2="${-120 * Math.tan((90 - slopeAngle) * Math.PI / 180)}" 
+          stroke="black" stroke-width="2"
+          clip-path="url(#aboveHorizontal)"/>
+    
+    <!-- 绘制角度弧线和标签 -->
     ${lines.angles.map(angle => {
         const pos = this.getAnglePosition(angle.position, lines.isVertical);
-        const arcPath = this.getAngleArc(pos.x * 100, pos.y * 100, 20, angle.position);
+        const arcPath = this.getAngleArc(0, 0, 30, angle.position, slopeAngle);
         return `
             <path d="${arcPath}" 
                   fill="none" 
                   stroke="black" 
-                  stroke-width="1"/>
+                  stroke-width="1.5"/>
             <text x="${pos.x * 100}" y="${pos.y * 100}" 
                   text-anchor="middle" 
                   alignment-baseline="middle"
@@ -183,49 +182,50 @@ export default class F1L11_1_Q1_N_MQ extends QuestionGenerator {
 </div>
 `;
         
-        // 添加问题文本
-        expression += `求角 x 的值。`;
-
         return expression;
     }
 
     private getAnglePosition(position: string, isVertical: boolean = false): {x: number, y: number} {
-        // SVG 坐标系中的位置（值范围从-1到1）
+        // 调整角度标签的位置到上方
         const positions: {[key: string]: {x: number, y: number}} = {
-            'AOB': {x: -0.6, y: -0.3},
-            'BOC': {x: 0.6, y: -0.3},
-            'COD': {x: 0.6, y: 0.3},
-            'DOE': {x: -0.6, y: 0.3}
+            'AOB': {x: -0.3, y: -0.2},  // 左上方
+            'BOC': {x: 0.3, y: -0.2},   // 右上方
+            'COD': {x: 0.15, y: 0.15},    // 右下角（备用）
+            'DOE': {x: -0.15, y: 0.15}    // 左下角（备用）
         };
         
         return positions[position] || {x: 0, y: 0};
     }
 
-    private getAngleArc(x: number, y: number, radius: number, position: string): string {
-        // 定义角度位置类型
-        type AnglePosition = 'AOB' | 'BOC' | 'COD' | 'DOE';
-        
-        // 根据角度位置确定弧线的起始和结束角度
-        const angles: Record<AnglePosition, { start: number; end: number }> = {
-            'AOB': { start: 180, end: 270 },
-            'BOC': { start: 270, end: 360 },
-            'COD': { start: 0, end: 90 },
-            'DOE': { start: 90, end: 180 }
+    private getAngleArc(x: number, y: number, radius: number, position: Angle['position'], slopeAngle: number): string {
+        // 根据角度位置使用不同的半径
+        const actualRadius = position === 'AOB' ? radius * 0.6 : radius * 1.2;  // 调整两个弧的大小差异
+
+        // 调整角度范围，第一个弧线从0度到斜线角度
+        const angles: Record<Angle['position'], { start: number; end: number }> = {
+            'AOB': { start: 0, end: slopeAngle * -1 },     // 从水平线到斜线，使用负角度
+            'BOC': { start: slopeAngle * -1, end: 0 },     // 从斜线到水平线
+            'COD': { start: 0, end: slopeAngle },          // 备用
+            'DOE': { start: slopeAngle, end: 180 }         // 备用
         };
 
-        // 类型断言确保 position 是有效的角度位置
-        const angle = angles[position as AnglePosition] || { start: 0, end: 90 };
+        const startAngle = angles[position]?.start || 0;
+        const endAngle = angles[position]?.end || 180;
         
         // 计算弧线路径
-        const startAngle = angle.start * Math.PI / 180;
-        const endAngle = angle.end * Math.PI / 180;
+        const startRad = startAngle * Math.PI / 180;
+        const endRad = endAngle * Math.PI / 180;
         
-        const x1 = x + radius * Math.cos(startAngle);
-        const y1 = y + radius * Math.sin(startAngle);
-        const x2 = x + radius * Math.cos(endAngle);
-        const y2 = y + radius * Math.sin(endAngle);
+        const x1 = actualRadius * Math.cos(startRad);
+        const y1 = actualRadius * Math.sin(startRad);
+        const x2 = actualRadius * Math.cos(endRad);
+        const y2 = actualRadius * Math.sin(endRad);
         
-        return `M ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2}`;
+        // 调整弧线的绘制方向
+        const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
+        const sweepFlag = position === 'AOB' ? 0 : 1;  // 根据位置调整绘制方向
+
+        return `M ${x1} ${y1} A ${actualRadius} ${actualRadius} 0 ${largeArcFlag} ${sweepFlag} ${x2} ${y2}`;
     }
 
     private getAnswer(lines: IntersectingLines): number {
