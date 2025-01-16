@@ -40,13 +40,12 @@ export default class F1L12_1_Generator_Q6_N_MQ extends QuestionGenerator {
         }
 
         const [question, answer, steps] = this.formatQuestion(terms);
-        const [questionWithBlank, blankAnswer] = this.createQuestionWithBlank(question, terms);
-        const wrongAnswers = this.generateWrongAnswers(blankAnswer, terms);
+        const wrongAnswers = this.generateWrongAnswers(answer, terms);
         
         return this.getGeneratorOutput({
-            content: questionWithBlank,
-            correctAnswer: blankAnswer,
-            wrongAnswers: wrongAnswers.map(ans => this.extractBlankPart(ans, answer)),
+            content: question,
+            correctAnswer: answer,
+            wrongAnswers: wrongAnswers,
             explanation: steps,
             type: 'text',
             displayOptions: {
@@ -209,7 +208,14 @@ export default class F1L12_1_Generator_Q6_N_MQ extends QuestionGenerator {
             }
         });
 
-        // 格式化题目
+        // 随机选择一个项和其中的一个变量来放置方框
+        const termIndex = Math.floor(Math.random() * terms.length);
+        const selectedTerm = terms[termIndex];
+        const variables = Array.from(selectedTerm.variables.keys());
+        const selectedVar = variables[Math.floor(Math.random() * variables.length)];
+        const selectedExp = selectedTerm.variables.get(selectedVar)!;
+
+        // 格式化题目，包含方框
         const questionParts = terms.map((term, index) => {
             let termStr = '';
             if (term.coefficient !== 1) {
@@ -220,22 +226,31 @@ export default class F1L12_1_Generator_Q6_N_MQ extends QuestionGenerator {
                 .sort(([a], [b]) => a.localeCompare(b));
             
             sortedVars.forEach(([variable, exp]) => {
-                termStr += variable + (exp !== 1 ? `^{${exp}}` : '');
+                if (index === termIndex && variable === selectedVar) {
+                    termStr += `${variable}^{\\Box}`; // 放置方框
+                } else {
+                    termStr += variable + (exp !== 1 ? `^{${exp}}` : '');
+                }
             });
             
             return index === 0 ? termStr : 
                 (term.operation === 'divide' ? ' \\div ' + termStr : ' \\times ' + termStr);
         });
 
-        // 格式化答案
-        const sortedResultVars = Array.from(result.variables.entries())
-            .sort(([a], [b]) => a.localeCompare(b));
-        
-        const varPart = sortedResultVars.map(([variable, exp]) => {
-            return exp === 1 ? variable : `${variable}^{${exp}}`;
-        }).join('');
-
-        const answer = result.coefficient === 1 ? varPart : `${result.coefficient}${varPart}`;
+        // 格式化结果
+        const resultStr = (() => {
+            let str = '';
+            if (result.coefficient !== 1) {
+                str += result.coefficient;
+            }
+            const sortedResultVars = Array.from(result.variables.entries())
+                .sort(([a], [b]) => a.localeCompare(b));
+            
+            sortedResultVars.forEach(([variable, exp]) => {
+                str += variable + (exp !== 1 ? `^{${exp}}` : '');
+            });
+            return str;
+        })();
 
         // 生成解题步骤
         const steps = `1. 找出各項的指數：<br>` +
@@ -253,12 +268,12 @@ export default class F1L12_1_Generator_Q6_N_MQ extends QuestionGenerator {
                 });
                 return `\\[${v}: ${exps.join(' ')} = ${result.variables.get(v) || 0}\\]`;
             }).join('<br>')}<br>` +
-            `3. 最終答案：\\[${answer}\\]`;
+            `3. 方框中的指數：\\[${selectedExp}\\]`;
 
-        // 将题目转换为 LaTeX 格式
-        const question = `\\[${questionParts.join('')}\\]`;
+        // 将题目转换为 LaTeX 格式，包含等号和结果
+        const question = `\\[${questionParts.join('')} = ${resultStr}\\]`;
 
-        return [question, answer, steps];
+        return [question, selectedExp.toString(), steps];
     }
 
     protected generateWrongAnswers(correctAnswer: string, terms: Term[]): string[] {
@@ -282,26 +297,5 @@ export default class F1L12_1_Generator_Q6_N_MQ extends QuestionGenerator {
         }
 
         return Array.from(wrongAnswers);
-    }
-
-    private createQuestionWithBlank(question: string, terms: Term[]): [string, string] {
-        // 随机选择一个项和其中的一个变量
-        const termIndex = Math.floor(Math.random() * terms.length);
-        const term = terms[termIndex];
-        const variables = Array.from(term.variables.keys());
-        const variable = variables[Math.floor(Math.random() * variables.length)];
-        const exponent = term.variables.get(variable)!;
-
-        // 在问题中替换选中的指数为方框
-        const regex = new RegExp(`${variable}\\^{${exponent}}`, 'g');
-        const questionWithBlank = question.replace(regex, `${variable}^{\\Box}`);
-
-        return [questionWithBlank, exponent.toString()];
-    }
-
-    private extractBlankPart(option: string, answer: string): string {
-        // 从选项中提取指数部分
-        const expMatch = option.match(/\^{(\d+)}/);
-        return expMatch ? expMatch[1] : option;
     }
 } 
