@@ -1,6 +1,5 @@
 import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
 import { LaTeX } from '@/utils/mathUtils';
-import { FractionUtils } from '@/utils/FractionUtils';
 
 interface Term {
     coefficient: number;
@@ -241,8 +240,23 @@ export default class F1L12_1_Generator_Q6_N_MQ extends QuestionGenerator {
         const resultStr = (() => {
             let str = '';
             if (result.coefficient !== 1) {
-                str += result.coefficient;
+                // 检查系数是否需要转换为分数
+                const coefficient = result.coefficient;
+                if (Number.isInteger(coefficient)) {
+                    str += coefficient;
+                } else {
+                    // 如果小数位超过3位，转换为分数
+                    const decimalPlaces = (coefficient.toString().split('.')[1] || '').length;
+                    if (decimalPlaces > 3) {
+                        const denominator = Math.pow(10, decimalPlaces);
+                        const numerator = Math.round(coefficient * denominator);
+                        str += `\\frac{${numerator}}{${denominator}}`;
+                    } else {
+                        str += coefficient.toFixed(decimalPlaces);
+                    }
+                }
             }
+            
             const sortedResultVars = Array.from(result.variables.entries())
                 .sort(([a], [b]) => a.localeCompare(b));
             
