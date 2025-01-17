@@ -66,7 +66,7 @@ export default class F2L8_3_2_Q2_F_MQ extends QuestionGenerator {
         for (let i = 0; i < intPart.length; i++) {
             if (intPart[i] === "1") {
                 const power = intPart.length - 1 - i;
-                terms.push(`2${power === 0 ? "⁰" : "^" + power}`);
+                terms.push(`2^${power}`);
             }
         }
         
@@ -82,52 +82,49 @@ export default class F2L8_3_2_Q2_F_MQ extends QuestionGenerator {
     }
 
     private generateWrongAnswer(binary: string, correctAnswer: string): string {
+        const terms = correctAnswer.split(" + ");
+        
         const errorTypes = [
-            // 使用4作為底數
+            // 1. 只保留最高位
+            () => terms[0],
+            
+            // 2. 漏掉一项（不是最高位）
             () => {
-                const terms = correctAnswer.split(" + ");
-                return terms.map(term => {
-                    if (term.includes("⁻")) {
-                        return term; // 保持小數部分不變
-                    } else {
-                        return term.replace(/^2/, "4");
-                    }
-                }).join(" + ");
+                if (terms.length <= 1) return terms[0];
+                const skipIndex = getRandomInt(1, terms.length - 1);
+                return terms.filter((_, i) => i !== skipIndex).join(" + ");
             },
-            // 所有指數+1
+            
+            // 3. 最高位指数+1，其他不变
             () => {
-                const terms = correctAnswer.split(" + ");
+                if (terms.length === 0) return "2^0";
+                const firstTerm = terms[0];
+                const power = parseInt(firstTerm.match(/\d+/)?.[0] || "0") + 1;
+                return [`2^${power}`, ...terms.slice(1)].join(" + ");
+            },
+            
+            // 4. 所有指数+1
+            () => {
                 return terms.map(term => {
+                    const match = term.match(/\d+/);
+                    if (!match) return term;
+                    const power = parseInt(match[0]) + 1;
                     if (term.includes("⁻")) {
-                        const power = parseInt(term.slice(2)) - 1;
                         return `2⁻${power}`;
-                    } else {
-                        const power = parseInt(term.slice(2)) + 1;
-                        return `2${power === 0 ? "⁰" : "^" + power}`;
                     }
+                    return `2^${power}`;
                 }).join(" + ");
-            },
-            // 遺漏最高位
-            () => {
-                const terms = correctAnswer.split(" + ");
-                return terms.slice(1).join(" + ");
             }
         ];
 
-        // 如果是小數，添加特殊的錯誤類型
-        if (binary.includes(".")) {
-            errorTypes.push(
-                // 將負指數當作正指數
-                () => correctAnswer.replace(/⁻/g, ""),
-                // 完全忽略小數部分
-                () => {
-                    const terms = correctAnswer.split(" + ");
-                    return terms.filter(term => !term.includes("⁻")).join(" + ");
-                }
-            );
+        const errorIndex = getRandomInt(0, errorTypes.length - 1);
+        const wrongAnswer = errorTypes[errorIndex]();
+        
+        if (!wrongAnswer || wrongAnswer.includes("NaN")) {
+            return terms.length > 1 ? terms[0] : "2^0";
         }
-
-        return errorTypes[getRandomInt(0, errorTypes.length - 1)]();
+        
+        return wrongAnswer;
     }
 
     private generateExplanation(binary: string, answer: string): string {
@@ -135,7 +132,7 @@ export default class F2L8_3_2_Q2_F_MQ extends QuestionGenerator {
         
         steps.push(
             '1. 找出二進制數中的1的位置',
-            `\\[${binary}_2\\]`,
+            `\\[${binary}₂\\]`,
             '2. 計算每個1的位值',
             `\\[${answer}\\]`,
             '3. 確認答案'
@@ -156,7 +153,7 @@ export default class F2L8_3_2_Q2_F_MQ extends QuestionGenerator {
         }
         
         return {
-            content: `將${binary}_2轉換為2的冪次表示式：`,
+            content: `將${binary}₂轉換為2的冪次表示式：`,
             correctAnswer,
             wrongAnswers: Array.from(wrongAnswers),
             explanation: this.generateExplanation(binary, correctAnswer),
