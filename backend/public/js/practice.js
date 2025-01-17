@@ -703,7 +703,7 @@ async function startPractice(generatorId, difficulty) {
         
         const question = await response.json();
         question.maxDifficulty = parseInt(levelNumber);
-        question.currentDifficulty = difficulty;
+        question.currentDifficulty = parseInt(difficulty);
         
         displayQuestion(question, false); // 传入 false 表示不重新生成难度按钮
     } catch (error) {
@@ -931,11 +931,17 @@ function normalizeAnswer(answer) {
 
 function nextQuestion() {
     const activeGenerator = document.querySelector('.generator-item.active');
-    const difficulty = document.querySelector('.diff-btn.active')?.dataset.difficulty || '1';
+    const activeDifficultyBtn = document.querySelector('.diff-btn.active');
+    const difficulty = activeDifficultyBtn?.dataset.difficulty || '1';
     
     if (activeGenerator) {
         const generatorId = activeGenerator.dataset.topic;
-        startPractice(generatorId, difficulty);
+        startPractice(generatorId, difficulty).then(() => {
+            // 确保在新题目加载后重新设置难度按钮的高亮状态
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.difficulty === difficulty);
+            });
+        });
     }
 }
 
