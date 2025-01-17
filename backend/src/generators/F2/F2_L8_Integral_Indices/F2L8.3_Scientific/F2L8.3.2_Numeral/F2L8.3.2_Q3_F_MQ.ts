@@ -182,45 +182,95 @@ export default class F2L8_3_2_Q3_F_MQ extends QuestionGenerator {
         const intPart = parts[0];
         const decPart = parts[1] || "";
         
-        let steps: string[] = ['計算步驟：'];
+        let steps: string[] = [];
+        
+        // 標題
+        steps.push('解題步驟：');
+        
+        // 原始數值說明
+        steps.push(`\\[${binary}_{2} = \\text{?}\\]`);
         
         // 整數部分的計算
-        let intTerms: string[] = [];
-        let intSum = 0;
-        for (let i = 0; i < intPart.length; i++) {
-            if (intPart[i] === "1") {
-                const power = intPart.length - 1 - i;
-                const value = Math.pow(2, power);
-                intSum += value;
-                intTerms.push(`2^{${power}} = ${value}`);
+        if (intPart) {
+            let intTerms: string[] = [];
+            let intSum = 0;
+            
+            // 收集所有項
+            for (let i = 0; i < intPart.length; i++) {
+                if (intPart[i] === "1") {
+                    const power = intPart.length - 1 - i;
+                    const value = Math.pow(2, power);
+                    intSum += value;
+                    intTerms.push(`2^{${power}}`);
+                }
             }
-        }
-        
-        if (intTerms.length > 0) {
-            steps.push(`整數部分：${intTerms.join(" + ")} = ${intSum}`);
+            
+            if (intTerms.length > 0) {
+                // 顯示整數部分的展開式
+                steps.push('整數部分：');
+                steps.push(`\\[\\begin{aligned}`);
+                steps.push(`&${intTerms.join(" + ")} \\\\`);
+                
+                // 顯示各項的實際值
+                let valueTerms = intTerms.map(term => {
+                    const power = parseInt(term.match(/\{(-?\d+)\}/)?.[1] || "0");
+                    return Math.pow(2, power);
+                });
+                steps.push(`&= ${valueTerms.join(" + ")} \\\\`);
+                
+                // 顯示最終和
+                steps.push(`&= ${intSum}`);
+                steps.push(`\\end{aligned}\\]`);
+            }
         }
         
         // 小數部分的計算
         if (decPart) {
             let decTerms: string[] = [];
             let decSum = 0;
+            
+            // 收集所有項
             for (let i = 0; i < decPart.length; i++) {
                 if (decPart[i] === "1") {
                     const power = -(i + 1);
                     const value = Math.pow(2, power);
                     decSum += value;
-                    decTerms.push(`2^{${power}} = ${value}`);
+                    decTerms.push(`2^{${power}}`);
                 }
             }
+            
             if (decTerms.length > 0) {
-                steps.push(`小數部分：${decTerms.join(" + ")} = ${decSum.toFixed(3)}`);
-                steps.push(`總和：${intSum} + ${decSum.toFixed(3)} = ${answer}`);
+                // 顯示小數部分的展開式
+                steps.push('小數部分：');
+                steps.push(`\\[\\begin{aligned}`);
+                steps.push(`&${decTerms.join(" + ")} \\\\`);
+                
+                // 顯示各項的實際值
+                let valueTerms = decTerms.map(term => {
+                    const power = parseInt(term.match(/\{(-?\d+)\}/)?.[1] || "0");
+                    return Math.pow(2, power).toFixed(3);
+                });
+                steps.push(`&= ${valueTerms.join(" + ")} \\\\`);
+                
+                // 顯示最終和
+                steps.push(`&= ${decSum.toFixed(3)}`);
+                steps.push(`\\end{aligned}\\]`);
+            }
+            
+            // 如果同時有整數和小數部分，顯示最終相加
+            if (intPart && decPart) {
+                steps.push('總和：');
+                steps.push(`\\[\\begin{aligned}`);
+                const intSum = this.binaryToDecimal(intPart);
+                steps.push(`&${intSum} + ${decSum.toFixed(3)} \\\\`);
+                steps.push(`&= ${answer}`);
+                steps.push(`\\end{aligned}\\]`);
             }
         }
         
-        if (!decPart) {
-            steps.push(`最終結果：${answer}`);
-        }
+        // 最終結果
+        steps.push('因此：');
+        steps.push(`\\[${binary}_{2} = ${answer}_{10}\\]`);
         
         return steps.join('\n');
     }
