@@ -149,13 +149,7 @@ function renderDirectoryStructure(structure) {
 
                         // 渲染生成器
                         (subSection.generators || []).forEach(generator => {
-                            html += `
-                                <div class="generator-item" data-topic="${generator.id}">
-                                    <span class="icon file-icon">📄</span>
-                                    <span class="generator-title">${generator.title}</span>
-                                    <span class="difficulty-badge">${generator.difficulty}</span>
-                                </div>
-                            `;
+                            html += renderGenerator(generator);
                         });
 
                         html += `
@@ -167,13 +161,7 @@ function renderDirectoryStructure(structure) {
                 
                 // 渲染当前小节的生成器
                 (section.generators || []).forEach(generator => {
-                    html += `
-                        <div class="generator-item" data-topic="${generator.id}">
-                            <span class="icon file-icon">📄</span>
-                            <span class="generator-title">${generator.title}</span>
-                            <span class="difficulty-badge">${generator.difficulty}</span>
-                        </div>
-                    `;
+                    html += renderGenerator(generator);
                 });
                 
                 html += `
@@ -196,6 +184,20 @@ function renderDirectoryStructure(structure) {
     
     html += '</div>';
     return html;
+}
+
+function renderGenerator(generator) {
+    // 从生成器ID中提取题号
+    const questionMatch = generator.id.match(/Q(\d+)/);
+    const questionNumber = questionMatch ? `Q${questionMatch[1]}. ` : '';
+    
+    return `
+        <div class="generator-item" data-topic="${generator.id}">
+            <span class="icon file-icon">��</span>
+            <span class="generator-title">${questionNumber}${generator.title}</span>
+            <span class="difficulty-badge">${generator.difficulty}</span>
+        </div>
+    `;
 }
 
 function addEventListeners() {
@@ -249,10 +251,13 @@ function addEventListeners() {
                         // 然后添加生成器文件
                         if (content.generators && content.generators.length > 0) {
                             content.generators.forEach(gen => {
+                                const questionMatch = gen.id.match(/Q(\d+)/);
+                                const questionNumber = questionMatch ? `Q${questionMatch[1]}. ` : '';
+                                
                                 contentHtml += `
                                     <div class="generator-item" data-topic="${gen.id}">
                                         <span class="icon file-icon">📄</span>
-                                        <span class="generator-title">${gen.title}</span>
+                                        <span class="generator-title">${questionNumber}${gen.title}</span>
                                         <span class="difficulty-badge">${gen.difficulty}</span>
                                     </div>
                                 `;
