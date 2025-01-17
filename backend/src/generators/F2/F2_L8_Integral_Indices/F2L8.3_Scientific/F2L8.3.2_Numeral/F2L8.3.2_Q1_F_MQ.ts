@@ -144,76 +144,96 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
         try {
             const wrongAnswers = new Set<string>();
             const base = isBinary ? 2 : 10;
-            const maxValue = isBinary ? 64 : 10000;
 
-            // 1. 数字本身
-            const digit = parseInt(this.question.number[
-                this.question.number.length - 1 - this.question.markedPosition
-            ]);
-            if (digit !== correctValue) {
-                wrongAnswers.add(digit.toString());
-            }
-
-            // 2. 邻近位值
-            if (isDecimal && correctValue < 1) {
-                // 小数位值的情况
-                const exponent = Math.log(correctValue) / Math.log(base);
-                const higherValue = Math.pow(base, Math.ceil(exponent));
-                const lowerValue = Math.pow(base, Math.floor(exponent - 1));
-                
-                if (higherValue !== correctValue) {
-                    wrongAnswers.add(higherValue.toString());
+            // 对于二进制小数，使用预定义的位值集合
+            if (isBinary && isDecimal) {
+                const binaryFractions = [0.5, 0.25, 0.125, 0.0625];
+                for (const value of binaryFractions) {
+                    if (value !== correctValue) {
+                        wrongAnswers.add(value.toString());
+                    }
                 }
-                if (lowerValue !== correctValue) {
-                    wrongAnswers.add(lowerValue.toString());
+                // 如果还需要更多错误答案，添加1
+                if (wrongAnswers.size < 3 && correctValue !== 1) {
+                    wrongAnswers.add('1');
+                }
+            } else if (isDecimal) {
+                // 十进制小数的情况
+                const decimalFractions = [0.1, 0.01, 0.001, 0.0001];
+                for (const value of decimalFractions) {
+                    if (value !== correctValue) {
+                        wrongAnswers.add(value.toString());
+                    }
+                }
+                // 如果还需要更多错误答案，添加1
+                if (wrongAnswers.size < 3 && correctValue !== 1) {
+                    wrongAnswers.add('1');
                 }
             } else {
-                // 整数位值的情况
+                // 整数的情况保持不变
+                const maxValue = isBinary ? 64 : 10000;
+
+                // 1. 数字本身
+                const digit = parseInt(this.question.number[
+                    this.question.number.length - 1 - this.question.markedPosition
+                ]);
+                if (digit !== correctValue && !isNaN(digit)) {
+                    wrongAnswers.add(digit.toString());
+                }
+
+                // 2. 邻近位值
                 if (correctValue > base) {
-                    wrongAnswers.add(Math.floor(correctValue / base).toString());
+                    const lowerValue = Math.floor(correctValue / base);
+                    wrongAnswers.add(lowerValue.toString());
                 }
                 if (correctValue * base <= maxValue) {
                     wrongAnswers.add((correctValue * base).toString());
                 }
-            }
 
-            // 3. 位置错误
-            const wrongPosition = this.question.markedPosition > 0 ? 
-                this.question.markedPosition - 1 : 
-                this.question.markedPosition + 1;
-            const wrongPosValue = isDecimal ? 
-                Math.pow(base, -wrongPosition) :
-                Math.pow(base, wrongPosition);
-            
-            if (wrongPosValue !== correctValue && wrongPosValue <= maxValue) {
-                wrongAnswers.add(wrongPosValue.toString());
-            }
-
-            // 确保有3个不同的错误答案
-            while (wrongAnswers.size < 3) {
-                if (isDecimal && correctValue < 1) {
-                    const exponent = Math.log(correctValue) / Math.log(base);
-                    const randomExponent = exponent + (Math.random() < 0.5 ? -1 : 1);
-                    const randomValue = Math.pow(base, Math.floor(randomExponent));
-                    if (randomValue !== correctValue) {
-                        wrongAnswers.add(randomValue.toString());
+                // 3. 基本位值
+                const basicValues = isBinary ? 
+                    [1, 2, 4, 8, 16, 32, 64] : 
+                    [1, 10, 100, 1000, 10000];
+                
+                for (const value of basicValues) {
+                    if (value !== correctValue && value <= maxValue) {
+                        wrongAnswers.add(value.toString());
                     }
-                } else {
-                    const multiplier = getRandomInt(2, 4);
-                    const randomValue = correctValue * multiplier;
-                    if (randomValue <= maxValue && randomValue !== correctValue) {
-                        wrongAnswers.add(randomValue.toString());
-                    }
+                    if (wrongAnswers.size >= 3) break;
                 }
             }
 
-            return Array.from(wrongAnswers).slice(0, 3);
+            // 确保有3个不同的错误答案
+            const result = Array.from(wrongAnswers)
+                .filter(ans => !isNaN(Number(ans)) && ans !== correctValue.toString())
+                .slice(0, 3);
+
+            // 如果错误答案不够3个，添加安全的默认值
+            while (result.length < 3) {
+                if (isBinary && isDecimal) {
+                    const defaults = ['0.5', '0.25', '0.125'].filter(v => v !== correctValue.toString());
+                    result.push(defaults[result.length]);
+                } else if (isDecimal) {
+                    const defaults = ['0.1', '0.01', '0.001'].filter(v => v !== correctValue.toString());
+                    result.push(defaults[result.length]);
+                } else {
+                    const defaults = isBinary ? 
+                        ['2', '4', '8'].filter(v => v !== correctValue.toString()) :
+                        ['10', '100', '1000'].filter(v => v !== correctValue.toString());
+                    result.push(defaults[result.length]);
+                }
+            }
+
+            return result;
         } catch (error) {
             console.error('Error in generateWrongAnswers:', error);
+            // 提供安全的默认错误答案
             const defaultWrongs = isBinary ? 
-                (isDecimal ? ['0.25', '0.5', '1'] : ['2', '4', '8']) : 
+                (isDecimal ? ['0.5', '0.25', '0.125'] : ['2', '4', '8']) : 
                 (isDecimal ? ['0.1', '0.01', '0.001'] : ['10', '100', '1000']);
-            return defaultWrongs.filter(w => w !== correctValue.toString()).slice(0, 3);
+            return defaultWrongs
+                .filter(w => w !== correctValue.toString())
+                .slice(0, 3);
         }
     }
 
