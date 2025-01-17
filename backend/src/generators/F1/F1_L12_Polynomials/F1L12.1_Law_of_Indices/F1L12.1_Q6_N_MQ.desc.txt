@@ -2,6 +2,8 @@
 Mixed Operations of Indices (Fill in the Blank)
 ===================================
 
+Level number：5
+
 題型：運用指數定律計算，並填寫缺少的指數
 難度等級：
 1. 簡單：兩步運算，單一變量 (如 x³ × x⁴ ÷ x²)

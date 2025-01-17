@@ -49,31 +49,41 @@ export default class F2L2_5_Q2_N_MQ extends QuestionGenerator {
     }
 
     private formatExpression(b: number, c: number, var1: string = 'x', var2: string = 'y'): string {
-        // 一次项处理
-        let bTerm;
-        if (b === 0) {
-            bTerm = '';
-        } else if (b === 1) {
-            bTerm = `+${var1}${var2}`;
-        } else if (b === -1) {
-            bTerm = `-${var1}${var2}`;
-        } else if (b > 0) {
-            bTerm = `+${b}${var1}${var2}`;
-        } else {
-            bTerm = `${b}${var1}${var2}`;
+        // x²项总是系数为1，所以直接用 var1^2
+        const x2Term = `${var1}^2`;
+
+        // xy项处理
+        let bTerm = '';
+        if (b !== 0) {
+            if (b === 1) {
+                bTerm = `+${var1}${var2}`;
+            } else if (b === -1) {
+                bTerm = `-${var1}${var2}`;
+            } else {
+                bTerm = b > 0 ? `+${b}${var1}${var2}` : `${b}${var1}${var2}`;
+            }
         }
 
         // y²项处理
-        let cTerm;
-        if (c === 0) {
-            cTerm = '';
-        } else if (c > 0) {
-            cTerm = `+${c}${var2}^2`;
-        } else {
-            cTerm = `${c}${var2}^2`;
+        let cTerm = '';
+        if (c !== 0) {
+            if (c === 1) {
+                cTerm = `+${var2}^2`;
+            } else if (c === -1) {
+                cTerm = `-${var2}^2`;
+            } else {
+                cTerm = c > 0 ? `+${c}${var2}^2` : `${c}${var2}^2`;
+            }
         }
 
-        return `${var1}^2${bTerm}${cTerm}`;
+        let result = `${x2Term}${bTerm}${cTerm}`;
+        
+        // 如果表达式以 '+' 开头，移除这个加号
+        if (result.startsWith('+')) {
+            result = result.substring(1);
+        }
+        
+        return result;
     }
 
     private generateFactors(): Factor {
@@ -161,11 +171,20 @@ export default class F2L2_5_Q2_N_MQ extends QuestionGenerator {
             }
         }
 
-        // 其他难度的格式
+        // 格式化第一个因子
         const firstTerm = m === 0 ? var1 :
-                         m > 0 ? `(${var1} - ${m}${var2})` : `(${var1} + ${-m}${var2})`;
+            m === 1 ? `(${var1} + ${var2})` :
+            m === -1 ? `(${var1} - ${var2})` :
+            m > 0 ? `(${var1} + ${m}${var2})` : 
+            `(${var1} ${m}${var2})`;
+
+        // 格式化第二个因子
         const secondTerm = n === 0 ? var1 :
-                          n > 0 ? `(${var1} - ${n}${var2})` : `(${var1} + ${-n}${var2})`;
+            n === 1 ? `(${var1} + ${var2})` :
+            n === -1 ? `(${var1} - ${var2})` :
+            n > 0 ? `(${var1} + ${n}${var2})` : 
+            `(${var1} ${n}${var2})`;
+
         return `${firstTerm}${secondTerm}`;
     }
 

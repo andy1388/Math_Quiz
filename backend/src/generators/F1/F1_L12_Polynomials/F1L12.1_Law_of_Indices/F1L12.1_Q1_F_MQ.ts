@@ -1,4 +1,5 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
+import { LaTeX } from '@/utils/mathUtils';
 
 interface Term {
     coefficient: number;
@@ -9,7 +10,7 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
     protected readonly VARIABLES = ['x', 'y', 'z', 'a', 'b', 'm', 'n', 'p', 'q', 'r'];
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+        super(difficulty, 'F1L12.1_Q1_F_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -38,24 +39,12 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
         const [question, answer, steps] = this.formatQuestion(terms);
         const wrongAnswers = this.generateWrongAnswers(answer, this.difficulty);
         
-        return {
+        return this.getGeneratorOutput({
             content: question,
             correctAnswer: answer,
             wrongAnswers: wrongAnswers,
-            explanation: steps,
-            
-            // 新增字段
-            hasImage: false,     // 这题暂时不需要图片
-            type: 'text',
-            displayOptions: {
-                latex: true      // 使用 LaTeX 显示数学公式
-            },
-            metadata: {
-                topic: 'Law of Indices',
-                subtopic: 'Basic Operations',
-                skills: ['Multiplication of Indices']
-            }
-        };
+            explanation: steps
+        });
     }
 
     private generateLevel1(): Term[] {
@@ -155,121 +144,138 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
     }
 
     protected generateWrongAnswers(correctAnswer: string, difficulty: number): string[] {
-        const wrongAnswers: string[] = [];
+        const wrongAnswers = new Set<string>();
         
-        // 解析正確答案中的係數和變量
-        const coefficientMatch = correctAnswer.match(/^(\d+)?/);
-        const coefficient = coefficientMatch && coefficientMatch[1] ? parseInt(coefficientMatch[1]) : 1;
-        
-        // 解析變量和指數
-        const terms = new Map<string, number>();
-        const regex = /([a-z])(\d+)/g;
-        let match;
-        while ((match = regex.exec(correctAnswer)) !== null) {
-            const [, variable, exponent] = match;
-            terms.set(variable, parseInt(exponent));
-        }
-
-        if (terms.size === 0) {
-            console.error('無法解析正確答案:', correctAnswer);
-            return ['ERROR', 'ERROR', 'ERROR'];
-        }
-
-        // 生成錯誤答案的策略
-        const generateWrongAnswer = () => {
-            const newTerms = new Map(terms);
-            const newCoefficient = coefficient;  // 預設保持係數不變
-            const strategy = Math.floor(Math.random() * 4);  // 增加策略數量
+        try {
+            // 解析正确答案中的系数和变量
+            const varExps = new Map<string, number>();
+            const varRegex = /([a-z])(?:\^{(\d+)})?/g;
+            let match;
             
-            switch (strategy) {
-                case 0: // 改變一個變量的指數
-                    const randomVar = Array.from(newTerms.keys())[Math.floor(Math.random() * newTerms.size)];
-                    const currentExp = newTerms.get(randomVar)!;
-                    newTerms.set(randomVar, currentExp + (Math.random() < 0.5 ? 1 : -1));
-                    break;
-                    
-                case 1: // 交換兩個變量的指數
-                    if (newTerms.size >= 2) {
-                        const vars = Array.from(newTerms.entries());
-                        const exp1 = vars[0][1];
-                        vars[0][1] = vars[1][1];
-                        vars[1][1] = exp1;
-                        newTerms.clear();
-                        vars.forEach(([v, e]) => newTerms.set(v, e));
+            // 提取系数
+            const coeffMatch = correctAnswer.match(/^(\d+)?/);
+            const coefficient = coeffMatch && coeffMatch[1] ? parseInt(coeffMatch[1]) : 1;
+            
+            // 提取所有变量和指数
+            while ((match = varRegex.exec(correctAnswer)) !== null) {
+                const [, variable, expStr] = match;
+                const exp = expStr ? parseInt(expStr) : 1;
+                varExps.set(variable, exp);
+            }
+
+            // 如果没有成功解析到任何变量，返回默认错误答案
+            if (varExps.size === 0) {
+                return ['ERROR1', 'ERROR2', 'ERROR3'];
+            }
+
+            // 根据难度选择不同的错误答案生成策略
+            const strategies = difficulty >= 3 ? [
+                // Level 3-5 的策略
+                // 1. 保持指数，改变系数
+                () => {
+                    if (coefficient !== 1) {
+                        return this.formatTerm(coefficient * 2, varExps);
                     }
-                    break;
-                    
-                case 2: // 所有指數加1或減1
-                    const change = Math.random() < 0.5 ? 1 : -1;
-                    newTerms.forEach((exp, v) => {
-                        newTerms.set(v, exp + change);
+                    return this.formatTerm(2, varExps);
+                },
+                // 2. 保持系数，修改指数
+                () => {
+                    const newVars = new Map(varExps);
+                    const firstVar = Array.from(varExps.keys())[0];
+                    const firstExp = varExps.get(firstVar) || 1;
+                    newVars.set(firstVar, firstExp + 1);
+                    return this.formatTerm(coefficient, newVars);
+                },
+                // 3. 修改系数和指数
+                () => {
+                    const newVars = new Map(varExps);
+                    const firstVar = Array.from(varExps.keys())[0];
+                    const firstExp = varExps.get(firstVar) || 1;
+                    newVars.set(firstVar, firstExp - 1);
+                    return this.formatTerm(coefficient * 3, newVars);
+                },
+                // 4. 指数加倍
+                () => {
+                    const newVars = new Map(varExps);
+                    newVars.forEach((exp, v) => {
+                        newVars.set(v, exp * 2);
                     });
-                    break;
+                    return this.formatTerm(coefficient, newVars);
+                }
+            ] : [
+                // Level 1-2 的简单策略
+                () => this.formatTerm(coefficient, new Map([[Array.from(varExps.keys())[0], Array.from(varExps.values())[0] + 1]])),
+                () => this.formatTerm(coefficient, new Map([[Array.from(varExps.keys())[0], Array.from(varExps.values())[0] + 2]])),
+                () => this.formatTerm(coefficient, new Map([[Array.from(varExps.keys())[0], Array.from(varExps.values())[0] * 2]])),
+                () => this.formatTerm(2, varExps)
+            ];
 
-                case 3: // 改變係數
-                    if (difficulty >= 3) {  // 只在難度3以上改變係數
-                        const coefficientChanges = [
-                            coefficient + 1,
-                            coefficient - 1,
-                            coefficient * 2,
-                            Math.floor(coefficient / 2)
-                        ].filter(c => c > 0 && c !== coefficient);
-                        
-                        const newCoef = coefficientChanges[Math.floor(Math.random() * coefficientChanges.length)];
-                        return `${newCoef}${Array.from(newTerms.entries())
-                            .sort(([a], [b]) => a.localeCompare(b))
-                            .map(([v, e]) => `${v}${e}`)
-                            .join('')}`;
+            // 生成错误答案
+            let attempts = 0;
+            const maxAttempts = 20;
+            
+            while (wrongAnswers.size < 3 && attempts < maxAttempts) {
+                attempts++;
+                const strategy = strategies[Math.floor(Math.random() * strategies.length)];
+                try {
+                    const wrong = strategy();
+                    if (wrong && wrong !== correctAnswer && !wrongAnswers.has(wrong)) {
+                        wrongAnswers.add(wrong);
                     }
-                    break;
+                } catch (e) {
+                    console.error('Error generating wrong answer:', e);
+                    continue;
+                }
             }
 
-            // 構建錯誤答案字符串
-            const wrongAnswer = Array.from(newTerms.entries())
-                .sort(([a], [b]) => a.localeCompare(b))
-                .map(([v, e]) => `${v}${e}`)
-                .join('');
+            // 如果没有生成足够的错误答案，添加默认答案
+            if (wrongAnswers.size < 3) {
+                const defaultAnswers = [
+                    this.formatTerm(coefficient + 1, varExps),
+                    this.formatTerm(coefficient + 2, varExps),
+                    this.formatTerm(coefficient * 2, varExps)
+                ];
                 
-            return coefficient !== 1 ? `${coefficient}${wrongAnswer}` : wrongAnswer;
-        };
+                for (const ans of defaultAnswers) {
+                    if (wrongAnswers.size >= 3) break;
+                    if (ans !== correctAnswer) {
+                        wrongAnswers.add(ans);
+                    }
+                }
+            }
 
-        // 生成三個不同的錯誤答案
-        const maxAttempts = 15;  // 增加嘗試次數
-        let attempts = 0;
+        } catch (e) {
+            console.error('Error in generateWrongAnswers:', e);
+            return ['ERROR1', 'ERROR2', 'ERROR3'];
+        }
+
+        return Array.from(wrongAnswers);
+    }
+
+    private formatTerm(coefficient: number, variables: Map<string, number>): string {
+        if (variables.size === 0) return coefficient.toString();
         
-        while (wrongAnswers.length < 3 && attempts < maxAttempts) {
-            const wrong = generateWrongAnswer();
-            if (!wrongAnswers.includes(wrong) && wrong !== correctAnswer) {
-                wrongAnswers.push(wrong);
-            }
-            attempts++;
-        }
-
-        // 如果無法生成足夠的錯誤答案，使用備用策略
-        while (wrongAnswers.length < 3) {
-            const backupWrong = coefficient !== 1 
-                ? `${coefficient + wrongAnswers.length + 1}${Array.from(terms.entries())
-                    .map(([v, e]) => `${v}${e}`)
-                    .join('')}`
-                : Array.from(terms.entries())
-                    .map(([v, e]) => `${v}${e + wrongAnswers.length + 1}`)
-                    .join('');
-                    
-            if (!wrongAnswers.includes(backupWrong)) {
-                wrongAnswers.push(backupWrong);
-            }
-        }
-
-        return wrongAnswers;
+        const sortedVars = Array.from(variables.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([variable, exp]) => {
+                return exp === 1 ? variable : `${variable}^{${exp}}`;
+            })
+            .join('');
+        
+        return coefficient === 1 ? sortedVars : `${coefficient}${sortedVars}`;
     }
 
     protected formatQuestion(terms: Term[]): [string, string, string] {
         // 格式化題目
         const questionParts = terms.map(term => {
             let termStr = '';
-            if (term.coefficient !== 1) termStr += term.coefficient;
+            if (term.coefficient !== 1) {
+                termStr += term.coefficient > 0 ? 
+                    term.coefficient.toString() : 
+                    LaTeX.formatConstant(term.coefficient);
+            }
             term.variables.forEach((exp, variable) => {
-                termStr += variable + (exp !== 1 ? exp : '');
+                termStr += variable + (exp !== 1 ? `^{${exp}}` : '');
             });
             return termStr;
         });
@@ -292,36 +298,56 @@ export default class F1L12_1_Generator_Q1_F_MQ extends QuestionGenerator {
 
         // 格式化答案
         let answer = '';
-        if (result.coefficient !== 1) answer += result.coefficient;
+        if (result.coefficient !== 1) {
+            answer += result.coefficient > 0 ? 
+                result.coefficient.toString() : 
+                LaTeX.formatConstant(result.coefficient);
+        }
         
         // 按字母順序排列變量
         const sortedVars = Array.from(result.variables.entries())
             .sort(([a,], [b,]) => a.localeCompare(b));
         
         sortedVars.forEach(([variable, exp]) => {
-            answer += variable + (exp !== 1 ? exp : '');
+            answer += variable + (exp !== 1 ? `^{${exp}}` : '');
         });
 
         // 生成解題步驟
         const steps = terms.every(t => t.coefficient === 1) 
-            ? `解題步驟：
-1. 同類項指數相加：
-${Array.from(result.variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\)`)
-    .join('\n')}
-最終答案：\\(${
-    result.coefficient !== 1 ? result.coefficient : ''
-}${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\)`
-            : `解題步驟：
-1. 係數相乘：\\(${terms.map(t => t.coefficient).join(' \\times ')} = ${result.coefficient}\\)
-2. 同類項指數相加：
-${Array.from(result.variables.entries())
-    .map(([v, e]) => `   \\(${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\)`)
-    .join('\n')}
-3. 最終答案：\\(${
-    result.coefficient !== 1 ? result.coefficient : ''
-}${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\)`;
+            ? `1. 同類項指數相加：<br>` +
+              `${Array.from(result.variables.entries())
+                  .map(([v, e]) => `\\[${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\]`)
+                  .join('<br>')}<br>` +
+              `最終答案：\\[${
+                  result.coefficient !== 1 ? LaTeX.formatConstant(result.coefficient) : ''
+              }${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\]`
+            : `解題步驟：<br>` +
+              `1. 係數相乘：\\[${terms.map(t => LaTeX.formatConstant(t.coefficient)).join(' \\times ')} = ${result.coefficient}\\]<br>` +
+              `2. 同類項指數相加：<br>` +
+              `${Array.from(result.variables.entries())
+                  .map(([v, e]) => `\\[${v}: ${terms.map(t => t.variables.get(v) || 0).join(' + ')} = ${e}\\]`)
+                  .join('<br>')}<br>` +
+              `3. 最終答案：\\[${
+                  result.coefficient !== 1 ? LaTeX.formatConstant(result.coefficient) : ''
+              }${sortedVars.map(([v, e]) => v + '^{' + e + '}').join('')}\\]`;
 
-        return [questionParts.join(' × '), answer, steps];
+        // 将题目转换为 LaTeX 格式，添加 "=?"
+        const question = `\\[${questionParts.join(' \\times ')} = \\text{?}\\]`;
+
+        return [question, answer, steps];
+    }
+
+    private generateExplanation(question: string, answer: number): string {
+        const steps: string[] = [];
+        
+        steps.push(
+            '1. 找出已知的指數<br>',
+            `\\[${question}\\]<br>`,
+            '2. 觀察運算符號為乘法，使用指數加法原理<br>',
+            '3. 計算指數相加<br>',
+            `\\[y^1 \\times y^3 = y^{1+3} = y^4\\]`
+        );
+
+        return steps.join('');
     }
 } 

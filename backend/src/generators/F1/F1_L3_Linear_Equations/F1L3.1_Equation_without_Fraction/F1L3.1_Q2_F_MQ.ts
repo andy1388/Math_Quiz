@@ -177,10 +177,10 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
             // Level 1-2: ax + b = c
             const [leftSide, rightSide] = [equation.leftSide, equation.rightSide];
             steps.push(
-                '1. 移項：將常數項移到等號右邊',
-                `\\[${leftSide} = ${rightSide}\\]`,
-                `\\[x = ${rightSide} ${formatNumber(-parseInt(rightSide))}\\]`,
-                '2. 計算：解出變量的值',
+                '1. 移項：將常數項移到等號右邊<br>',
+                `\\[${leftSide} = ${rightSide}\\]<br>`,
+                `\\[x = ${rightSide} ${formatNumber(-parseInt(rightSide))}\\]<br>`,
+                '2. 計算：解出變量的值<br>',
                 `\\[x = ${equation.solution}\\]`
             );
         } else if (this.difficulty === 3) {
@@ -188,12 +188,12 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
             const [a, b] = equation.leftSide.match(/-?\d+/g)?.map(Number) || [0, 0];
             const c = parseInt(equation.rightSide);
             steps.push(
-                '1. 合併同類項：將變量項合併',
-                `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
-                `\\[${a}x ${b >= 0 ? '+' : ''}${b}x = ${c}\\]`,
-                `\\[${a + b}x = ${c}\\]`,
-                '2. 求解：得到變量的值',
-                `\\[x = ${c} \\div ${a + b}\\]`,
+                '1. 合併同類項：將變量項合併<br>',
+                `\\[${equation.leftSide} = ${equation.rightSide}\\]<br>`,
+                `\\[${a}x ${b >= 0 ? '+' : ''}${b}x = ${c}\\]<br>`,
+                `\\[${a + b}x = ${c}\\]<br>`,
+                '2. 求解：得到變量的值<br>',
+                `\\[x = ${c} \\div ${a + b}\\]<br>`,
                 `\\[x = ${equation.solution}\\]`
             );
         } else if (this.difficulty === 4) {
@@ -204,15 +204,15 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
                 const [a, b] = matches;
                 const [c, d] = rightMatches;
                 steps.push(
-                    '1. 移項：將所有變量項移到等號左邊',
-                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
-                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]`,
-                    '2. 合併同類項',
-                    `\\[${a - c}x ${formatNumber(b)} = ${d}\\]`,
-                    '3. 移項：將常數項移到等號右邊',
-                    `\\[${a - c}x = ${d} ${formatNumber(-b)}\\]`,
-                    '4. 求解：得到變量的值',
-                    `\\[x = ${d - b} \\div ${a - c}\\]`,
+                    '1. 移項：將所有變量項移到等號左邊<br>',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]<br>`,
+                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]<br>`,
+                    '2. 合併同類項<br>',
+                    `\\[${a - c}x ${formatNumber(b)} = ${d}\\]<br>`,
+                    '3. 移項：將常數項移到等號右邊<br>',
+                    `\\[${a - c}x = ${d} ${formatNumber(-b)}\\]<br>`,
+                    '4. 求解：得到變量的值<br>',
+                    `\\[x = ${d - b} \\div ${a - c}\\]<br>`,
                     `\\[x = ${equation.solution}\\]`
                 );
             }
@@ -224,20 +224,20 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
                 const [a, b] = matches;
                 const [c, d] = rightMatches;
                 steps.push(
-                    '1. 移項：將所有變量項移到等號左邊',
-                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
-                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]`,
-                    '2. 合併同類項（注意小數計算）',
-                    `\\[${(a - c).toFixed(1)}x ${formatNumber(b)} = ${d}\\]`,
-                    '3. 移項：將常數項移到等號右邊',
-                    `\\[${(a - c).toFixed(1)}x = ${d} ${formatNumber(-b)}\\]`,
-                    '4. 求解：得到變量的值',
-                    `\\[x = ${(d - b).toFixed(1)} \\div ${(a - c).toFixed(1)}\\]`,
+                    '1. 移項：將所有變量項移到等號左邊<br>',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]<br>`,
+                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]<br>`,
+                    '2. 合併同類項（注意小數計算）<br>',
+                    `\\[${(a - c).toFixed(1)}x ${formatNumber(b)} = ${d}\\]<br>`,
+                    '3. 移項：將常數項移到等號右邊<br>',
+                    `\\[${(a - c).toFixed(1)}x = ${d} ${formatNumber(-b)}\\]<br>`,
+                    '4. 求解：得到變量的值<br>',
+                    `\\[x = ${(d - b).toFixed(1)} \\div ${(a - c).toFixed(1)}\\]<br>`,
                     `\\[x = ${equation.solution}\\]`
                 );
             }
         }
 
-        return steps.join('\n');
+        return steps.join('');
     }
 } 

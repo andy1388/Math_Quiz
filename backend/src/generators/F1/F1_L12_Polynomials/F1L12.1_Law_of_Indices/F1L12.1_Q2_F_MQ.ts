@@ -1,4 +1,5 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
+import { LaTeX } from '@/utils/mathUtils';
 
 interface Term {
     coefficient: number;
@@ -12,7 +13,7 @@ export default class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
     protected missingExponent: number = 0;  // 記錄缺失的指數值
 
     constructor(difficulty: number = 1) {
-        super(difficulty, 'F1L12.1');
+        super(difficulty, 'F1L12.1_Q2_F_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -42,13 +43,12 @@ export default class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
         const [question, answer, steps] = this.formatQuestion(terms, result);
         const wrongAnswers = this.generateWrongAnswers(this.missingExponent, this.difficulty);
         
-        return {
+        return this.getGeneratorOutput({
             content: question,
             correctAnswer: this.missingExponent.toString(),
-            options: [this.missingExponent.toString(), ...wrongAnswers],
-            correctIndex: 0,
+            wrongAnswers: wrongAnswers.map(String),
             explanation: steps
-        };
+        });
     }
 
     protected generateLevel1(): [Term[], Term] {
@@ -212,42 +212,63 @@ export default class F1L12_1_Generator_Q2_F_MQ extends QuestionGenerator {
     }
 
     protected formatQuestion(terms: Term[], result: Term): [string, string, string] {
-        // 格式化題目，將缺失的指數用 LaTeX 的方框符號替代
+        // 格式化题目
         const questionParts = terms.map(term => {
             let termStr = '';
-            if (term.coefficient !== 1) termStr += term.coefficient;
-            term.variables.forEach((exp, variable) => {
+            if (term.coefficient !== 1) {
+                // 移除正数前的 "+" 号
+                termStr += term.coefficient > 0 ? 
+                    term.coefficient.toString() : 
+                    LaTeX.formatConstant(term.coefficient);
+            }
+            
+            const sortedVars = Array.from(term.variables.entries())
+                .sort(([a], [b]) => a.localeCompare(b));
+            
+            sortedVars.forEach(([variable, exp]) => {
                 if (term.hasMissing && variable === term.missingVar) {
-                    // 使用 LaTeX 的 \Box 符號作為空格，放在指數位置
-                    termStr += variable + '^{\\Box}';
+                    termStr += `${variable}^{\\Box}`;
                 } else {
-                    termStr += variable + '^{' + exp + '}';
+                    termStr += variable + (exp !== 1 ? `^{${exp}}` : '');
                 }
             });
+
             return termStr;
         });
 
-        // 格式化結果
-        let answer = '';
-        if (result.coefficient !== 1) answer += result.coefficient;
-        result.variables.forEach((exp, variable) => {
-            answer += variable + '^{' + exp + '}';
+        // 格式化结果
+        let resultStr = '';
+        if (result.coefficient !== 1) {
+            // 移除正数前的 "+" 号
+            resultStr += result.coefficient > 0 ? 
+                result.coefficient.toString() : 
+                LaTeX.formatConstant(result.coefficient);
+        }
+        
+        const sortedResultVars = Array.from(result.variables.entries())
+            .sort(([a], [b]) => a.localeCompare(b));
+        
+        sortedResultVars.forEach(([variable, exp]) => {
+            resultStr += variable + (exp !== 1 ? `^{${exp}}` : '');
         });
 
-        // 生成解題步驟
-        const steps = `解題步驟：
-1. 找出已知的指數：
-${Array.from(terms[0].variables.entries())
-    .map(([v, e]) => `   \\(${v}^{${e}}\\)`)
-    .join('\n')}
-2. 觀察最終答案中的指數：
-${Array.from(result.variables.entries())
-    .map(([v, e]) => `   \\(${v}^{${e}}\\)`)
-    .join('\n')}
-3. 利用指數加法原理，求出缺少的指數：
-   \\(${terms[1].missingVar}^{\\Box} = ${this.missingExponent}\\)`;
+        // 生成完整的等式
+        const equation = `\\[${questionParts.join(' \\times ')} = ${resultStr}\\]`;
 
-        return [questionParts.join(' \\times ') + ' = ' + answer, this.missingExponent.toString(), steps];
+        // 获取第一个变量和指数
+        const firstTermEntries = Array.from(terms[0].variables.entries());
+        const resultEntries = Array.from(result.variables.entries());
+        
+        // 生成解題步驟
+        const steps =  
+            `1. 找出已知的指數：` +
+            `   \\(${firstTermEntries[0][0]}^{${firstTermEntries[0][1]}}\\)<br>` +
+            `2. 觀察最終答案中的指數：` +
+            `   \\(${resultEntries[0][0]}^{${resultEntries[0][1]}}\\)<br>` +
+            `3. 利用指數加法原理，求出缺少的指數：` +
+            `   \\(${terms[1].missingVar}^{\\Box} = ${this.missingExponent}\\)`;
+
+        return [equation, this.missingExponent.toString(), steps];
     }
 
     protected shuffleArray<T>(array: T[]): T[] {
@@ -256,5 +277,19 @@ ${Array.from(result.variables.entries())
             [array[i], array[j]] = [array[j], array[i]];
         }
         return array;
+    }
+
+    private generateExplanation(question: string, answer: number): string {
+        const steps: string[] = [];
+        
+        steps.push(
+            '1. 找出已知的指數<br>',
+            `\\[${question}\\]<br>`,
+            '2. 觀察最終答案中的指數<br>',
+            '3. 利用指數加法原理，求出缺少的指數<br>',
+            `\\[□ = ${answer}\\]`
+        );
+
+        return steps.join('');
     }
 } 

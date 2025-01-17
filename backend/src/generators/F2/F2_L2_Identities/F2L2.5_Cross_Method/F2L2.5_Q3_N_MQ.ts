@@ -156,42 +156,18 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         // 计算展开式的系数
         const x2Coeff: number = (p * a * c) / q;
         const xCoeff: number = (p * (a * d + b * c)) / q;
-        const constTerm: number = (p * b * d) / q;
-
-        // 辅助函数：检查是否需要使用分数表示（超过2位小数）
-        const needsFraction = (num: number): boolean => {
-            const decimalParts = num.toString().split('.');
-            if (decimalParts.length < 2) {
-                return false;  // 整数不需要转换为分数
-            }
-            const decimalPlaces = decimalParts[1].length;
-            const roundedNum = Number(num.toFixed(2));
-            const originalNum = Number(num.toFixed(10));
-            
-            return Math.abs(roundedNum - originalNum) > 1e-10;  // 比较是否有效差异
-        };
-
-        // 辅助函数：将数字转换为分数表示
-        const toFraction = (num: number): string => {
-            // 处理负数，将负号放在分数前面
-            const sign = num < 0 ? '-' : '';
-            const absNum = Math.abs(num);
-            
-            // 将数字乘以分母q，得到分子
-            const numerator = Math.round(absNum * q);
-            return `${sign}\\frac{${numerator}}{${q}}`;
-        };
+        const constValue: number = (p * b * d) / q;  // 改名为 constValue
 
         // 格式化x²项
         let x2Term: string;
-        if (x2Coeff === 1) {
+        if (x2Coeff === 0) {
+            x2Term = '';
+        } else if (x2Coeff === 1) {
             x2Term = 'x^2';
         } else if (x2Coeff === -1) {
             x2Term = '-x^2';
         } else {
-            x2Term = needsFraction(x2Coeff) ? 
-                `${toFraction(x2Coeff)}x^2` : 
-                `${x2Coeff}x^2`;
+            x2Term = `${x2Coeff}x^2`;
         }
 
         // 格式化x项
@@ -203,25 +179,24 @@ export default class F2L2_5_Q3_N_MQ extends QuestionGenerator {
         } else if (xCoeff === -1) {
             xTerm = '- x';
         } else {
-            const coeffStr = needsFraction(xCoeff) ? 
-                toFraction(xCoeff) : 
-                xCoeff.toString();
-            xTerm = xCoeff > 0 ? `+ ${coeffStr}x` : `${coeffStr}x`;
+            xTerm = xCoeff > 0 ? `+ ${xCoeff}x` : `${xCoeff}x`;
         }
 
         // 格式化常数项
-        let constantTerm: string;
-        if (constTerm === 0) {
-            constantTerm = '';
-        } else {
-            const termStr = needsFraction(constTerm) ? 
-                toFraction(constTerm) : 
-                constTerm.toString();
-            constantTerm = constTerm > 0 ? `+ ${termStr}` : termStr;
+        let constTerm: string = '';
+        if (constValue !== 0) {
+            constTerm = constValue > 0 ? `+ ${constValue}` : `${constValue}`;
         }
 
         // 移除多余的空格并返回结果
-        return `${x2Term} ${xTerm} ${constantTerm}`.trim();
+        let result = `${x2Term} ${xTerm} ${constTerm}`.trim();
+        
+        // 如果表达式以 '+ ' 开头，移除这个加号
+        if (result.startsWith('+ ')) {
+            result = result.substring(2);
+        }
+        
+        return result;
     }
 
     private formatAnswer(factors: Factor): string {

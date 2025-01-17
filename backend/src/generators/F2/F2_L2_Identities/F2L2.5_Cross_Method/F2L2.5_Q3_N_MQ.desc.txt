@@ -2,6 +2,8 @@
 Factorization (Cross Method - With Coefficients)
 ===================================
 
+Level number：5
+
 題型：將二次項分解因式（二次項係數不為1）
 Factorize quadratic expressions where coefficient of x² is not 1
 

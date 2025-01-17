@@ -1,6 +1,9 @@
 指數乘法 (填空)
 Multiplication of Indices (Fill in the blank)
 ===================================
+
+Level number：5
+
 難度：普通
 
 題型說明：
