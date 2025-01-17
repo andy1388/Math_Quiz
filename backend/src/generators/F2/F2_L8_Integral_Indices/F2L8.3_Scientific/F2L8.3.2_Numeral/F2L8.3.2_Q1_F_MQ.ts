@@ -317,7 +317,9 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
                 markedIndex = this.question.number.length - 1 - this.question.markedPosition;
             }
             
-            const content = `\\[${baseNumber.slice(0, markedIndex)}\\underline{${baseNumber[markedIndex]}}${baseNumber.slice(markedIndex + 1)}${this.question.isBinary ? '_2' : ''}\\]`;
+            // 添加问题描述
+            const questionText = 'What is the place value of the underlined number?';
+            const content = `${questionText}\n\\[${baseNumber.slice(0, markedIndex)}\\underline{${baseNumber[markedIndex]}}${baseNumber.slice(markedIndex + 1)}${this.question.isBinary ? '_2' : ''}\\]`;
 
             const wrongAnswers = this.generateWrongAnswers(
                 this.question.placeValue,
@@ -338,7 +340,7 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
         } catch (error) {
             console.error('Error in generate:', error);
             return {
-                content: '\\[1234\\]',
+                content: 'What is the place value of the underlined number?\n\\[1234\\]',
                 correctAnswer: '1',
                 wrongAnswers: ['2', '3', '4'],
                 explanation: '错误生成题目',
