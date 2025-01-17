@@ -1,27 +1,30 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
 import {
     getRandomInt,
-    getRandomDecimal,
+    getNonZeroRandomInt,
     formatNumber,
     LaTeX,
-    DifficultyUtils,
-    DEFAULT_CONFIG,
-    getNonZeroRandomInt
-} from '../../../../utils/mathUtils';
+} from '@/utils/mathUtils';
 
-interface LinearEquation {
+interface BracketEquation {
     leftSide: string;
     rightSide: string;
     solution: number;
+    a: number;
+    b: number;
+    c: number;
+    d?: number;
+    e?: number;
+    f?: number;
 }
 
-export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
+export default class F1L3_1_Q2_F_MQ extends QuestionGenerator {
     constructor(difficulty: number) {
         super(difficulty, 'F1L3.1_Q2_F_MQ');
     }
 
     generate(): IGeneratorOutput {
-        let equation: LinearEquation;
+        let equation: BracketEquation;
         
         // 根據難度生成方程
         switch (this.difficulty) {
@@ -64,105 +67,146 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel1(): LinearEquation {
-        // x ± b = c 形式，係數固定為1
-        const solution = getRandomInt(-10, 10);
-        const b = getNonZeroRandomInt(-10, 10);
-        const c = solution + b;  // a = 1，所以 c = x + b
-
-        return {
-            leftSide: `x ${LaTeX.formatConstant(b)}`,
-            rightSide: c.toString(),
-            solution
-        };
-    }
-
-    private generateLevel2(): LinearEquation {
-        // ax ± b = c 形式，變量只在左邊
-        const solution = getRandomInt(-10, 10);
-        const a = getNonZeroRandomInt(-5, 5);
-        const b = getNonZeroRandomInt(-10, 10);
-        const c = a * solution + b;
-
-        return {
-            leftSide: `${LaTeX.formatLinearTerm(a, 'x')} ${LaTeX.formatConstant(b)}`,
-            rightSide: c.toString(),
-            solution
-        };
-    }
-
-    private generateLevel3(): LinearEquation {
-        // ax + bx = c 形式，兩個變量項都在左邊
+    private generateLevel1(): BracketEquation {
+        // a(x + b) = c 形式，係數為正整數
         const solution = getRandomInt(-8, 8);
+        const a = getRandomInt(1, 5);  // 正整數係數 1-5
+        const b = getNonZeroRandomInt(-5, 5);
+        const c = a * (solution + b);  // 計算右邊的值
+
+        return {
+            leftSide: `${a === 1 ? '' : a}(x ${formatNumber(b)})`,
+            rightSide: c.toString(),
+            solution,
+            a,
+            b,
+            c
+        };
+    }
+
+    private generateLevel2(): BracketEquation {
+        // -a(x + b) = c 形式，係數為負整數
+        const solution = getRandomInt(-8, 8);
+        const a = getNonZeroRandomInt(-5, -1);  // 負整數係數 -5 到 -1
+        const b = getNonZeroRandomInt(-5, 5);
+        const c = a * (solution + b);  // 計算右邊的值
+
+        return {
+            leftSide: `${a === -1 ? '-' : a}(x ${formatNumber(b)})`,
+            rightSide: c.toString(),
+            solution,
+            a,
+            b,
+            c
+        };
+    }
+
+    private generateLevel3(): BracketEquation {
+        // a(x + b) = c(x + d) 形式
+        let a: number, b: number, c: number, d: number;
+        let solution: number;
         
-        // 確保係數和不為0
-        let a, b;
+        do {
+            a = getNonZeroRandomInt(-5, 5);
+            c = getNonZeroRandomInt(-5, 5);
+            b = getNonZeroRandomInt(-5, 5);
+            d = getNonZeroRandomInt(-5, 5);
+            
+            // 確保方程有唯一解：a-c ≠ 0
+            if (a === c) continue;
+            
+            // 計算解：(cd-ab)/(a-c)
+            const tempSolution = (c*d - a*b)/(a-c);
+            
+            // 確保解是整數且在範圍內
+            if (!Number.isInteger(tempSolution) || Math.abs(tempSolution) > 10) continue;
+            
+            solution = tempSolution;
+            break;
+            
+        } while (true);
+
+        return {
+            leftSide: `${a === 1 ? '' : a === -1 ? '-' : formatNumber(a)}(x ${formatNumber(b)})`,
+            rightSide: `${c === 1 ? '' : c === -1 ? '-' : formatNumber(c)}(x ${formatNumber(d)})`,
+            solution,
+            a,
+            b,
+            c,
+            d
+        };
+    }
+
+    private generateLevel4(): BracketEquation {
+        // a(bx + c) = d 形式
+        const a = getNonZeroRandomInt(-5, 5);
+        const b = getNonZeroRandomInt(-5, 5);
+        const c = getNonZeroRandomInt(-5, 5);
+        const solution = getRandomInt(-8, 8);
+        const d = a * (b * solution + c);
+
+        return {
+            leftSide: `${a === 1 ? '' : a === -1 ? '-' : formatNumber(a)}(${b === 1 ? 'x' : b === -1 ? '-x' : b + 'x'} ${formatNumber(c)})`,
+            rightSide: d.toString(),
+            solution,
+            a,
+            b,
+            c,
+            d
+        };
+    }
+
+    private generateLevel5(): BracketEquation {
+        // a(bx + c) = d(ex + f) 形式
+        let a: number, b: number, c: number, d: number, e: number, f: number;
+        let solution: number;
+        
         do {
             a = getNonZeroRandomInt(-5, 5);
             b = getNonZeroRandomInt(-5, 5);
-        } while (a + b === 0);  // 避免係數和為0的情況
-        
-        // 計算等式右邊的值
-        const c = (a + b) * solution;
-
-        // 構建左邊的表達式，確保正確顯示加號或減號
-        const firstTerm = LaTeX.formatLinearTerm(a, 'x');
-        const secondTerm = b > 0 ? 
-            `+${LaTeX.formatLinearTerm(b, 'x')}` : 
-            LaTeX.formatLinearTerm(b, 'x');
-
-        return {
-            leftSide: `${firstTerm}${secondTerm}`,  // 不需要額外的空格，因為符號已包含在 secondTerm 中
-            rightSide: c.toString(),
-            solution
-        };
-    }
-
-    private generateLevel4(): LinearEquation {
-        // ax ± b = cx ± d 形式，變量在兩邊
-        const solution = getRandomInt(-6, 6);
-        const a = getNonZeroRandomInt(-5, 5);
-        const b = getNonZeroRandomInt(-10, 10);
-        const c = getNonZeroRandomInt(-5, 5);
-        const d = (a - c) * solution + b;
+            c = getNonZeroRandomInt(-5, 5);
+            d = getNonZeroRandomInt(-5, 5);
+            e = getNonZeroRandomInt(-5, 5);
+            f = getNonZeroRandomInt(-5, 5);
+            
+            // 確保係數不會導致分母為0
+            if (a*b === d*e) continue;
+            
+            // 計算解：(df-ac)/(ab-de)
+            const tempSolution = (d*f - a*c)/(a*b - d*e);
+            
+            // 確保解是整數且在範圍內
+            if (!Number.isInteger(tempSolution) || Math.abs(tempSolution) > 10) continue;
+            
+            solution = tempSolution;
+            break;
+            
+        } while (true);
 
         return {
-            leftSide: `${LaTeX.formatLinearTerm(a, 'x')} ${LaTeX.formatConstant(b)}`,
-            rightSide: `${LaTeX.formatLinearTerm(c, 'x')} ${LaTeX.formatConstant(d)}`,
-            solution
-        };
-    }
-
-    private generateLevel5(): LinearEquation {
-        // 小數係數：ax + b = cx + d
-        const solution = getRandomDecimal(-5, 5, 1);
-        const a = getRandomDecimal(0.5, 3, 1);
-        const b = getRandomDecimal(-5, 5, 1);
-        const c = getRandomDecimal(-2, 2, 1);
-        const d = Number((a * solution + b - c * solution).toFixed(1));
-
-        return {
-            leftSide: `${LaTeX.formatLinearTerm(a, 'x')} ${LaTeX.formatConstant(b)}`,
-            rightSide: `${LaTeX.formatLinearTerm(c, 'x')} ${LaTeX.formatConstant(d)}`,
-            solution
+            leftSide: `${a === 1 ? '' : a === -1 ? '-' : formatNumber(a)}(${b === 1 ? 'x' : b === -1 ? '-x' : b + 'x'} ${formatNumber(c)})`,
+            rightSide: `${d === 1 ? '' : d === -1 ? '-' : formatNumber(d)}(${e === 1 ? 'x' : e === -1 ? '-x' : e + 'x'} ${formatNumber(f)})`,
+            solution,
+            a,
+            b,
+            c,
+            d,
+            e,
+            f
         };
     }
 
     private generateWrongAnswers(correctAnswer: number): string[] {
         const wrongAnswers: string[] = [];
-        const isDecimal = this.difficulty === 5;
         
         while (wrongAnswers.length < 3) {
-            let wrong: number;
-            if (isDecimal) {
-                // 對於小數，生成鄰近的錯誤答案
-                wrong = Number((correctAnswer + (Math.random() - 0.5) * 2).toFixed(1));
-            } else {
-                // 對於整數，生成鄰近的整數
-                wrong = correctAnswer + (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
-            }
+            // 生成鄰近的錯誤答案
+            let wrong = correctAnswer + (Math.floor(Math.random() * 5) + 1) * (Math.random() < 0.5 ? 1 : -1);
             
-            if (!wrongAnswers.includes(wrong.toString()) && wrong !== correctAnswer) {
+            // 確保錯誤答案在合理範圍內
+            if (Math.abs(wrong) <= 10 && 
+                !wrongAnswers.includes(wrong.toString()) && 
+                wrong !== correctAnswer) {
                 wrongAnswers.push(wrong.toString());
             }
         }
@@ -170,74 +214,77 @@ export default class F1L3_1_Q1_F_MQ extends QuestionGenerator {
         return wrongAnswers;
     }
 
-    private generateExplanation(equation: LinearEquation): string {
+    private generateExplanation(equation: BracketEquation): string {
         const steps: string[] = [];
         
         if (this.difficulty <= 2) {
-            // Level 1-2: ax + b = c
-            const [leftSide, rightSide] = [equation.leftSide, equation.rightSide];
+            // Level 1-2: ±a(x + b) = c
+            const expandedLeft = `${equation.a}x ${formatNumber(equation.a * equation.b)}`;
             steps.push(
-                '1. 移項：將常數項移到等號右邊<br>',
-                `\\[${leftSide} = ${rightSide}\\]<br>`,
-                `\\[x = ${rightSide} ${formatNumber(-parseInt(rightSide))}\\]<br>`,
-                '2. 計算：解出變量的值<br>',
+                '1. 先把括號展開',
+                `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                `\\[${expandedLeft} = ${equation.c}\\]`,
+                '2. 移項：將常數項移到等號右邊',
+                `\\[${equation.a}x = ${equation.c} ${formatNumber(-equation.a * equation.b)}\\]`,
+                '3. 求解：得到變量的值',
                 `\\[x = ${equation.solution}\\]`
             );
         } else if (this.difficulty === 3) {
-            // Level 3: ax + bx = c
-            const [a, b] = equation.leftSide.match(/-?\d+/g)?.map(Number) || [0, 0];
-            const c = parseInt(equation.rightSide);
+            // Level 3: a(x + b) = c(x + d)
+            if (equation.d === undefined) {
+                throw new Error('Level 3 equation missing required parameter d');
+            }
+            const expandedLeft = `${equation.a}x ${formatNumber(equation.a * equation.b)}`;
+            const expandedRight = `${equation.c}x ${formatNumber(equation.c * equation.d)}`;
+            const combinedLike = `${equation.a - equation.c}x`;
+            const combinedConst = formatNumber(equation.c * equation.d - equation.a * equation.b);
+            
             steps.push(
-                '1. 合併同類項：將變量項合併<br>',
-                `\\[${equation.leftSide} = ${equation.rightSide}\\]<br>`,
-                `\\[${a}x ${b >= 0 ? '+' : ''}${b}x = ${c}\\]<br>`,
-                `\\[${a + b}x = ${c}\\]<br>`,
-                '2. 求解：得到變量的值<br>',
-                `\\[x = ${c} \\div ${a + b}\\]<br>`,
+                '1. 把兩邊的括號都展開',
+                `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                `\\[${expandedLeft} = ${expandedRight}\\]`,
+                '2. 移項：將含x的項移到等號左邊，常數項移到右邊',
+                `\\[${combinedLike} = ${combinedConst}\\]`,
+                '3. 求解：得到變量的值',
                 `\\[x = ${equation.solution}\\]`
             );
-        } else if (this.difficulty === 4) {
-            // Level 4: ax + b = cx + d
-            const matches = equation.leftSide.match(/-?\d+/g)?.map(Number);
-            const rightMatches = equation.rightSide.match(/-?\d+/g)?.map(Number);
-            if (matches && rightMatches) {
-                const [a, b] = matches;
-                const [c, d] = rightMatches;
+        } else {
+            // Level 4-5: 複雜括號
+            if (equation.d === undefined) {
+                throw new Error('Level 4-5 equation missing required parameter d');
+            }
+            
+            const expandedLeft = `${equation.a * equation.b}x ${formatNumber(equation.a * equation.c)}`;
+            let expandedRight = equation.d.toString();
+            
+            if (this.difficulty === 5) {
+                if (equation.e === undefined || equation.f === undefined) {
+                    throw new Error('Level 5 equation missing required parameters e or f');
+                }
+                expandedRight = `${equation.d * equation.e}x ${formatNumber(equation.d * equation.f)}`;
+                
                 steps.push(
-                    '1. 移項：將所有變量項移到等號左邊<br>',
-                    `\\[${equation.leftSide} = ${equation.rightSide}\\]<br>`,
-                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]<br>`,
-                    '2. 合併同類項<br>',
-                    `\\[${a - c}x ${formatNumber(b)} = ${d}\\]<br>`,
-                    '3. 移項：將常數項移到等號右邊<br>',
-                    `\\[${a - c}x = ${d} ${formatNumber(-b)}\\]<br>`,
-                    '4. 求解：得到變量的值<br>',
-                    `\\[x = ${d - b} \\div ${a - c}\\]<br>`,
+                    '1. 展開括號',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                    `\\[${expandedLeft} = ${expandedRight}\\]`,
+                    '2. 移項並合併同類項',
+                    `\\[${equation.a * equation.b - equation.d * equation.e}x = ${formatNumber(equation.d * equation.f - equation.a * equation.c)}\\]`,
+                    '3. 求解：得到變量的值',
                     `\\[x = ${equation.solution}\\]`
                 );
-            }
-        } else {
-            // Level 5: 小數係數
-            const matches = equation.leftSide.match(/-?\d+\.?\d*/g)?.map(Number);
-            const rightMatches = equation.rightSide.match(/-?\d+\.?\d*/g)?.map(Number);
-            if (matches && rightMatches) {
-                const [a, b] = matches;
-                const [c, d] = rightMatches;
+            } else {
                 steps.push(
-                    '1. 移項：將所有變量項移到等號左邊<br>',
-                    `\\[${equation.leftSide} = ${equation.rightSide}\\]<br>`,
-                    `\\[${a}x ${formatNumber(b)} ${formatNumber(-c)}x = ${d}\\]<br>`,
-                    '2. 合併同類項（注意小數計算）<br>',
-                    `\\[${(a - c).toFixed(1)}x ${formatNumber(b)} = ${d}\\]<br>`,
-                    '3. 移項：將常數項移到等號右邊<br>',
-                    `\\[${(a - c).toFixed(1)}x = ${d} ${formatNumber(-b)}\\]<br>`,
-                    '4. 求解：得到變量的值<br>',
-                    `\\[x = ${(d - b).toFixed(1)} \\div ${(a - c).toFixed(1)}\\]<br>`,
+                    '1. 展開括號',
+                    `\\[${equation.leftSide} = ${equation.rightSide}\\]`,
+                    `\\[${expandedLeft} = ${expandedRight}\\]`,
+                    '2. 移項並合併同類項',
+                    `\\[${equation.a * equation.b}x = ${equation.d} ${formatNumber(-equation.a * equation.c)}\\]`,
+                    '3. 求解：得到變量的值',
                     `\\[x = ${equation.solution}\\]`
                 );
             }
         }
 
-        return steps.join('');
+        return steps.join('\n');
     }
 } 
