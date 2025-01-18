@@ -1,4 +1,4 @@
-import { QuestionGenerator, IGeneratorOutput } from '../../../../QuestionGenerator';
+import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
 
 interface LogarithmExpression {
     number: number;
@@ -95,9 +95,8 @@ export default class F4L7_1_1_Generator_Q1_F_MQ extends QuestionGenerator {
         const wrongAnswers = this.generateWrongAnswers(result);
 
         // 生成所有选项并打乱顺序
-        const options = [result.toString(), ...wrongAnswers.map(x => x.toString())];
-        const shuffledOptions = this.shuffleArray([...options]);
-        const correctIndex = shuffledOptions.indexOf(result.toString());
+        const allAnswers = [result.toString(), ...wrongAnswers.map(x => x.toString())];
+        const shuffledAnswers = this.shuffleArray([...allAnswers]);
 
         // 生成解题步骤
         const steps = this.generateSteps(number, result);
@@ -105,9 +104,12 @@ export default class F4L7_1_1_Generator_Q1_F_MQ extends QuestionGenerator {
         return {
             content: expression,
             correctAnswer: result.toString(),
-            options: shuffledOptions,
-            correctIndex: correctIndex,
-            explanation: steps
+            wrongAnswers: wrongAnswers.map(x => x.toString()),
+            explanation: steps,
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
         };
     }
 
