@@ -113,23 +113,58 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel3(): AdvancedLogQuestion {
-        // 数字运算
-        const num1 = getRandomInt(2, 9);
-        const num2 = getRandomInt(2, 9);
-        const power = getRandomInt(1, 3);
-        const num3 = Math.pow(10, power);
-        const result = num1 * num2 * num3;
+        // 生成 10^1 到 10^5 的幂
+        const targetPower = getRandomInt(1, 5);
+        const target = Math.pow(10, targetPower);  // 例如 1000 (10^3)
+        
+        // 获取所有可能的因子对
+        const possibleFactors = [];
+        for (let f1 = 2; f1 <= 9; f1++) {
+            for (let f2 = 2; f2 <= 9; f2++) {
+                const product = f1 * f2;
+                if (target % product === 0) {  // 确保能整除
+                    possibleFactors.push({
+                        factor1: f1,
+                        factor2: f2,
+                        quotient: target / product
+                    });
+                }
+            }
+        }
+        
+        // 随机选择一个因子组合
+        const randomIndex = getRandomInt(0, possibleFactors.length - 1);
+        const { factor1, factor2, quotient } = possibleFactors[randomIndex];
+        
+        // 构建表达式和步骤
+        let expression: string;
+        let steps: string[];
+        
+        if (quotient === 1) {
+            // 如果商为1，不显示
+            expression = `\\log(${factor1}\\times${factor2})`;
+            steps = [
+                `\\log(${factor1}\\times${factor2})`,
+                `= \\log ${factor1 * factor2}`,
+                `= \\log 10^{${targetPower}}`,
+                `= ${targetPower}`
+            ];
+        } else {
+            // 如果商不为1，显示所有因子
+            expression = `\\log(${factor1}\\times${factor2}\\times${quotient})`;
+            steps = [
+                `\\log(${factor1}\\times${factor2}\\times${quotient})`,
+                `= \\log ${factor1 * factor2 * quotient}`,
+                `= \\log 10^{${targetPower}}`,
+                `= ${targetPower}`
+            ];
+        }
         
         return {
-            expression: `\\log(${num1}\\times${num2}\\times${num3})`,
-            number: result,
-            result: Math.log10(result),
-            steps: [
-                `\\log(${num1}\\times${num2}\\times${num3})`,
-                `= \\log(${num1 * num2}\\times${num3})`,
-                `= \\log ${result}`,
-                `= ${roundTo(Math.log10(result), 3)}`
-            ]
+            expression: expression,
+            number: target,
+            result: targetPower,
+            steps: steps
         };
     }
 
