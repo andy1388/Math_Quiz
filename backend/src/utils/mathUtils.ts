@@ -1007,4 +1007,34 @@ export const OPERATION_BUTTONS: OperationButton[] = [
             return latex.includes('.') || latex.includes('\\frac');
         }
     }
-]; 
+];
+
+/**
+ * 四捨五入到指定小數位
+ * @param num 要舍入的数字
+ * @param decimals 小数位数
+ */
+export function roundTo(num: number, decimals: number): number {
+    const factor = Math.pow(10, decimals);
+    return Math.round(num * factor) / factor;
+}
+
+/**
+ * 向上舍入到指定小數位
+ * @param num 要舍入的数字
+ * @param decimals 小数位数
+ */
+export function roundUp(num: number, decimals: number): number {
+    const factor = Math.pow(10, decimals);
+    return Math.ceil(num * factor) / factor;
+}
+
+/**
+ * 向下舍入到指定小數位
+ * @param num 要舍入的数字
+ * @param decimals 小数位数
+ */
+export function roundDown(num: number, decimals: number): number {
+    const factor = Math.pow(10, decimals);
+    return Math.floor(num * factor) / factor;
+} 
