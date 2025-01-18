@@ -4,20 +4,21 @@ import { getRandomInt } from '@/utils/mathUtils';
 interface PlaceValueQuestion {
     number: string;
     markedPosition: number;  // 0-based from right
-    placeValue: number;
+    placeValue: number;      // 存儲指數
     isBinary: boolean;
     isDecimal: boolean;
 }
 
-export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
+export default class F2L8_3_2_Q6_F_MQ extends QuestionGenerator {
     protected difficulty: number;
     private question!: PlaceValueQuestion;
 
     constructor(difficulty: number) {
-        super(difficulty, 'F2L8.3.2_Q1_F_MQ');
+        super(difficulty, 'F2L8.3.2_Q6_F_MQ');
         this.difficulty = difficulty;
     }
 
+    // 生成數字的基本方法保持不變
     private generateDecimalNumber(min: number, max: number): string {
         return getRandomInt(min, max).toString();
     }
@@ -38,7 +39,6 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
             if (digit !== 0) allZeros = false;
             result += digit;
         }
-        // 如果全是0，确保最后一位不为0
         if (allZeros) {
             result = result.slice(0, -1) + getRandomInt(1, 9);
         }
@@ -53,7 +53,6 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
             if (bit === '1') allZeros = false;
             result += bit;
         }
-        // 如果全是0，确保最后一位为1
         if (allZeros) {
             result = result.slice(0, -1) + '1';
         }
@@ -68,20 +67,20 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
         try {
             switch (this.difficulty) {
                 case 1: {
-                    // 难度1：十进制整数 (3-5位数)
-                    const min = Math.pow(10, 2);  // 100
-                    const max = Math.pow(10, 5) - 1;  // 99999
+                    // 難度1：十進制整數 (3-5位數)
+                    const min = Math.pow(10, 2);
+                    const max = Math.pow(10, 5) - 1;
                     number = this.generateDecimalNumber(min, max);
                     break;
                 }
                 case 2: {
-                    // 难度2：二进制整数 (4-7位)
+                    // 難度2：二進制整數 (4-7位)
                     number = this.generateBinaryNumber(getRandomInt(4, 7));
                     isBinary = true;
                     break;
                 }
                 case 3: {
-                    // 难度3：十进制小数
+                    // 難度3：十進制小數
                     const intPart = this.generateDecimalNumber(1000, 9999);
                     const fracPart = this.generateDecimalFraction(getRandomInt(2, 4));
                     number = `${intPart}.${fracPart}`;
@@ -89,7 +88,7 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
                     break;
                 }
                 case 4: {
-                    // 难度4：二进制小数
+                    // 難度4：二進制小數
                     const intPart = this.generateBinaryNumber(getRandomInt(3, 4));
                     const fracPart = this.generateBinaryFraction(getRandomInt(2, 3));
                     number = `${intPart}.${fracPart}`;
@@ -105,20 +104,15 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
             let placeValue: number;
 
             if (isDecimal) {
-                // 对于难度3和4，只标记小数部分
                 const [intPart, fracPart] = number.split('.');
-                // 随机选择小数部分的一个位置
+                // 只標記小數部分
                 markedPosition = intPart.length + getRandomInt(0, fracPart.length - 1);
-                // 计算位值（负指数）
+                // 計算位值（負指數）
                 const fracPosition = markedPosition - intPart.length;
-                placeValue = isBinary ? 
-                    Math.pow(2, -(fracPosition + 1)) : 
-                    Math.pow(10, -(fracPosition + 1));
+                placeValue = -(fracPosition + 1);
             } else {
                 markedPosition = getRandomInt(0, number.length - 1);
-                placeValue = isBinary ? 
-                    Math.pow(2, markedPosition) : 
-                    Math.pow(10, markedPosition);
+                placeValue = number.length - 1 - markedPosition;
             }
 
             return {
@@ -140,100 +134,37 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
         }
     }
 
-    private generateWrongAnswers(correctValue: number, isBinary: boolean, isDecimal: boolean): string[] {
+    private formatPowerExpression(base: number, exponent: number): string {
+        return `${base}^{${exponent}}`;
+    }
+
+    private generateWrongAnswers(correctExp: string, isBinary: boolean, isDecimal: boolean): string[] {
+        const wrongAnswers = new Set<string>();
+        const base = isBinary ? 2 : 10;
+        const exponent = this.question.placeValue;
+
         try {
-            const wrongAnswers = new Set<string>();
-            const base = isBinary ? 2 : 10;
+            // 1. 指數錯誤
+            wrongAnswers.add(this.formatPowerExpression(base, exponent + 1));
+            wrongAnswers.add(this.formatPowerExpression(base, exponent - 1));
 
-            // 对于二进制小数，使用预定义的位值集合
-            if (isBinary && isDecimal) {
-                const binaryFractions = [0.5, 0.25, 0.125, 0.0625];
-                for (const value of binaryFractions) {
-                    if (value !== correctValue) {
-                        wrongAnswers.add(value.toString());
-                    }
-                }
-                // 如果还需要更多错误答案，添加1
-                if (wrongAnswers.size < 3 && correctValue !== 1) {
-                    wrongAnswers.add('1');
-                }
-            } else if (isDecimal) {
-                // 十进制小数的情况
-                const decimalFractions = [0.1, 0.01, 0.001, 0.0001];
-                for (const value of decimalFractions) {
-                    if (value !== correctValue) {
-                        wrongAnswers.add(value.toString());
-                    }
-                }
-                // 如果还需要更多错误答案，添加1
-                if (wrongAnswers.size < 3 && correctValue !== 1) {
-                    wrongAnswers.add('1');
-                }
-            } else {
-                // 整数的情况保持不变
-                const maxValue = isBinary ? 64 : 10000;
+            // 2. 基數錯誤
+            const wrongBase = isBinary ? 10 : 2;
+            wrongAnswers.add(this.formatPowerExpression(wrongBase, exponent));
 
-                // 1. 数字本身
-                const digit = parseInt(this.question.number[
-                    this.question.number.length - 1 - this.question.markedPosition
-                ]);
-                if (digit !== correctValue && !isNaN(digit)) {
-                    wrongAnswers.add(digit.toString());
-                }
-
-                // 2. 邻近位值
-                if (correctValue > base) {
-                    const lowerValue = Math.floor(correctValue / base);
-                    wrongAnswers.add(lowerValue.toString());
-                }
-                if (correctValue * base <= maxValue) {
-                    wrongAnswers.add((correctValue * base).toString());
-                }
-
-                // 3. 基本位值
-                const basicValues = isBinary ? 
-                    [1, 2, 4, 8, 16, 32, 64] : 
-                    [1, 10, 100, 1000, 10000];
-                
-                for (const value of basicValues) {
-                    if (value !== correctValue && value <= maxValue) {
-                        wrongAnswers.add(value.toString());
-                    }
-                    if (wrongAnswers.size >= 3) break;
-                }
+            // 3. 符號錯誤（對於小數）
+            if (isDecimal) {
+                wrongAnswers.add(this.formatPowerExpression(base, -exponent));
             }
 
-            // 确保有3个不同的错误答案
-            const result = Array.from(wrongAnswers)
-                .filter(ans => !isNaN(Number(ans)) && ans !== correctValue.toString())
-                .slice(0, 3);
-
-            // 如果错误答案不够3个，添加安全的默认值
-            while (result.length < 3) {
-                if (isBinary && isDecimal) {
-                    const defaults = ['0.5', '0.25', '0.125'].filter(v => v !== correctValue.toString());
-                    result.push(defaults[result.length]);
-                } else if (isDecimal) {
-                    const defaults = ['0.1', '0.01', '0.001'].filter(v => v !== correctValue.toString());
-                    result.push(defaults[result.length]);
-                } else {
-                    const defaults = isBinary ? 
-                        ['2', '4', '8'].filter(v => v !== correctValue.toString()) :
-                        ['10', '100', '1000'].filter(v => v !== correctValue.toString());
-                    result.push(defaults[result.length]);
-                }
-            }
-
-            return result;
+            return Array.from(wrongAnswers).slice(0, 3);
         } catch (error) {
             console.error('Error in generateWrongAnswers:', error);
-            // 提供安全的默认错误答案
-            const defaultWrongs = isBinary ? 
-                (isDecimal ? ['0.5', '0.25', '0.125'] : ['2', '4', '8']) : 
-                (isDecimal ? ['0.1', '0.01', '0.001'] : ['10', '100', '1000']);
-            return defaultWrongs
-                .filter(w => w !== correctValue.toString())
-                .slice(0, 3);
+            return [
+                '10^{1}',
+                '2^{2}',
+                '10^{3}'
+            ];
         }
     }
 
@@ -242,52 +173,15 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
             const steps: string[] = [];
             const base = question.isBinary ? 2 : 10;
             
-            let position: number;
-            let digit: string;
-            
-            if (question.isDecimal) {
-                const [intPart, fracPart] = question.number.split('.');
-                if (question.markedPosition >= intPart.length) {
-                    // 小数部分
-                    position = question.markedPosition - intPart.length + 1;
-                    digit = fracPart[position - 1];
-                    steps.push(
-                        '1. 找出底線數字的位置',
-                        `\\[\\text{從小數點後第 ${position} 位}\\]`,
-                        '2. 計算位值',
-                        question.isBinary ?
-                            `\\[2^{-${position}} = ${question.placeValue}\\]` :
-                            `\\[10^{-${position}} = ${question.placeValue}\\]`
-                    );
-                } else {
-                    // 整数部分
-                    position = intPart.length - question.markedPosition;
-                    digit = intPart[question.markedPosition];
-                    steps.push(
-                        '1. 找出底線數字的位置',
-                        `\\[\\text{整數部分從右邊數起第 ${position} 位}\\]`,
-                        '2. 計算位值',
-                        question.isBinary ?
-                            `\\[2^{${position - 1}} = ${question.placeValue}\\]` :
-                            `\\[10^{${position - 1}} = ${question.placeValue}\\]`
-                    );
-                }
-            } else {
-                position = question.markedPosition + 1;
-                digit = question.number[question.number.length - position];
-                steps.push(
-                    '1. 找出底線數字的位置',
-                    `\\[\\text{從右邊數起第 ${position} 位}\\]`,
-                    '2. 計算位值',
-                    question.isBinary ?
-                        `\\[2^{${question.markedPosition}} = ${question.placeValue}\\]` :
-                        `\\[10^{${question.markedPosition}} = ${question.placeValue}\\]`
-                );
-            }
-            
             steps.push(
+                '1. 找出底線數字的位置',
+                question.isDecimal ?
+                    `\\[\\text{從小數點後第 ${-question.placeValue} 位}\\]` :
+                    `\\[\\text{從右邊數起第 ${question.placeValue + 1} 位}\\]`,
+                '2. 計算位值',
+                `\\[${this.formatPowerExpression(base, question.placeValue)}\\]`,
                 '3. 確認答案',
-                `\\[\\text{數字 ${digit} 的位值為 ${question.placeValue}}\\]`
+                `\\[\\text{底線數字的位值為 }${this.formatPowerExpression(base, question.placeValue)}\\]`
             );
 
             return steps.join('\n');
@@ -301,35 +195,33 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
         try {
             this.question = this.generateQuestion();
             
-            const baseNumber = this.question.number;
-            let markedIndex: number;
-            
-            if (this.question.isDecimal) {
-                const [intPart, fracPart] = baseNumber.split('.');
-                if (this.question.markedPosition >= intPart.length) {
-                    // 标记在小数部分
-                    markedIndex = intPart.length + 1 + (this.question.markedPosition - intPart.length);
-                } else {
-                    // 标记在整数部分
-                    markedIndex = this.question.markedPosition;
-                }
-            } else {
-                markedIndex = this.question.number.length - 1 - this.question.markedPosition;
-            }
-            
-            // 添加问题描述
-            const questionText = 'What is the place value of the underlined number?';
-            const content = `${questionText}\n\\[${baseNumber.slice(0, markedIndex)}\\underline{${baseNumber[markedIndex]}}${baseNumber.slice(markedIndex + 1)}${this.question.isBinary ? '_2' : ''}\\]`;
+            // 構建帶有底線的數字
+            let displayNumber = this.question.number;
+            const markedIndex = this.question.isDecimal ?
+                (this.question.markedPosition >= this.question.number.indexOf('.') ?
+                    this.question.markedPosition + 1 : // 加1是因為小數點
+                    this.question.markedPosition) :
+                this.question.markedPosition;
+
+            displayNumber = 
+                displayNumber.slice(0, markedIndex) + 
+                '\\underline{' + displayNumber[markedIndex] + '}' + 
+                displayNumber.slice(markedIndex + 1);
+
+            const correctAnswer = this.formatPowerExpression(
+                this.question.isBinary ? 2 : 10,
+                this.question.placeValue
+            );
 
             const wrongAnswers = this.generateWrongAnswers(
-                this.question.placeValue,
+                correctAnswer,
                 this.question.isBinary,
                 this.question.isDecimal
             );
 
             return {
-                content,
-                correctAnswer: this.question.placeValue.toString(),
+                content: `What is the place value of the underlined number?\n\\[${displayNumber}${this.question.isBinary ? '_2' : ''}\\]`,
+                correctAnswer,
                 wrongAnswers,
                 explanation: this.generateExplanation(this.question),
                 type: 'text',
@@ -340,9 +232,9 @@ export default class F2L8_3_2_Q1_F_MQ extends QuestionGenerator {
         } catch (error) {
             console.error('Error in generate:', error);
             return {
-                content: 'What is the place value of the underlined number?\n\\[1234\\]',
-                correctAnswer: '1',
-                wrongAnswers: ['2', '3', '4'],
+                content: 'What is the place value?\n\\[1234\\]',
+                correctAnswer: '10^{3}',
+                wrongAnswers: ['10^{2}', '2^{3}', '10^{4}'],
                 explanation: '错误生成题目',
                 type: 'text',
                 displayOptions: {
