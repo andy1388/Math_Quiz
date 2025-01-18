@@ -1,166 +1,218 @@
 import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
-import { getRandomInt, roundTo } from '@/utils/mathUtils';
+import {
+    getRandomInt,
+    getRandomDecimal,
+    formatNumber,
+    LaTeX,
+    DEFAULT_CONFIG,
+    roundTo,
+    roundUp,
+    roundDown
+} from '@/utils/mathUtils';
 
-type Difficulty = 1 | 2 | 3 | 4;
+interface LogarithmQuestion {
+    number: number;
+    result: number;
+}
 
 export default class F4L7_1_1_Q1_F_MQ extends QuestionGenerator {
     constructor(difficulty: number) {
         super(difficulty, 'F4L7.1.1_Q1_F_MQ');
     }
 
-    private generateNumber(difficulty: Difficulty): number {
-        switch(difficulty) {
-            case 1: // 整數 2-9
-                return getRandomInt(2, 9);
-            case 2: // 特殊數字：1, 0, -1, 10
-                const specialCases = [1, 0, -1, 10];
-                return specialCases[getRandomInt(0, 3)];
-            case 3: // 較大整數 10-9999
-                return getRandomInt(10, 9999);
-            case 4: // 小數 0.1-19.9
-                const isLessThanOne = Math.random() < 0.5;
-                if (isLessThanOne) {
-                    return roundTo(0.1 + Math.random() * 0.8, 1);
-                } else {
-                    return roundTo(1.1 + Math.random() * 18.8, 1);
-                }
-            default:
-                return 2;
-        }
-    }
-
-    private calculateLog(num: number): number | string {
-        if (num < 0) return 'Undefined';
-        if (num === 0) return 'Undefined';
-        return roundTo(Math.log10(num), 3);
-    }
-
-    private generateWrongAnswer(correctAnswer: number | string, num: number): number | string {
-        // 如果是undefined的情况，生成特殊的错误答案
-        if (correctAnswer === 'Undefined') {
-            const specialWrongs = [
-                '0',
-                '-∞',
-                num < 0 ? Math.abs(num).toString() : (-num).toString()
-            ];
-            return specialWrongs[getRandomInt(0, 2)];
-        }
-
-        // 如果是特殊值1或0的情况
-        if (correctAnswer === '1' || correctAnswer === '0') {
-            const specialWrongs = [
-                (parseFloat(correctAnswer as string) + 1).toString(),
-                (parseFloat(correctAnswer as string) - 1).toString(),
-                'Undefined'
-            ];
-            return specialWrongs[getRandomInt(0, 2)];
-        }
-
-        const errorTypes = [
-            // 1. 正負號錯誤
-            () => roundTo(Math.abs(correctAnswer as number), 3),
-            
-            // 2. 小數點位置錯誤
-            () => roundTo((correctAnswer as number) * 10, 3),
-            
-            // 3. 計算錯誤（±0.1以內的偏差）
-            () => {
-                const variation = Math.random() * 0.2 - 0.1;
-                return roundTo((correctAnswer as number) + variation, 3);
-            }
-        ];
-
-        const errorIndex = getRandomInt(0, errorTypes.length - 1);
-        const wrongAnswer = errorTypes[errorIndex]();
-        
-        // 避免无限递归
-        const attempts = 0;
-        const maxAttempts = 10;
-        
-        if (Math.abs(wrongAnswer - (correctAnswer as number)) < 0.001) {
-            if (attempts >= maxAttempts) {
-                return roundTo((correctAnswer as number) + 0.1, 3);
-            }
-            return this.generateWrongAnswer(correctAnswer, num);
-        }
-        
-        return roundTo(wrongAnswer, 3);
-    }
-
-    private generateExplanation(num: number, answer: number | string): string {
-        const steps: string[] = [];
-        
-        steps.push(`1. 計算 log ${num}`);
-        
-        if (num < 0) {
-            steps.push('因為輸入為負數');
-            steps.push('因為10的所有次方都不會出現負數');
-            steps.push('所以log(-1)為Undefined');
-        } else if (num === 0) {
-            steps.push('因為輸入為0');
-            steps.push('因為10的所有次方都不會出現0');
-            steps.push('所以log(0)為Undefined');
-        } else if (num === 10) {
-            steps.push('因為10是log的底數');
-            steps.push('所以log(10) = 1');
-        } else if (num === 1) {
-            steps.push('因為任何數的log(1)都等於0');
-        } else {
-            steps.push(num < 1 ? '因為輸入小於1，結果為負數' : '因為輸入大於1，結果為正數');
-            steps.push('2. 使用計算機計算');
-            steps.push(`3. 答案準確到小數點後3位：${answer}`);
-        }
-
-        return steps.join('<br><br>');
-    }
-
     generate(): IGeneratorOutput {
-        const difficulty = this.difficulty as Difficulty;
-        const num = this.generateNumber(difficulty);
-        const correctAnswer = this.calculateLog(num);
+        let question: LogarithmQuestion;
         
-        // 生成3個錯誤答案
-        const wrongAnswers = new Set<string>();
-        let attempts = 0;
-        const maxAttempts = 20;
-        
-        while (wrongAnswers.size < 3 && attempts < maxAttempts) {
-            const wrongAnswer = this.generateWrongAnswer(correctAnswer, num);
-            if (wrongAnswer !== correctAnswer.toString()) {
-                wrongAnswers.add(wrongAnswer.toString());
-            }
-            attempts++;
+        // 根据难度生成问题
+        switch (this.difficulty) {
+            case 1:
+                question = this.generateLevel1();
+                break;
+            case 2:
+                question = this.generateLevel2();
+                break;
+            case 3:
+                question = this.generateLevel3();
+                break;
+            case 4:
+                question = this.generateLevel4();
+                break;
+            default:
+                throw new Error(`不支援的難度等級: ${this.difficulty}`);
         }
 
-        // 如果没有生成足够的错误答案，添加默认错误答案
-        if (wrongAnswers.size < 3) {
-            if (correctAnswer === 'Undefined') {
-                wrongAnswers.add('0');
-                wrongAnswers.add('-∞');
-                wrongAnswers.add('1');
-            } else {
-                const defaultWrongs = [
-                    roundTo((correctAnswer as number) + 0.1, 3).toString(),
-                    roundTo((correctAnswer as number) - 0.1, 3).toString(),
-                    roundTo((correctAnswer as number) * 10, 3).toString()
-                ];
-                for (const wrong of defaultWrongs) {
-                    if (wrongAnswers.size < 3) {
-                        wrongAnswers.add(wrong);
-                    }
+        // 处理无定义的情况
+        if (isNaN(question.result)) {
+            const content = `\\[\\log ${question.number}\\]`;
+            return {
+                content: content,
+                correctAnswer: "Undefined",
+                wrongAnswers: ["0", "1", "-1"],  // 对于无定义的情况的错误答案
+                explanation: this.generateExplanation(question),
+                type: 'text',
+                displayOptions: {
+                    latex: true
                 }
-            }
+            };
         }
+
+        // 计算结果并格式化
+        const exactResult = Math.log10(question.number);
+        const formattedResult = this.isIntegerResult(question.number) ? 
+            Math.round(exactResult) : // 对于整数结果直接返回
+            roundTo(exactResult, 2);  // 对于非整数结果四舍五入到2位小数
+
+        // 生成错误答案
+        const wrongAnswers = this.generateWrongAnswers(formattedResult, question.number);
+
+        // 格式化题目和答案
+        const content = `\\[\\log ${question.number}\\]`;
+        const correctAnswer = this.isIntegerResult(question.number) ? 
+            formattedResult.toString() :  // 整数结果不需要小数点
+            formattedResult.toFixed(2);   // 非整数结果显示2位小数
+        const explanation = this.generateExplanation(question);
 
         return {
-            content: `計算 log ${num}`,
-            correctAnswer: correctAnswer.toString(),
-            wrongAnswers: Array.from(wrongAnswers),
-            explanation: this.generateExplanation(num, correctAnswer),
+            content: content,
+            correctAnswer: correctAnswer,
+            wrongAnswers: this.isIntegerResult(question.number) ? 
+                wrongAnswers.map(x => x.toString()) :  // 整数结果的错误答案不需要小数点
+                wrongAnswers.map(x => x.toFixed(2)),   // 非整数结果的错误答案显示2位小数
+            explanation: explanation,
             type: 'text',
             displayOptions: {
                 latex: true
             }
         };
+    }
+
+    private generateLevel1(): LogarithmQuestion {
+        // 整数 2-9
+        const number = getRandomInt(2, 9);
+        return {
+            number,
+            result: Math.log10(number)
+        };
+    }
+
+    private generateLevel2(): LogarithmQuestion {
+        // 特殊数字：1, 10, 0, -1
+        const specialNumbers = [1, 10, 0, -1];
+        const number = specialNumbers[getRandomInt(0, specialNumbers.length - 1)];
+        
+        // 对于无定义的情况（0和负数），我们返回特殊标记
+        if (number <= 0) {
+            return {
+                number,
+                result: NaN  // 用于标识无定义的情况
+            };
+        }
+        
+        return {
+            number,
+            result: Math.log10(number)
+        };
+    }
+
+    private generateLevel3(): LogarithmQuestion {
+        // 较大整数 10-9999
+        const number = getRandomInt(10, 9999);
+        return {
+            number,
+            result: Math.log10(number)
+        };
+    }
+
+    private generateLevel4(): LogarithmQuestion {
+        // 小数 0.01-0.99
+        const number = getRandomDecimal(0.01, 0.99, 2); // 修改范围并使用2位小数
+        return {
+            number,
+            result: Math.log10(number)
+        };
+    }
+
+    private generateWrongAnswers(correctAnswer: number, originalNumber: number): number[] {
+        const wrongAnswers: number[] = [];
+        
+        while (wrongAnswers.length < 3) {
+            let wrongAnswer: number;
+            
+            // 根据不同的错误类型生成错误答案
+            const errorType = getRandomInt(1, 3);
+            
+            switch (errorType) {
+                case 1: // 正负号错误
+                    wrongAnswer = -correctAnswer;
+                    break;
+                    
+                case 2: // 小数点位置错误
+                    wrongAnswer = correctAnswer < 0 ? 
+                        correctAnswer * 0.1 : 
+                        correctAnswer * 10;
+                    break;
+                    
+                case 3: // 计算错误（略微偏差）
+                    // 对于小于1的数，使用更小的偏差
+                    const deviation = originalNumber < 1 ? 
+                        (Math.random() - 0.5) * 0.1 : // ±0.05 范围内的偏差
+                        (Math.random() - 0.5) * 0.2;  // ±0.1 范围内的偏差
+                    wrongAnswer = correctAnswer + deviation;
+                    break;
+                    
+                default:
+                    wrongAnswer = correctAnswer + 0.1;
+            }
+            
+            // 确保答案格式正确（2位小数）
+            wrongAnswer = roundTo(wrongAnswer, 2);
+            
+            // 确保答案不重复且不等于正确答案
+            if (!wrongAnswers.includes(wrongAnswer) && 
+                Math.abs(wrongAnswer - correctAnswer) > 0.01) {
+                wrongAnswers.push(wrongAnswer);
+            }
+        }
+        
+        return wrongAnswers;
+    }
+
+    private isIntegerResult(number: number): boolean {
+        // 检查是否为特殊情况（log 1 = 0 或 log 10 = 1）
+        return number === 1 || number === 10;
+    }
+
+    private generateExplanation(question: LogarithmQuestion): string {
+        const steps: string[] = [];
+        
+        steps.push('計算步驟：');
+        steps.push(`\\[\\log ${question.number}\\]`);
+        
+        if (question.number <= 0) {
+            if (question.number === 0) {
+                steps.push('因為10的任何次方也不會是0');
+                steps.push('所以 log 0 沒有定義');
+            } else {
+                steps.push('因為10的任何次方也不會是負數');
+                steps.push('所以負數的對數沒有定義');
+            }
+            steps.push(`\\[= \\text{Undefined}\\]`);
+        } else if (question.number === 1) {
+            steps.push('因為10^{0} = 1');
+            steps.push(`\\[= 0\\]`);
+        } else if (question.number === 10) {
+            steps.push('因為10^{1} = 10');
+            steps.push(`\\[= 1\\]`);
+        } else if (question.number < 1) {
+            steps.push('因為輸入小於 1，所以結果為負數');
+            const result = roundTo(Math.log10(question.number), 2);
+            steps.push(`\\[= ${result.toFixed(2)}\\]`);
+        } else {
+            steps.push('使用計算機計算：');
+            const result = roundTo(Math.log10(question.number), 2);
+            steps.push(`\\[= ${result.toFixed(2)}\\]`);
+        }
+        
+        return steps.join('\n');
     }
 } 

@@ -2,7 +2,7 @@
 Calculate the following common logarithm expressions using calculator
 ===================================
 
-Level number: 4
+Level number：4
 
 題型：計算常用對數值（以10為底）
 Question Type: Calculate common logarithm values (base 10)
@@ -26,8 +26,8 @@ Question Type: Calculate common logarithm values (base 10)
    例：log 100 = 2.000、log 5000 = 3.699
    特點：結果為大於1的正數
 
-4. 小數 0.1-19.9
-   例：log 0.5 = -0.301、log 15.7 = 1.196
+4. 小數 0.1-0.9
+   例：log 0.5 = -0.301
    特點：小於1的數得到負數結果
 
 生成規則：

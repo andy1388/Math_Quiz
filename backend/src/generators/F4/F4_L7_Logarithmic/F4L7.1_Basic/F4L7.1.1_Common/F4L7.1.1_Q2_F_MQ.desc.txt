@@ -2,7 +2,7 @@
 Calculate the following common logarithm expressions using calculator
 ===================================
 
-Level number: 7
+Level number：7
 
 題型：計算進階常用對數值（以10為底）
 Question Type: Calculate advanced common logarithm values (base 10)
