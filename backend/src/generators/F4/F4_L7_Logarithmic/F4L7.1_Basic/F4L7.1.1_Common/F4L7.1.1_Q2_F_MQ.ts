@@ -75,6 +75,20 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel1(): AdvancedLogQuestion {
+        // 10的正负次方
+        const power = getRandomInt(-5, 5);
+        return {
+            expression: `\\log 10^{${power}}`,
+            number: Math.pow(10, power),
+            result: power,
+            steps: [
+                `\\log 10^{${power}}`,
+                `= ${power}`
+            ]
+        };
+    }
+
+    private generateLevel2(): AdvancedLogQuestion {
         // 10的整数次方
         const power = getRandomInt(1, 4);
         const number = Math.pow(10, power);
@@ -90,7 +104,7 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel2(): AdvancedLogQuestion {
+    private generateLevel3(): AdvancedLogQuestion {
         // 生成 -5 到 5 的随机整数作为指数
         const power = getRandomInt(-5, 5);
         const number = Math.pow(10, power);
@@ -112,17 +126,17 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel3(): AdvancedLogQuestion {
+    private generateLevel4(): AdvancedLogQuestion {
         // 生成 10^1 到 10^5 的幂
         const targetPower = getRandomInt(1, 5);
-        const target = Math.pow(10, targetPower);  // 例如 1000 (10^3)
+        const target = Math.pow(10, targetPower);
         
         // 获取所有可能的因子对
         const possibleFactors = [];
         for (let f1 = 2; f1 <= 9; f1++) {
             for (let f2 = 2; f2 <= 9; f2++) {
                 const product = f1 * f2;
-                if (target % product === 0) {  // 确保能整除
+                if (target % product === 0) {
                     possibleFactors.push({
                         factor1: f1,
                         factor2: f2,
@@ -141,7 +155,6 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
         let steps: string[];
         
         if (quotient === 1) {
-            // 如果商为1，不显示
             expression = `\\log(${factor1}\\times${factor2})`;
             steps = [
                 `\\log(${factor1}\\times${factor2})`,
@@ -150,7 +163,6 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
                 `= ${targetPower}`
             ];
         } else {
-            // 如果商不为1，显示所有因子
             expression = `\\log(${factor1}\\times${factor2}\\times${quotient})`;
             steps = [
                 `\\log(${factor1}\\times${factor2}\\times${quotient})`,
@@ -165,20 +177,6 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
             number: target,
             result: targetPower,
             steps: steps
-        };
-    }
-
-    private generateLevel4(): AdvancedLogQuestion {
-        // 10的正负次方
-        const power = getRandomInt(-5, 5);
-        return {
-            expression: `\\log 10^{${power}}`,
-            number: Math.pow(10, power),
-            result: power,
-            steps: [
-                `\\log 10^{${power}}`,
-                `= ${power}`
-            ]
         };
     }
 
