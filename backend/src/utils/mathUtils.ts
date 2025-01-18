@@ -882,6 +882,99 @@ export const ExpressionAnalyzer = {
             console.error('Reduction error:', error);
             throw error;
         }
+    },
+
+    /**
+     * 質因數分解
+     */
+    primeFactorize(expression: string): string {
+        try {
+            // 移除等號及其後面的內容
+            const [expr, equals] = expression.split('=');
+            
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
+
+            // 清理表達式,只保留數字
+            const cleanExpr = expr.trim().replace(/[^\d]/g, '');
+            const num = parseInt(cleanExpr);
+
+            if (isNaN(num)) {
+                throw new Error('無效的數字格式');
+            }
+
+            if (num <= 1) {
+                throw new Error('請輸入大於1的整數');
+            }
+
+            // 執行質因數分解
+            const factors = this._getPrimeFactors(num);
+            
+            // 格式化結果
+            const result = this._formatPrimeFactors(factors);
+
+            console.log('Prime factorization result:', result);
+
+            // 添加等號部分(如果有)
+            return equals ? `${result}=${equals}` : result;
+        } catch (error) {
+            console.error('Prime factorization error:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * 獲取質因數列表
+     */
+    _getPrimeFactors(n: number): number[] {
+        const factors: number[] = [];
+        let num = n;
+
+        // 處理2的因數
+        while (num % 2 === 0) {
+            factors.push(2);
+            num = num / 2;
+        }
+
+        // 處理其他質因數
+        for (let i = 3; i <= Math.sqrt(num); i += 2) {
+            while (num % i === 0) {
+                factors.push(i);
+                num = num / i;
+            }
+        }
+
+        // 如果最後剩餘的數大於2,它本身就是質數
+        if (num > 2) {
+            factors.push(num);
+        }
+
+        return factors;
+    },
+
+    /**
+     * 格式化質因數分解結果為 LaTeX 格式
+     */
+    _formatPrimeFactors(factors: number[]): string {
+        if (factors.length === 0) return '';
+
+        // 統計每個質因數的次數
+        const countMap = new Map<number, number>();
+        factors.forEach(factor => {
+            countMap.set(factor, (countMap.get(factor) || 0) + 1);
+        });
+
+        // 按質因數大小排序
+        const sortedFactors = Array.from(countMap.entries()).sort((a, b) => a[0] - b[0]);
+
+        // 構建 LaTeX 格式的結果
+        const terms = sortedFactors.map(([factor, count]) => {
+            if (count === 1) return factor.toString();
+            return `${factor}^{${count}}`;
+        });
+
+        return terms.join(' \\times ');
     }
 };
 
@@ -941,7 +1034,8 @@ export const MathOperations = {
     COMMON_DENOMINATOR: 'common-denominator',
     EXPAND: 'expand',
     FACTORIZE: 'factorize',
-    DECIMAL_FRACTION_CONVERSION: 'decimal-fraction'
+    DECIMAL_FRACTION_CONVERSION: 'decimal-fraction',
+    PRIME_FACTORIZE: 'prime-factorize'
 } as const;
 
 export interface OperationButton {
@@ -1005,6 +1099,16 @@ export const OPERATION_BUTTONS: OperationButton[] = [
         operation: 'DECIMAL_FRACTION_CONVERSION',
         isAvailable: (latex: string) => {
             return latex.includes('.') || latex.includes('\\frac');
+        }
+    },
+    {
+        id: 'prime-factorize',
+        label: '質因數分解',
+        description: '將數字分解為質因數的乘積',
+        operation: 'PRIME_FACTORIZE',
+        isAvailable: (latex: string) => {
+            const num = parseInt(latex.replace(/[^\d]/g, ''));
+            return !isNaN(num) && num > 1;
         }
     }
 ];

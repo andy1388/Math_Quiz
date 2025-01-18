@@ -143,6 +143,9 @@ router.post('/process', (req, res) => {
             case 'reduce':
                 result = ExpressionAnalyzer.reduceFraction(latex);
                 break;
+            case 'prime-factorize':
+                result = ExpressionAnalyzer.primeFactorize(latex);
+                break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }
@@ -197,6 +200,11 @@ router.post('/check-operation', (req, res) => {
                 // 检查是否是多项式
                 const type = ExpressionAnalyzer.getExpressionType(latex);
                 available = type === 'polynomial';
+                break;
+            case 'prime-factorize':
+                // 檢查是否為正整數
+                const num = parseInt(latex.replace(/[^\d]/g, ''));
+                available = !isNaN(num) && num > 1;
                 break;
             default:
                 available = false;
