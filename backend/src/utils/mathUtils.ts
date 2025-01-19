@@ -975,6 +975,61 @@ export const ExpressionAnalyzer = {
         });
 
         return terms.join(' \\times ');
+    },
+
+    /**
+     * 將指數表達式化簡為正指數形式
+     * 處理規則：
+     * 1. a^0 = 1
+     * 2. a^{-n} = \frac{1}{a^n}
+     */
+    simplifyIndices(latex: string): string {
+        try {
+            // 移除所有空格
+            latex = latex.replace(/\s+/g, '');
+            console.log('Input latex:', latex);
+            
+            // 如果表達式包含等號，分開處理
+            const [expr, equals] = latex.split('=');
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
+            console.log('Expression part:', expr);
+
+            let result = expr;
+
+            // 處理零指數：a^0 = 1
+            result = result.replace(/(\d+)\^{0}/g, '1');
+
+            // 處理負指數：a^{-n} = \frac{1}{a^n}
+            // 修正正則表達式以準確匹配負指數形式
+            const negativeExponentPattern = /(\d+)\^{-(\d+)}/;
+            const match = expr.match(negativeExponentPattern);
+            
+            console.log('Regex match result:', match);
+            
+            if (match) {
+                const [_, base, exp] = match;  // 使用 _ 忽略完整匹配
+                console.log('Matched parts:', {
+                    base,
+                    exp
+                });
+                
+                // 構建分數形式，分母使用正指數
+                result = `\\frac{1}{${base}^{${exp}}}`;
+                console.log('Final result:', result);
+            } else {
+                console.log('No match found for negative exponent');
+            }
+
+            // 添加等號部分（如果有）
+            const finalResult = equals ? `${result}=${equals}` : result;
+            console.log('Final output:', finalResult);
+            return finalResult;
+        } catch (error) {
+            console.error('Simplify indices error:', error);
+            throw error;
+        }
     }
 };
 
