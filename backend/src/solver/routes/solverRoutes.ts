@@ -6,6 +6,7 @@ import { NumberTheoryGenerator } from '../arithmetic/NumberTheory';
 import { Solver } from '../Solver';
 import { analyzeExpression } from '../controllers/analyzeController';
 import { ExpressionAnalyzer } from '../../utils/mathUtils';
+import { IndicesGenerator } from '../arithmetic/Indices';
 
 const router = express.Router();
 
@@ -65,6 +66,16 @@ router.post('/generate', async (req, res) => {
                 });
                 break;
 
+            case 'indices':
+                const indicesGenerator = new IndicesGenerator(difficulty);
+                const indicesOperation = indicesGenerator.generate();
+                const indicesQuestion = indicesGenerator.getLatexQuestion(indicesOperation);
+                res.json({
+                    question: indicesQuestion,
+                    operation: indicesOperation
+                });
+                break;
+
             default:
                 res.status(400).json({ error: '不支援的運算類型' });
         }
@@ -92,6 +103,9 @@ router.get('/difficulties/:type', async (req, res) => {
             case 'lcm':
             case 'prime-factorization':
                 res.json(NumberTheoryGenerator.getDifficultyInfos(type));
+                break;
+            case 'indices':
+                res.json(IndicesGenerator.getDifficultyInfos());
                 break;
             default:
                 res.status(400).json({ error: '不支援的運算類型' });
@@ -145,6 +159,9 @@ router.post('/process', (req, res) => {
                 break;
             case 'prime-factorize':
                 result = ExpressionAnalyzer.primeFactorize(latex);
+                break;
+            case 'simplify-indices':
+                result = ExpressionAnalyzer.simplifyIndices(latex);
                 break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
@@ -205,6 +222,12 @@ router.post('/check-operation', (req, res) => {
                 // 檢查是否為正整數
                 const num = parseInt(latex.replace(/[^\d]/g, ''));
                 available = !isNaN(num) && num > 1;
+                break;
+            case 'simplify-indices':
+                // 檢查是否包含指數運算
+                available = latex.includes('^') || 
+                          latex.includes('\\sqrt') || 
+                          /\d+\^\{[^}]+\}/.test(latex);
                 break;
             default:
                 available = false;
