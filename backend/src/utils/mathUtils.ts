@@ -982,49 +982,71 @@ export const ExpressionAnalyzer = {
      * 處理規則：
      * 1. a^0 = 1
      * 2. a^{-n} = \frac{1}{a^n}
+     * 3. a^m · a^n = a^{m+n}
+     * 4. a^m ÷ a^n = a^{m-n}
      */
     simplifyIndices(latex: string): string {
         try {
             // 移除所有空格
             latex = latex.replace(/\s+/g, '');
-            console.log('Input latex:', latex);
+            console.log('Input after removing spaces:', latex);
             
             // 如果表達式包含等號，分開處理
             const [expr, equals] = latex.split('=');
             if (!expr) {
                 throw new Error('表達式為空');
             }
-            console.log('Expression part:', expr);
+            console.log('Expression before processing:', expr);
 
             let result = expr;
 
-            // 處理零指數：a^0 = 1
-            result = result.replace(/(\d+)\^{0}/g, '1');
+            // 處理指數乘法：a^m · a^n = a^{m+n}
+            const beforeMultiply = result;
+            result = result.replace(/(\d+)\^{(\d+)}\\cdot\1\^{(\d+)}/g, (match, base, exp1, exp2) => {
+                console.log('Multiply match found:', { match, base, exp1, exp2 });
+                const sumExp = parseInt(exp1) + parseInt(exp2);
+                return `${base}^{${sumExp}}`;
+            });
+            if (beforeMultiply !== result) {
+                console.log('After handling multiplication:', result);
+            }
+
+            // 處理指數除法：a^m ÷ a^n = a^{m-n}
+            const beforeDivide = result;
+            result = result.replace(/(\d+)\^{(\d+)}\\div\1\^{(\d+)}/g, (match, base, exp1, exp2) => {
+                console.log('Divide match found:', { match, base, exp1, exp2 });
+                const diffExp = parseInt(exp1) - parseInt(exp2);
+                if (diffExp === 0) return '1';
+                if (diffExp < 0) {
+                    return `\\frac{1}{${base}^{${-diffExp}}}`;
+                }
+                return `${base}^{${diffExp}}`;
+            });
+            if (beforeDivide !== result) {
+                console.log('After handling division:', result);
+            }
 
             // 處理負指數：a^{-n} = \frac{1}{a^n}
-            // 修正正則表達式以準確匹配負指數形式
-            const negativeExponentPattern = /(\d+)\^{-(\d+)}/;
-            const match = expr.match(negativeExponentPattern);
-            
-            console.log('Regex match result:', match);
-            
-            if (match) {
-                const [_, base, exp] = match;  // 使用 _ 忽略完整匹配
-                console.log('Matched parts:', {
-                    base,
-                    exp
-                });
-                
-                // 構建分數形式，分母使用正指數
-                result = `\\frac{1}{${base}^{${exp}}}`;
-                console.log('Final result:', result);
-            } else {
-                console.log('No match found for negative exponent');
+            const beforeNegative = result;
+            result = result.replace(/(\d+)\^{-(\d+)}/g, (match, base, exp) => {
+                console.log('Negative exponent match found:', { match, base, exp });
+                return `\\frac{1}{${base}^{${exp}}}`;
+            });
+            if (beforeNegative !== result) {
+                console.log('After handling negative exponent:', result);
+            }
+
+            // 處理零指數：a^0 = 1
+            // 只在完全匹配 a^{0} 時才替換
+            const beforeZero = result;
+            if (result.match(/^\d+\^{0}$/)) {
+                result = '1';
+                console.log('After handling zero exponent:', result);
             }
 
             // 添加等號部分（如果有）
             const finalResult = equals ? `${result}=${equals}` : result;
-            console.log('Final output:', finalResult);
+            console.log('Final result:', finalResult);
             return finalResult;
         } catch (error) {
             console.error('Simplify indices error:', error);
