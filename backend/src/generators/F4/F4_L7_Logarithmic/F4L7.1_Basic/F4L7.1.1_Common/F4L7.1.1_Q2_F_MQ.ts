@@ -5,7 +5,9 @@ import {
     formatNumber,
     LaTeX,
     DEFAULT_CONFIG,
-    roundTo
+    roundTo,
+    ExpressionAnalyzer,
+    generateFactorCombinations
 } from '@/utils/mathUtils';
 
 interface AdvancedLogQuestion {
@@ -131,46 +133,41 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
         const targetPower = getRandomInt(1, 5);
         const target = Math.pow(10, targetPower);
         
-        // 获取所有可能的因子对
-        const possibleFactors = [];
-        for (let f1 = 2; f1 <= 9; f1++) {
-            for (let f2 = 2; f2 <= 9; f2++) {
-                const product = f1 * f2;
-                if (target % product === 0) {
-                    possibleFactors.push({
-                        factor1: f1,
-                        factor2: f2,
-                        quotient: target / product
-                    });
-                }
-            }
+        // 获取所有可能的因子组合
+        const possibleFactors = generateFactorCombinations(target, {
+            minFactor: 2,
+            maxFactor: 9,
+            maxQuotient: 9,
+            maxFactors: 3  // 对于对数问题，我们限制在3个因子
+        });
+
+        // 如果没有找到合适的组合，使用默认的2和5组合
+        if (possibleFactors.length === 0) {
+            return {
+                expression: `\\log(2\\times5\\times${Math.pow(10, targetPower - 1)})`,
+                number: target,
+                result: targetPower,
+                steps: [
+                    `\\log(2\\times5\\times${Math.pow(10, targetPower - 1)})`,
+                    `= \\log ${target}`,
+                    `= \\log 10^{${targetPower}}`,
+                    `= ${targetPower}`
+                ]
+            };
         }
-        
+
         // 随机选择一个因子组合
         const randomIndex = getRandomInt(0, possibleFactors.length - 1);
-        const { factor1, factor2, quotient } = possibleFactors[randomIndex];
+        const { factors } = possibleFactors[randomIndex];
         
         // 构建表达式和步骤
-        let expression: string;
-        let steps: string[];
-        
-        if (quotient === 1) {
-            expression = `\\log(${factor1}\\times${factor2})`;
-            steps = [
-                `\\log(${factor1}\\times${factor2})`,
-                `= \\log ${factor1 * factor2}`,
-                `= \\log 10^{${targetPower}}`,
-                `= ${targetPower}`
-            ];
-        } else {
-            expression = `\\log(${factor1}\\times${factor2}\\times${quotient})`;
-            steps = [
-                `\\log(${factor1}\\times${factor2}\\times${quotient})`,
-                `= \\log ${factor1 * factor2 * quotient}`,
-                `= \\log 10^{${targetPower}}`,
-                `= ${targetPower}`
-            ];
-        }
+        const expression = `\\log(${factors.join('\\times')})`;
+        const steps = [
+            expression,
+            `= \\log ${factors.reduce((a, b) => a * b, 1)}`,
+            `= \\log 10^{${targetPower}}`,
+            `= ${targetPower}`
+        ];
         
         return {
             expression: expression,
@@ -181,42 +178,121 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel5(): AdvancedLogQuestion {
-        // 根号运算
-        const base = getRandomInt(10, 1000);
+        // 生成 10^1 到 10^5 的幂
+        const targetPower = getRandomInt(1, 5);
+        const base = Math.pow(10, targetPower);
         const rootPower = getRandomInt(2, 4);
+        
+        // 获取基数的因子组合
+        const possibleFactors = generateFactorCombinations(base, {
+            minFactor: 2,
+            maxFactor: 9,
+            maxQuotient: 9,
+            maxFactors: 2  // 根号内只用2个因子，避免太复杂
+        });
+
+        // 如果没有找到合适的组合，使用默认的2和5组合
+        if (possibleFactors.length === 0) {
+            const result = Math.pow(base, 1/rootPower);
+            const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
+            
+            return {
+                expression: `\\log ${rootSymbol}{${base}}`,
+                number: result,
+                result: Math.log10(result),
+                steps: [
+                    `\\log ${rootSymbol}{${base}}`,
+                    `= \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
+                    `= \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
+                    `= \\frac{${targetPower}}{${rootPower}}`,
+                    `= ${roundTo(targetPower/rootPower, 3)}`
+                ]
+            };
+        }
+
+        // 随机选择一个因子组合
+        const randomIndex = getRandomInt(0, possibleFactors.length - 1);
+        const { factors } = possibleFactors[randomIndex];
+        const factorExpression = factors.join('\\times');
+        
+        // 计算结果
         const result = Math.pow(base, 1/rootPower);
         
+        // 构建根号符号
         const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
+        
         return {
-            expression: `\\log ${rootSymbol}{${base}}`,
+            expression: `\\log ${rootSymbol}{${factorExpression}}`,
             number: result,
             result: Math.log10(result),
             steps: [
-                `\\log ${rootSymbol}{${base}}`,
-                `= \\log ${base}^{\\frac{1}{${rootPower}}}`,
-                `= \\frac{\\log ${base}}{${rootPower}}`,
-                `= ${roundTo(Math.log10(result), 3)}`
+                `\\log ${rootSymbol}{${factorExpression}}`,
+                `= \\log (${factorExpression})^{\\frac{1}{${rootPower}}}`,
+                `= \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
+                `= \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
+                `= \\frac{${targetPower}}{${rootPower}}`,
+                `= ${roundTo(targetPower/rootPower, 3)}`
             ]
         };
     }
 
     private generateLevel6(): AdvancedLogQuestion {
-        // 分数运算
-        const base = getRandomInt(10, 100);
+        // 生成 10^1 到 10^5 的幂
+        const targetPower = getRandomInt(1, 5);
+        const base = Math.pow(10, targetPower);
         const rootPower = getRandomInt(2, 3);
-        const denominator = Math.pow(base, 1/rootPower);
-        const result = 1/denominator;
         
+        // 获取基数的因子组合
+        const possibleFactors = generateFactorCombinations(base, {
+            minFactor: 2,
+            maxFactor: 9,
+            maxQuotient: 9,
+            maxFactors: 2  // 根号内只用2个因子，避免太复杂
+        });
+
+        // 如果没有找到合适的组合，使用默认的2和5组合
+        if (possibleFactors.length === 0) {
+            const result = -targetPower/rootPower;  // 负号是因为是分母
+            const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
+            
+            return {
+                expression: `\\log \\frac{1}{${rootSymbol}{${base}}}`,
+                number: Math.pow(10, result),
+                result: result,
+                steps: [
+                    `\\log \\frac{1}{${rootSymbol}{${base}}}`,
+                    `= \\log 1 - \\log ${rootSymbol}{${base}}`,
+                    `= 0 - \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
+                    `= 0 - \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
+                    `= 0 - \\frac{${targetPower}}{${rootPower}}`,
+                    `= ${roundTo(result, 3)}`
+                ]
+            };
+        }
+
+        // 随机选择一个因子组合
+        const randomIndex = getRandomInt(0, possibleFactors.length - 1);
+        const { factors } = possibleFactors[randomIndex];
+        const factorExpression = factors.join('\\times');
+        
+        // 计算结果
+        const result = -targetPower/rootPower;  // 负号是因为是分母
+        
+        // 构建根号符号
         const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
+        
         return {
-            expression: `\\log \\frac{1}{${rootSymbol}{${base}}}`,
-            number: result,
-            result: Math.log10(result),
+            expression: `\\log \\frac{1}{${rootSymbol}{${factorExpression}}}`,
+            number: Math.pow(10, result),
+            result: result,
             steps: [
-                `\\log \\frac{1}{${rootSymbol}{${base}}}`,
-                `= \\log 1 - \\log ${rootSymbol}{${base}}`,
-                `= 0 - \\frac{\\log ${base}}{${rootPower}}`,
-                `= ${roundTo(Math.log10(result), 3)}`
+                `\\log \\frac{1}{${rootSymbol}{${factorExpression}}}`,
+                `= \\log 1 - \\log ${rootSymbol}{${factorExpression}}`,
+                `= 0 - \\log (${factorExpression})^{\\frac{1}{${rootPower}}}`,
+                `= 0 - \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
+                `= 0 - \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
+                `= 0 - \\frac{${targetPower}}{${rootPower}}`,
+                `= ${roundTo(result, 3)}`
             ]
         };
     }

@@ -1141,4 +1141,108 @@ export function roundUp(num: number, decimals: number): number {
 export function roundDown(num: number, decimals: number): number {
     const factor = Math.pow(10, decimals);
     return Math.floor(num * factor) / factor;
+}
+
+/**
+ * 因子组合接口
+ */
+export interface FactorCombination {
+    factors: number[];      // 所有因子的数组
+}
+
+/**
+ * 获取一个数的所有质因数（包括重复的）
+ * @param n 要分解的数
+ * @returns 所有质因数数组
+ */
+function getAllPrimeFactors(n: number): number[] {
+    const factors: number[] = [];
+    let num = n;
+    
+    // 处理2的因数
+    while (num % 2 === 0) {
+        factors.push(2);
+        num = num / 2;
+    }
+    
+    // 处理其他质因数
+    for (let i = 3; i <= Math.sqrt(num); i += 2) {
+        while (num % i === 0) {
+            factors.push(i);
+            num = num / i;
+        }
+    }
+    
+    // 如果最后剩余的数大于2，它本身就是质数
+    if (num > 2) {
+        factors.push(num);
+    }
+    
+    return factors;
+}
+
+export interface FactorCombinationOptions {
+    minFactor?: number;      // 最小因子
+    maxFactor?: number;      // 最大因子
+    maxQuotient?: number;    // 最大商
+    maxFactors?: number;     // 最多因子数量
+}
+
+export function generateFactorCombinations(
+    number: number, 
+    options: FactorCombinationOptions = {}
+): FactorCombination[] {
+    const {
+        minFactor = 2,
+        maxFactor = 9,
+        maxQuotient = 9,
+        maxFactors = 3
+    } = options;
+
+    // 获取所有质因数（包括重复的）
+    const allPrimeFactors = getAllPrimeFactors(number);
+    
+    // 调整maxFactors为实际可能的最大因子数量
+    const actualMaxFactors = Math.min(maxFactors, allPrimeFactors.length);
+
+    const combinations: FactorCombination[] = [];
+    
+    // 递归函数来生成因子组合
+    function generateCombinations(
+        remainingNumber: number,
+        currentFactors: number[],
+        remainingFactors: number
+    ) {
+        // 如果已经达到目标因子数量
+        if (remainingFactors === 1) {
+            if (remainingNumber >= minFactor && remainingNumber <= maxFactor) {
+                combinations.push({
+                    factors: [...currentFactors, remainingNumber]
+                });
+            }
+            return;
+        }
+
+        // 尝试不同的因子
+        for (let f = minFactor; f <= Math.min(maxFactor, remainingNumber); f++) {
+            if (remainingNumber % f === 0) {
+                const nextNumber = remainingNumber / f;
+                // 确保剩余的数不会超过maxQuotient
+                if (nextNumber <= maxQuotient || remainingFactors === 2) {
+                    generateCombinations(
+                        nextNumber,
+                        [...currentFactors, f],
+                        remainingFactors - 1
+                    );
+                }
+            }
+        }
+    }
+
+    // 从2个因子开始尝试到actualMaxFactors个因子
+    for (let numFactors = 2; numFactors <= actualMaxFactors; numFactors++) {
+        generateCombinations(number, [], numFactors);
+    }
+
+    return combinations;
 } 
