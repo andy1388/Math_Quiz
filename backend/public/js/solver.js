@@ -150,33 +150,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    solveBtn.addEventListener('click', () => {
+    solveBtn.addEventListener('click', async () => {
         const equation = document.getElementById('equation-input').value.trim();
         if (!equation) {
             alert('請輸入算式');
             return;
         }
         
-        // 如果输入不是 LaTeX 格式，转换为 LaTeX 格式
+        // 如果輸入不是 LaTeX 格式，轉換為 LaTeX 格式
         const latexEquation = equation.startsWith('\\') ? equation : convertToLatex(equation);
         
-        // 清空实验区
+        // 清空實驗區
         const expressionHistory = document.querySelector('.expression-history');
         expressionHistory.innerHTML = '';
         
-        // 添加用户输入的公式作为初始表达式
+        // 添加用戶輸入的公式作為初始表達式
         const initialStep = document.createElement('div');
         initialStep.className = 'expression-step';
         initialStep.innerHTML = `<div class="math" data-latex="${latexEquation}">\\[${latexEquation}\\]</div>`;
         expressionHistory.appendChild(initialStep);
         
-        // 重新渲染数学公式
-        MathJax.typesetPromise().then(() => {
-            // 更新表达式属性
-            updateExpressionInfo();
-            // 更新操作按钮状态
-            updateOperationButtons(latexEquation);
-        });
+        // 重新渲染數學公式並更新表達式屬性
+        try {
+            await MathJax.typesetPromise();
+            await updateExpressionInfo();
+            await updateOperationButtons(latexEquation);
+        } catch (error) {
+            console.error('Error in solve button click:', error);
+        }
     });
 
     document.getElementById('equation-input').addEventListener('keypress', (e) => {
@@ -185,13 +186,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 添加输入监听器来更新预览
+    // 添加輸入監聽器來更新預覽
     equationInput.addEventListener('input', async () => {
         const input = equationInput.value.trim();
         const latex = input.startsWith('\\') ? input : convertToLatex(input);
+        
+        // 更新預覽區域
         previewContent.innerHTML = `\\[${latex}\\]`;
         
-        // 不需要在這裡更新表達式屬性，因為這只是預覽
+        // 等待 MathJax 渲染完成
+        if (window.MathJax) {
+            try {
+                await MathJax.typesetPromise([previewContent]);
+            } catch (error) {
+                console.error('MathJax rendering error:', error);
+            }
+        }
     });
 
     // 添加操作按钮事件处理
@@ -372,25 +382,29 @@ function displaySolution(solution) {
 
 // 修改 convertToLatex 函数，使其更智能地处理各种输入
 function convertToLatex(input) {
-    // 移除多余的空格
+    // 移除多餘的空格
     input = input.trim();
     
-    // 如果已经是 LaTeX 格式，直接返回
-    if (input.includes('\\frac')) {
+    // 如果已經是 LaTeX 格式，直接返回
+    if (input.includes('\\')) {
         return input;
     }
     
-    // 检查是否是分数格式 (例如: 12/28)
-    const fractionMatch = input.match(/^(\d+)\/(\d+)$/);
+    // 檢查是否是分數格式 (例如: 12/28)
+    const fractionMatch = input.match(/^(-?\d+)\/(-?\d+)$/);
     if (fractionMatch) {
         return `\\frac{${fractionMatch[1]}}{${fractionMatch[2]}}`;
     }
     
-    // 如果是普通数字，直接返回
-    if (/^\d+$/.test(input)) {
-        return input;
-    }
+    // 檢查是否包含變量和指數 (例如: x^2)
+    input = input.replace(/([a-zA-Z])(\^?)(\d*)/g, (match, variable, power, exponent) => {
+        if (power && exponent) {
+            return `${variable}^{${exponent}}`;
+        }
+        return match;
+    });
     
+    // 如果是普通數字或表達式，直接返回
     return input;
 }
 
