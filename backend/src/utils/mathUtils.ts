@@ -203,7 +203,8 @@ export const ExpressionAnalyzer = {
             fractionInfo: this.analyzeFraction(latex),
             irrationalInfo: this.analyzeIrrational(latex),
             variables: this.findVariables(latex),
-            likeTerms: this.analyzeLikeTerms(latex)
+            likeTerms: this.analyzeLikeTerms(latex),
+            bracketInfo: this.analyzeBrackets(latex)
         };
     },
 
@@ -1188,6 +1189,42 @@ export const ExpressionAnalyzer = {
             }
         }
         return operators;
+    },
+
+    analyzeBrackets(latex: string): BracketInfo {
+        const cleanLatex = this._cleanLatex(latex);
+        const hasBrackets = cleanLatex.includes('(');
+        
+        if (!hasBrackets) {
+            return {
+                hasBrackets: false,
+                bracketCount: 0,
+                needsExpansion: false,
+                bracketTerms: []
+            };
+        }
+
+        // 計算括號對數
+        const bracketCount = (cleanLatex.match(/\(/g) || []).length;
+
+        // 檢查是否需要展開
+        // 如果括號前有係數或變量，則需要展開
+        const needsExpansion = /[0-9a-zA-Z\-]\(/.test(cleanLatex);
+
+        // 提取括號內的項
+        const bracketTerms = [];
+        const bracketPattern = /\((.*?)\)/g;
+        let match;
+        while ((match = bracketPattern.exec(cleanLatex)) !== null) {
+            bracketTerms.push(match[1]);
+        }
+
+        return {
+            hasBrackets,
+            bracketCount,
+            needsExpansion,
+            bracketTerms
+        };
     }
 };
 
@@ -1201,6 +1238,7 @@ export interface ExpressionInfo {
     irrationalInfo: IrrationalInfo;
     variables: VariableInfo;
     likeTerms: LikeTermsInfo;
+    bracketInfo: BracketInfo;
 }
 
 export interface FractionInfo {
@@ -1235,6 +1273,13 @@ export interface LikeTermGroup {
     variable: string;
     terms: string[];
     count: number;
+}
+
+export interface BracketInfo {
+    hasBrackets: boolean;
+    bracketCount: number;
+    needsExpansion: boolean;
+    bracketTerms: string[];
 }
 
 /**

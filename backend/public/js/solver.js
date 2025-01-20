@@ -504,6 +504,17 @@ async function updateExpressionInfo(latex = null) {
         
         safeUpdateElement('like-terms-groups', groupsText || '-');
 
+        // 更新括號相關信息
+        safeUpdateElement('bracket-status', 
+            info.bracketInfo.hasBrackets ? '有' : '無');
+        safeUpdateElement('bracket-count', 
+            info.bracketInfo.hasBrackets ? `${info.bracketInfo.bracketCount}對` : '-');
+        safeUpdateElement('expansion-status', 
+            info.bracketInfo.needsExpansion ? '需要' : '不需要');
+        safeUpdateElement('bracket-terms', 
+            info.bracketInfo.bracketTerms.length > 0 ? 
+            info.bracketInfo.bracketTerms.join(', ') : '-');
+
     } catch (error) {
         console.error('Error updating expression info:', error);
         // 清空所有狀態顯示
