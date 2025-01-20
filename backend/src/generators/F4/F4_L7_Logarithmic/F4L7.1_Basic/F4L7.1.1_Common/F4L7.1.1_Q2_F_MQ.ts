@@ -7,7 +7,8 @@ import {
     DEFAULT_CONFIG,
     roundTo,
     ExpressionAnalyzer,
-    generateFactorCombinations
+    generateFactorCombinations,
+    formatLogResult
 } from '@/utils/mathUtils';
 
 interface AdvancedLogQuestion {
@@ -15,6 +16,7 @@ interface AdvancedLogQuestion {
     number: number;      // 实际计算的数值
     result: number;      // 对数计算结果
     steps: string[];     // 计算步骤
+    resultFraction?: string; // 分数形式的结果
 }
 
 export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
@@ -128,173 +130,154 @@ export default class F4L7_1_1_Q2_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generateLevel4(): AdvancedLogQuestion {
-        // 生成 10^1 到 10^5 的幂
-        const targetPower = getRandomInt(1, 5);
-        const target = Math.pow(10, targetPower);
+    private generatePowerFactorQuestion(
+        targetPower: number,
+        options: {
+            rootPower?: number,
+            isInverse?: boolean
+        } = {}
+    ): AdvancedLogQuestion {
+        const { rootPower = 1, isInverse = false } = options;
+        const base = Math.pow(10, targetPower);
         
         // 获取所有可能的因子组合
-        const possibleFactors = generateFactorCombinations(target, {
+        const possibleFactors = generateFactorCombinations(base, {
             minFactor: 2,
             maxFactor: 9,
             maxQuotient: 9,
-            maxFactors: 3  // 对于对数问题，我们限制在3个因子
+            maxFactors: rootPower === 1 ? 3 : 2
         });
+
+        // 计算分数形式的结果
+        const numerator = isInverse ? -targetPower : targetPower;
+        const denominator = rootPower;
+        const resultValue = numerator / denominator;  // 用于计算实际数值
+        const resultFraction = `\\frac{${numerator}}{${denominator}}`;  // LaTeX分数形式
 
         // 如果没有找到合适的组合，使用默认的2和5组合
         if (possibleFactors.length === 0) {
+            // 对于10的幂，总是可以用2和5的组合
+            const defaultFactors = ['2', '5'];
+            if (targetPower > 1) {
+                // 如果幂次大于1，添加剩余的10的幂
+                defaultFactors.push(String(Math.pow(10, targetPower - 1)));
+            }
+            const defaultExpression = defaultFactors.join('\\times');
+
+            const rootSymbol = rootPower === 2 ? '\\sqrt' : rootPower > 2 ? `\\sqrt[${rootPower}]` : '';
+            const expression = isInverse 
+                ? `\\log \\frac{1}{${rootSymbol}{${defaultExpression}}}` 
+                : rootPower === 1 
+                    ? `\\log(${defaultExpression})`
+                    : `\\log ${rootSymbol}{${defaultExpression}}`;
+
+            const steps = this.generateSteps(defaultExpression, targetPower, rootPower, isInverse, resultFraction);
+
             return {
-                expression: `\\log(2\\times5\\times${Math.pow(10, targetPower - 1)})`,
-                number: target,
-                result: targetPower,
-                steps: [
-                    `\\log(2\\times5\\times${Math.pow(10, targetPower - 1)})`,
-                    `= \\log ${target}`,
-                    `= \\log 10^{${targetPower}}`,
-                    `= ${targetPower}`
-                ]
+                expression,
+                number: Math.pow(10, resultValue),  // 使用数值进行计算
+                result: resultValue,                // 存储数值结果
+                steps,
+                resultFraction                      // 添加分数形式的结果
             };
         }
 
         // 随机选择一个因子组合
         const randomIndex = getRandomInt(0, possibleFactors.length - 1);
         const { factors } = possibleFactors[randomIndex];
-        
-        // 构建表达式和步骤
-        const expression = `\\log(${factors.join('\\times')})`;
-        const steps = [
-            expression,
-            `= \\log ${factors.reduce((a, b) => a * b, 1)}`,
-            `= \\log 10^{${targetPower}}`,
-            `= ${targetPower}`
-        ];
-        
+        const factorExpression = factors.join('\\times');
+
+        // 构建表达式
+        const rootSymbol = rootPower === 2 ? '\\sqrt' : rootPower > 2 ? `\\sqrt[${rootPower}]` : '';
+        const expression = isInverse 
+            ? `\\log \\frac{1}{${rootSymbol}{${factorExpression}}}` 
+            : rootPower === 1 
+                ? `\\log(${factorExpression})`
+                : `\\log ${rootSymbol}{${factorExpression}}`;
+
+        const steps = this.generateSteps(factorExpression, targetPower, rootPower, isInverse, resultFraction);
+
         return {
-            expression: expression,
-            number: target,
-            result: targetPower,
-            steps: steps
+            expression,
+            number: Math.pow(10, resultValue),  // 使用数值进行计算
+            result: resultValue,                // 存储数值结果
+            steps,
+            resultFraction                      // 添加分数形式的结果
         };
+    }
+
+    private generateSteps(
+        expression: string,
+        targetPower: number,
+        rootPower: number,
+        isInverse: boolean,
+        resultFraction: string
+    ): string[] {
+        const getRootSymbol = (power: number): string => {
+            return power === 2 ? '\\sqrt' : `\\sqrt[${power}]`;
+        };
+
+        if (rootPower === 1) {
+            return [
+                `\\log(${expression})`,
+                `= \\log ${String(Math.pow(10, targetPower))}`,
+                `= \\log 10^{${targetPower}}`,
+                `= ${targetPower}`
+            ];
+        }
+
+        const rootSymbol = getRootSymbol(rootPower);
+        if (isInverse) {
+            return [
+                `\\log \\frac{1}{${expression}}`,
+                `= \\log 1 - \\log ${rootSymbol} ${expression}`,
+                `= 0 - \\log ${rootSymbol} ${expression}`,
+                `= 0 - \\log (${expression})^{\\frac{1}{${rootPower}}}`,
+                `= 0 - \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
+                `= 0 - \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
+                `= ${resultFraction}`  // 使用分数形式
+            ];
+        }
+
+        return [
+            `\\log ${rootSymbol} ${expression}`,
+            `= \\log (${expression})^{\\frac{1}{${rootPower}}}`,
+            `= \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
+            `= \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
+            `= ${resultFraction}`  // 使用分数形式
+        ];
+    }
+
+    private generateLevel4(): AdvancedLogQuestion {
+        const targetPower = getRandomInt(1, 5);
+        return this.generatePowerFactorQuestion(targetPower);
     }
 
     private generateLevel5(): AdvancedLogQuestion {
-        // 生成 10^1 到 10^5 的幂
-        const targetPower = getRandomInt(1, 5);
-        const base = Math.pow(10, targetPower);
-        const rootPower = getRandomInt(2, 4);
+        // 为了确保结果是简单分数，我们需要合适的幂和根号
+        const validCombinations = [
+            { power: 1, root: 2 },  // 1/2
+            { power: 2, root: 2 },  // 1
+            { power: 3, root: 2 },  // 3/2
+            { power: 1, root: 3 },  // 1/3
+            { power: 2, root: 3 },  // 2/3
+            { power: 3, root: 3 },  // 1
+            { power: 1, root: 4 },  // 1/4
+            { power: 2, root: 4 },  // 1/2
+            { power: 3, root: 4 },  // 3/4
+        ];
         
-        // 获取基数的因子组合
-        const possibleFactors = generateFactorCombinations(base, {
-            minFactor: 2,
-            maxFactor: 9,
-            maxQuotient: 9,
-            maxFactors: 2  // 根号内只用2个因子，避免太复杂
-        });
-
-        // 如果没有找到合适的组合，使用默认的2和5组合
-        if (possibleFactors.length === 0) {
-            const result = Math.pow(base, 1/rootPower);
-            const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
-            
-            return {
-                expression: `\\log ${rootSymbol}{${base}}`,
-                number: result,
-                result: Math.log10(result),
-                steps: [
-                    `\\log ${rootSymbol}{${base}}`,
-                    `= \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
-                    `= \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
-                    `= \\frac{${targetPower}}{${rootPower}}`,
-                    `= ${roundTo(targetPower/rootPower, 3)}`
-                ]
-            };
-        }
-
-        // 随机选择一个因子组合
-        const randomIndex = getRandomInt(0, possibleFactors.length - 1);
-        const { factors } = possibleFactors[randomIndex];
-        const factorExpression = factors.join('\\times');
+        // 随机选择一个组合
+        const randomIndex = getRandomInt(0, validCombinations.length - 1);
+        const { power: targetPower, root: rootPower } = validCombinations[randomIndex];
         
-        // 计算结果
-        const result = Math.pow(base, 1/rootPower);
-        
-        // 构建根号符号
-        const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
-        
-        return {
-            expression: `\\log ${rootSymbol}{${factorExpression}}`,
-            number: result,
-            result: Math.log10(result),
-            steps: [
-                `\\log ${rootSymbol}{${factorExpression}}`,
-                `= \\log (${factorExpression})^{\\frac{1}{${rootPower}}}`,
-                `= \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
-                `= \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
-                `= \\frac{${targetPower}}{${rootPower}}`,
-                `= ${roundTo(targetPower/rootPower, 3)}`
-            ]
-        };
+        return this.generatePowerFactorQuestion(targetPower, { rootPower });
     }
 
     private generateLevel6(): AdvancedLogQuestion {
-        // 生成 10^1 到 10^5 的幂
         const targetPower = getRandomInt(1, 5);
-        const base = Math.pow(10, targetPower);
         const rootPower = getRandomInt(2, 3);
-        
-        // 获取基数的因子组合
-        const possibleFactors = generateFactorCombinations(base, {
-            minFactor: 2,
-            maxFactor: 9,
-            maxQuotient: 9,
-            maxFactors: 2  // 根号内只用2个因子，避免太复杂
-        });
-
-        // 如果没有找到合适的组合，使用默认的2和5组合
-        if (possibleFactors.length === 0) {
-            const result = -targetPower/rootPower;  // 负号是因为是分母
-            const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
-            
-            return {
-                expression: `\\log \\frac{1}{${rootSymbol}{${base}}}`,
-                number: Math.pow(10, result),
-                result: result,
-                steps: [
-                    `\\log \\frac{1}{${rootSymbol}{${base}}}`,
-                    `= \\log 1 - \\log ${rootSymbol}{${base}}`,
-                    `= 0 - \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
-                    `= 0 - \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
-                    `= 0 - \\frac{${targetPower}}{${rootPower}}`,
-                    `= ${roundTo(result, 3)}`
-                ]
-            };
-        }
-
-        // 随机选择一个因子组合
-        const randomIndex = getRandomInt(0, possibleFactors.length - 1);
-        const { factors } = possibleFactors[randomIndex];
-        const factorExpression = factors.join('\\times');
-        
-        // 计算结果
-        const result = -targetPower/rootPower;  // 负号是因为是分母
-        
-        // 构建根号符号
-        const rootSymbol = rootPower === 2 ? '\\sqrt' : `\\sqrt[${rootPower}]`;
-        
-        return {
-            expression: `\\log \\frac{1}{${rootSymbol}{${factorExpression}}}`,
-            number: Math.pow(10, result),
-            result: result,
-            steps: [
-                `\\log \\frac{1}{${rootSymbol}{${factorExpression}}}`,
-                `= \\log 1 - \\log ${rootSymbol}{${factorExpression}}`,
-                `= 0 - \\log (${factorExpression})^{\\frac{1}{${rootPower}}}`,
-                `= 0 - \\log (10^{${targetPower}})^{\\frac{1}{${rootPower}}}`,
-                `= 0 - \\log 10^{\\frac{${targetPower}}{${rootPower}}}`,
-                `= 0 - \\frac{${targetPower}}{${rootPower}}`,
-                `= ${roundTo(result, 3)}`
-            ]
-        };
+        return this.generatePowerFactorQuestion(targetPower, { rootPower, isInverse: true });
     }
 
     private generateLevel7(): AdvancedLogQuestion {
