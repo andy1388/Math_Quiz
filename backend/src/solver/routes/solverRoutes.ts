@@ -176,6 +176,9 @@ router.post('/process', (req, res) => {
             case 'simplify-indices':
                 result = ExpressionAnalyzer.simplifyIndices(latex);
                 break;
+            case 'expand':
+                result = ExpressionAnalyzer.expand(latex);
+                break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }

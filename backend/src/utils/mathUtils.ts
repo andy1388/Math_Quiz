@@ -208,12 +208,50 @@ export const ExpressionAnalyzer = {
     },
 
     /**
+     * 清理 LaTeX 表達式
+     */
+    _cleanLatex(latex: string): string {
+        // 移除空格
+        let clean = latex.replace(/\s+/g, '');
+        // 標準化負號
+        clean = clean.replace(/−/g, '-');
+        // 處理開頭的負號
+        clean = clean.replace(/^-/, 'NEG');  // 暫時替換開頭的負號
+        return clean;
+    },
+
+    /**
      * 獲取表達式類型
      */
     getExpressionType(latex: string): ExpressionType {
         const cleanLatex = this._cleanLatex(latex);
-        const hasVariable = /[a-zA-Z]/.test(cleanLatex);
-        const hasMultipleTerms = /[+\-]/.test(cleanLatex);
+        
+        // 還原 NEG 為負號
+        const finalLatex = cleanLatex.replace('NEG', '-');
+        
+        // 檢查是否有加號或減號（不在括號內的）
+        const hasOuterOperators = this._hasOuterOperators(finalLatex);
+        
+        if (hasOuterOperators) {
+            return 'polynomial';
+        }
+        
+        // 檢查是否是括號表達式
+        if (finalLatex.includes('(')) {
+            // 檢查括號前的部分是否為單項式
+            const beforeBracket = finalLatex.split('(')[0].replace('NEG', '-');
+            
+            // 檢查是否為單項式（包括負號情況）
+            const isSingleTerm = /^-?(\d*x?|\d+)$/.test(beforeBracket);
+            
+            if (isSingleTerm) {
+                return 'monomial';
+            }
+        }
+        
+        // 其他情況的判斷
+        const hasVariable = /[a-zA-Z]/.test(finalLatex);
+        const hasMultipleTerms = /[+\-]/.test(finalLatex.replace(/^-/, '')); // 忽略開頭的負號
 
         if (!hasVariable && !hasMultipleTerms) return 'constant';
         if (!hasVariable && hasMultipleTerms) return 'numerical';
@@ -226,10 +264,28 @@ export const ExpressionAnalyzer = {
      */
     countTerms(latex: string): number {
         const cleanLatex = this._cleanLatex(latex);
+        const finalLatex = cleanLatex.replace('NEG', '-');
+        
+        // 計算外部運算符的數量
+        const outerOperators = this._getOuterOperators(finalLatex);
+        if (outerOperators.length > 0) {
+            return outerOperators.length + 1;
+        }
+        
+        // 如果是單項式乘以括號，返回1
+        if (finalLatex.includes('(')) {
+            const beforeBracket = finalLatex.split('(')[0].replace('NEG', '-');
+            const isSingleTerm = /^-?(\d*x?|\d+)$/.test(beforeBracket);
+            if (isSingleTerm) {
+                return 1;
+            }
+        }
+        
         // 如果是常數或單項式，返回1
-        if (!this._hasMultipleTerms(cleanLatex)) return 1;
-        // 計算運算符數量並加1
-        const operators = cleanLatex.match(/[+\-]/g) || [];
+        if (!this._hasMultipleTerms(finalLatex.replace(/^-/, ''))) return 1;
+        
+        // 計算運算符數量並加1（忽略開頭的負號）
+        const operators = finalLatex.replace(/^-/, '').match(/[+\-]/g) || [];
         return operators.length + 1;
     },
 
@@ -297,10 +353,6 @@ export const ExpressionAnalyzer = {
     },
 
     // 輔助方法
-    _cleanLatex(latex: string): string {
-        return latex.replace(/\s+/g, '');
-    },
-
     _hasMultipleTerms(latex: string): boolean {
         return /[+\-]/.test(latex);
     },
@@ -1052,6 +1104,90 @@ export const ExpressionAnalyzer = {
             console.error('Simplify indices error:', error);
             throw error;
         }
+    },
+
+    /**
+     * 展開括號
+     */
+    expand(latex: string): string {
+        try {
+            // 移除等號及其後面的內容
+            const [expr, equals] = latex.split('=');
+            
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
+
+            console.log('Expanding expression:', expr);
+
+            // 清理表達式中的空格
+            let expression = expr.trim();
+
+            // 處理單項式乘以括號的情況：a(b+c) -> ab+ac
+            const bracketPattern = /^([^()]+)\(([^()]+)\)$/;
+            const match = expression.match(bracketPattern);
+
+            if (match) {
+                const [, outsideTerm, insideBracket] = match;
+                console.log('Bracket expansion:', { outsideTerm, insideBracket });
+
+                // 分割括號內的項
+                const terms = insideBracket.split(/(?=[+-])/).filter(term => term);
+                
+                // 對每一項添加外部項
+                const expandedTerms = terms.map(term => {
+                    // 如果項以 + 開頭，移除它
+                    term = term.replace(/^\+/, '');
+                    return `${outsideTerm}(${term})`;
+                });
+
+                // 組合結果
+                let result = expandedTerms.join('+');
+                
+                // 處理負號項
+                result = result.replace(/\+\-/g, '-');
+                
+                // 移除開頭的加號
+                result = result.replace(/^\+/, '');
+
+                console.log('Expanded result:', result);
+
+                // 添加等號部分（如果有）
+                return equals ? `${result}=${equals}` : result;
+            }
+
+            // 如果不符合任何模式，返回原表達式
+            return latex;
+        } catch (error) {
+            console.error('Expansion error:', error);
+            throw error;
+        }
+    },
+
+    // 新增輔助方法
+    _hasOuterOperators(latex: string): boolean {
+        let bracketCount = 0;
+        for (let i = 0; i < latex.length; i++) {
+            if (latex[i] === '(') bracketCount++;
+            else if (latex[i] === ')') bracketCount--;
+            else if (bracketCount === 0 && (latex[i] === '+' || latex[i] === '-' && i > 0)) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    _getOuterOperators(latex: string): string[] {
+        const operators: string[] = [];
+        let bracketCount = 0;
+        for (let i = 0; i < latex.length; i++) {
+            if (latex[i] === '(') bracketCount++;
+            else if (latex[i] === ')') bracketCount--;
+            else if (bracketCount === 0 && (latex[i] === '+' || latex[i] === '-' && i > 0)) {
+                operators.push(latex[i]);
+            }
+        }
+        return operators;
     }
 };
 
