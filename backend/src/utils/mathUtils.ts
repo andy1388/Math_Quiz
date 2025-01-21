@@ -942,100 +942,11 @@ export const ExpressionAnalyzer = {
     },
 
     /**
-     * 约分分数
+     * 約分分數
      */
     reduceFraction(expression: string): string {
-        try {
-            const [expr, equals] = expression.split('=');
-            
-            if (!expr) {
-                throw new Error('表達式為空');
-            }
-
-            console.log('Processing fraction reduction:', expr);
-
-            let num: number, den: number;
-
-            // 處理帶分數格式 (例如: 6\frac{20}{36})
-            const mixedFractionMatch = expr.match(/(\d+)\\frac\{(\d+)\}\{(\d+)\}/);
-            if (mixedFractionMatch) {
-                const [_, whole, numerator, denominator] = mixedFractionMatch;
-                // 將帶分數轉換為假分數
-                num = parseInt(whole) * parseInt(denominator) + parseInt(numerator);
-                den = parseInt(denominator);
-            } else {
-                // 處理普通分數格式
-                const fractionMatch = expr.match(/\\frac\s*\{([\d.]+)\}\s*\{([\d.]+)\}/);
-                if (fractionMatch) {
-                    const [_, numerator, denominator] = fractionMatch;
-                    num = parseFloat(numerator);
-                    den = parseFloat(denominator);
-                } else {
-                    // 處理普通除法格式 (a/b)
-                    const divisionMatch = expr.match(/([\d.]+)\s*\/\s*([\d.]+)/);
-                    if (divisionMatch) {
-                        const [_, numerator, denominator] = divisionMatch;
-                        num = parseFloat(numerator);
-                        den = parseFloat(denominator);
-                    } else {
-                        throw new Error('不是有效的分數格式');
-                    }
-                }
-            }
-
-            if (isNaN(num) || isNaN(den)) {
-                throw new Error('無效的數字格式');
-            }
-
-            if (den === 0) {
-                throw new Error('分母不能為零');
-            }
-
-            // 處理小數點
-            const getDecimalPlaces = (n: number): number => {
-                const str = n.toString();
-                const decimalIndex = str.indexOf('.');
-                return decimalIndex === -1 ? 0 : str.length - decimalIndex - 1;
-            };
-
-            // 獲取分子分母中小數位數的最大值
-            const numDecimals = getDecimalPlaces(num);
-            const denDecimals = getDecimalPlaces(den);
-            const maxDecimals = Math.max(numDecimals, denDecimals);
-
-            // 將分子分母同時乘以10的冪次來消除小數
-            if (maxDecimals > 0) {
-                const factor = Math.pow(10, maxDecimals);
-                num *= factor;
-                den *= factor;
-            }
-
-            // 轉換為整數
-            num = Math.round(num);
-            den = Math.round(den);
-
-            // 計算最大公約數
-            const gcdValue = gcd(num, den);
-            
-            // 約分
-            const reducedNum = num / gcdValue;
-            const reducedDen = den / gcdValue;
-
-            // 如果分母為1，返回整數
-            let result;
-            if (reducedDen === 1) {
-                result = reducedNum.toString();
-            } else {
-                result = `\\frac{${reducedNum}}{${reducedDen}}`;
-            }
-            
-            console.log('Reduced fraction:', result);
-
-            return equals ? `${result}=${equals}` : result;
-        } catch (error) {
-            console.error('Reduction error:', error);
-            throw error;
-        }
+        // 直接使用外部的 reduceFraction 函數
+        return reduceFraction(expression);
     },
 
     /**
@@ -1655,11 +1566,12 @@ export const ExpressionAnalyzer = {
 
     formatResult(result: NumberResult): string {
         if (result.denominator === 1) {
-            // 整數結果
             return `${result.isNegative ? '-' : ''}${result.numerator}`;
         }
-        // 分數結果
-        return `${result.isNegative ? '-' : ''}\\frac{${result.numerator}}{${result.denominator}}`;
+        // 使用外部的 reduceFraction 函數來約分分數
+        return reduceFraction(
+            `${result.isNegative ? '-' : ''}\\frac{${result.numerator}}{${result.denominator}}`
+        );
     },
 
     // 重命名為私有方法
