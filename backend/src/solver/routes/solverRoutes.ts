@@ -5,7 +5,7 @@ import { DecimalFractionConversionGenerator } from '../arithmetic/DecimalFractio
 import { NumberTheoryGenerator } from '../arithmetic/NumberTheory';
 import { Solver } from '../Solver';
 import { analyzeExpression } from '../controllers/analyzeController';
-import { ExpressionAnalyzer } from '../../utils/mathUtils';
+import { ExpressionAnalyzer, NumberCalculator } from '../../utils/mathUtils';
 import { IndicesGenerator } from '../arithmetic/Indices';
 import { MultiplicationGenerator } from '../arithmetic/Multiplication';
 
@@ -179,6 +179,12 @@ router.post('/process', (req, res) => {
             case 'expand':
                 result = ExpressionAnalyzer.expand(latex);
                 break;
+            case 'calculate':
+                result = ExpressionAnalyzer.calculate(latex);
+                break;
+            case 'number-calculate':
+                result = NumberCalculator.calculate(latex);
+                break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }
@@ -244,6 +250,14 @@ router.post('/check-operation', (req, res) => {
                 available = latex.includes('^') || 
                           latex.includes('\\sqrt') || 
                           /\d+\^\{[^}]+\}/.test(latex);
+                break;
+            case 'calculate':
+                // 检查是否包含数字运算
+                available = /\([0-9+\-*/\s]+\)/.test(latex);
+                break;
+            case 'number-calculate':
+                // 检查是否包含数字或分数
+                available = /(\d+|\\frac\{\d+\}\{\d+\}|\/)\s*[+\-]\s*(\d+|\\frac\{\d+\}\{\d+\}|\/)/.test(latex);
                 break;
             default:
                 available = false;

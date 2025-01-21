@@ -395,4 +395,19 @@ select option:checked {
 
 .experiment-content::-webkit-scrollbar-thumb:hover {
     background: #999;
+}
+
+.op-btn[data-op="calculate"],
+.op-btn[data-op="number-calculate"] {
+    background-color: #33ccff;
+}
+
+.op-btn[data-op="calculate"]:hover,
+.op-btn[data-op="number-calculate"]:hover {
+    background-color: #00bfff;
+}
+
+.op-btn[data-op="calculate"]:disabled,
+.op-btn[data-op="number-calculate"]:disabled {
+    background-color: #ccc;
 } 
