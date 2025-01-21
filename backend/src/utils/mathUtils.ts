@@ -1186,18 +1186,18 @@ export const ExpressionAnalyzer = {
         // 分割括號內的項
         const terms = insideBracket.split(/(?=[+-])/).filter(term => term);
         
-        // 展開括號
+        // 展開括號，但不進行實際乘法運算
         const expandedTerms: string[] = [];
         
         terms.forEach(term => {
             // 移除開頭的加號
             term = term.replace(/^\+/, '');
             
-            // 相乘兩個項
-            let resultTerm = this._multiplyTerms(outsideTerm, term);
+            // 直接組合兩項，用括號表示
+            let resultTerm = `(${outsideTerm})(${term})`;
             
-            // 如果結果是正數且不是第一項，加上加號
-            if (!resultTerm.startsWith('-') && expandedTerms.length > 0) {
+            // 如果不是第一項，加上加號
+            if (expandedTerms.length > 0) {
                 resultTerm = '+' + resultTerm;
             }
             
