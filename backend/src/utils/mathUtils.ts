@@ -252,7 +252,7 @@ export const ExpressionAnalyzer = {
         
         // 其他情況的判斷
         const hasVariable = /[a-zA-Z]/.test(finalLatex);
-        const hasMultipleTerms = /[+\-]/.test(finalLatex.replace(/^-/, '')); // 忽略開頭的負號
+        const hasMultipleTerms = /[+\-]/g.test(finalLatex.replace(/^-/, '')); // 忽略開頭的負號
 
         if (!hasVariable && !hasMultipleTerms) return 'constant';
         if (!hasVariable && hasMultipleTerms) return 'numerical';
@@ -1135,10 +1135,39 @@ export const ExpressionAnalyzer = {
                 if (singleTerm && singleBracket) {
                     // 處理單項式乘以括號的情況
                     return this._expandSingleTermBracket(singleTerm, singleBracket, equals);
-                } else {
+                } else if (firstBracket && secondBracket) {
                     // 處理兩個括號相乘的情況
-                    const first = firstBracket || '1';  // 如果第一個括號不存在，視為1
-                    return this._expandDoubleBrackets(first, secondBracket, equals);
+                    // 分割兩個括號內的項
+                    const firstTerms = firstBracket.split(/(?=[+-])/).filter(term => term);
+                    const secondTerms = secondBracket.split(/(?=[+-])/).filter(term => term);
+                    
+                    // 展開兩個括號，但不進行實際乘法運算
+                    const expandedTerms: string[] = [];
+                    
+                    firstTerms.forEach(term1 => {
+                        // 移除開頭的加號
+                        term1 = term1.replace(/^\+/, '');
+                        
+                        secondTerms.forEach(term2 => {
+                            // 移除開頭的加號
+                            term2 = term2.replace(/^\+/, '');
+                            
+                            // 直接組合兩項，用括號表示
+                            let resultTerm = `(${term1})(${term2})`;
+                            
+                            // 如果不是第一項，加上加號
+                            if (expandedTerms.length > 0) {
+                                resultTerm = '+' + resultTerm;
+                            }
+                            
+                            expandedTerms.push(resultTerm);
+                        });
+                    });
+
+                    // 組合結果
+                    let result = expandedTerms.join('');
+                    
+                    return equals ? `${result}=${equals}` : result;
                 }
             }
 
@@ -1185,43 +1214,59 @@ export const ExpressionAnalyzer = {
     },
 
     /**
-     * 處理兩個括號相乘的情況
+     * 輔助方法：相乘兩個代數項
      */
-    _expandDoubleBrackets(firstBracket: string, secondBracket: string, equals?: string): string {
-        // 分割兩個括號內的項
-        const firstTerms = firstBracket.split(/(?=[+-])/).filter(term => term);
-        const secondTerms = secondBracket.split(/(?=[+-])/).filter(term => term);
+    _multiplyTerms(term1: string, term2: string): string {
+        // 處理係數
+        const getCoefficient = (term: string): number => {
+            if (term === '' || term === '+') return 1;
+            if (term === '-') return -1;
+            const match = term.match(/^[+-]?\d*\.?\d*/);
+            if (!match || match[0] === '') return 1;
+            if (match[0] === '+') return 1;
+            if (match[0] === '-') return -1;
+            return parseFloat(match[0] || '1');
+        };
+
+        // 處理變量部分
+        const getVariable = (term: string): string => {
+            const match = term.match(/[a-zA-Z].*/);
+            return match ? match[0] : '';
+        };
+
+        const coef1 = getCoefficient(term1);
+        const coef2 = getCoefficient(term2);
+        const var1 = getVariable(term1);
+        const var2 = getVariable(term2);
+
+        // 計算係數
+        const resultCoef = coef1 * coef2;
+
+        // 組合變量，按字母順序排序
+        const vars = [var1, var2].filter(v => v).sort();
+        let resultVar = '';
         
-        // 展開兩個括號
-        const expandedTerms: string[] = [];
+        // 合併相同變量並處理指數
+        const varCount = new Map<string, number>();
+        vars.forEach(v => {
+            varCount.set(v, (varCount.get(v) || 0) + 1);
+        });
         
-        firstTerms.forEach(term1 => {
-            // 移除開頭的加號
-            term1 = term1.replace(/^\+/, '');
-            
-            secondTerms.forEach(term2 => {
-                // 移除開頭的加號
-                term2 = term2.replace(/^\+/, '');
-                
-                // 相乘兩個項
-                let resultTerm = this._multiplyTerms(term1, term2);
-                
-                // 如果結果是正數且不是第一項，加上加號
-                if (!resultTerm.startsWith('-') && expandedTerms.length > 0) {
-                    resultTerm = '+' + resultTerm;
-                }
-                
-                expandedTerms.push(resultTerm);
-            });
+        // 構建結果變量部分
+        varCount.forEach((count, variable) => {
+            if (count === 1) {
+                resultVar += variable;
+            } else {
+                resultVar += variable + '²';
+            }
         });
 
-        // 組合結果
-        let result = expandedTerms.join('');
-        
-        // 移除開頭的加號
-        result = result.replace(/^\+/, '');
-
-        return equals ? `${result}=${equals}` : result;
+        // 格式化結果
+        if (resultCoef === 0) return '0';
+        if (resultCoef === 1 && resultVar) return resultVar;
+        if (resultCoef === -1 && resultVar) return '-' + resultVar;
+        if (!resultVar) return resultCoef.toString();
+        return resultCoef + resultVar;
     },
 
     // 新增輔助方法
@@ -1284,62 +1329,6 @@ export const ExpressionAnalyzer = {
             needsExpansion,
             bracketTerms
         };
-    },
-
-    /**
-     * 輔助方法：相乘兩個代數項
-     */
-    _multiplyTerms(term1: string, term2: string): string {
-        // 處理係數
-        const getCoefficient = (term: string): number => {
-            if (term === '' || term === '+') return 1;
-            if (term === '-') return -1;
-            const match = term.match(/^[+-]?\d*\.?\d*/);
-            if (!match || match[0] === '') return 1;
-            if (match[0] === '+') return 1;
-            if (match[0] === '-') return -1;
-            return parseFloat(match[0] || '1');
-        };
-
-        // 處理變量部分
-        const getVariable = (term: string): string => {
-            const match = term.match(/[a-zA-Z].*/);
-            return match ? match[0] : '';
-        };
-
-        const coef1 = getCoefficient(term1);
-        const coef2 = getCoefficient(term2);
-        const var1 = getVariable(term1);
-        const var2 = getVariable(term2);
-
-        // 計算係數
-        const resultCoef = coef1 * coef2;
-
-        // 組合變量，按字母順序排序
-        const vars = [var1, var2].filter(v => v).sort();
-        let resultVar = '';
-        
-        // 合併相同變量並處理指數
-        const varCount = new Map<string, number>();
-        vars.forEach(v => {
-            varCount.set(v, (varCount.get(v) || 0) + 1);
-        });
-        
-        // 構建結果變量部分
-        varCount.forEach((count, variable) => {
-            if (count === 1) {
-                resultVar += variable;
-            } else {
-                resultVar += variable + '²';
-            }
-        });
-
-        // 格式化結果
-        if (resultCoef === 0) return '0';
-        if (resultCoef === 1 && resultVar) return resultVar;
-        if (resultCoef === -1 && resultVar) return '-' + resultVar;
-        if (!resultVar) return resultCoef.toString();
-        return resultCoef + resultVar;
     }
 };
 
