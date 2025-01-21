@@ -682,7 +682,7 @@ export const ExpressionAnalyzer = {
                 // 移除開頭的加號
                 term = term.trim().replace(/^\+/, '');
                 
-                // 提取變量部分（包括函數）
+                // 提取變量部分（包括函數和多個變量）
                 let variable = '';
                 if (term.includes('\\')) {
                     // 如果包含 LaTeX 命令，保留完整的函數形式
@@ -691,9 +691,12 @@ export const ExpressionAnalyzer = {
                         variable = funcMatch[0];
                     }
                 } else {
-                    // 一般變量
-                    const variableMatch = term.match(/[a-zA-Z]+/);
-                    variable = variableMatch ? variableMatch[0] : '';
+                    // 處理一般變量，包括多個變量的情況
+                    const variableMatch = term.match(/[a-zA-Z]+/g);
+                    if (variableMatch) {
+                        // 對變量進行排序以確保一致性（如 ab 和 ba 視為相同）
+                        variable = variableMatch.sort().join('');
+                    }
                 }
                 
                 // 將項加入對應的組
@@ -718,9 +721,11 @@ export const ExpressionAnalyzer = {
                                 return `${num}/${den}`;
                             }
                         }
-                        // 處理一般係數
+                        // 處理一般係數，包括負號的情況
                         const coefMatch = term.match(/^([+-]?\d*\.?\d*)/);
-                        return coefMatch ? (coefMatch[1] || '1') : '1';
+                        if (!coefMatch || coefMatch[1] === '' || coefMatch[1] === '+') return '1';
+                        if (coefMatch[1] === '-') return '-1';
+                        return coefMatch[1];
                     }).join('+');
 
                     // 使用 NumberCalculator 計算係數和
@@ -1594,7 +1599,8 @@ export const ExpressionAnalyzer = {
 
     _lcm(a: number, b: number): number {
         return Math.abs(a * b) / this._gcd(a, b);  // 使用 _gcd
-    }
+    },
+
 };
 
 // 類型定義
@@ -1914,7 +1920,6 @@ export const NumberCalculator = {
             // 首先處理括號內的運算
             expr = expr.replace(/\(([^()]+)\)/g, (match, content) => {
                 console.log('Processing bracket content:', content);
-                // 如果括號內包含分數或運算，遞迴處理
                 if (content.includes('\\frac') || content.includes('+') || 
                     content.includes('-') || content.includes('*') || 
                     content.includes('\\times')) {
@@ -1923,40 +1928,33 @@ export const NumberCalculator = {
                 return match;
             });
 
-            // 處理數字和括號之間的隱含乘法
-            expr = expr.replace(/(\d+)\s*\(([^()]+)\)/g, (match, number, bracketContent) => {
-                console.log('Found implicit multiplication:', { number, bracketContent });
-                
-                // 移除括號
-                bracketContent = bracketContent.replace(/[()]/g, '');
-                
-                // 解析數字和括號內的內容
-                const num1 = this.parseNumber(number.trim());
-                const num2 = this.parseNumber(bracketContent.trim());
-                console.log('Parsed implicit numbers:', { num1, num2 });
-                
-                // 執行乘法運算
-                const result = this.performMultiply(num1, num2);
-                console.log('Implicit multiplication result:', result);
-                
-                return this.formatResult(result);
-            });
+            // 標準化表達式
+            expr = expr
+                // 處理連續的加減號
+                .replace(/\+\+/g, '+')
+                .replace(/\+-/g, '-')
+                .replace(/-\+/g, '-')
+                .replace(/--/g, '+')
+                // 確保數字之間有運算符
+                .replace(/(\d)\s+(\d)/g, '$1+$2');
 
-            // 處理其他運算
+            // 處理乘除運算
             expr = this._handleMultiplicationDivision(expr);
             console.log('After multiplication/division:', expr);
             
-            // 處理加減運算
-            const terms = expr.match(/[+-]?\s*(?:\\frac\{\d+\}\{\d+\}|\d+(?:\/\d+)?|\d+)/g);
+            // 分割項並過濾空項
+            const terms = expr.match(/[+-]?\s*\d*\.?\d+/g);
             console.log('Matched terms:', terms);
             
             if (!terms || terms.length === 0) {
                 throw new Error('無效的運算式');
             }
 
+            // 處理第一項
             let result = this.parseNumber(terms[0]);
             console.log('First term parsed:', result);
 
+            // 處理剩餘項
             for (let i = 1; i < terms.length; i++) {
                 const term = terms[i].trim();
                 const isAdd = !term.startsWith('-');
@@ -1975,52 +1973,6 @@ export const NumberCalculator = {
         }
     },
 
-    _handleMultiplicationDivision(expr: string): string {
-        console.log('Handling multiplication/division for:', expr);
-        
-        // 首先處理數字和括號之間的隱含乘法
-        expr = expr.replace(/(\d+)\s*\(([^()]+)\)/g, (match, number, bracketContent) => {
-            console.log('Found implicit multiplication:', { number, bracketContent });
-            
-            // 移除括號
-            bracketContent = bracketContent.replace(/[()]/g, '');
-            
-            // 解析數字和括號內的內容
-            const num1 = this.parseNumber(number.trim());
-            const num2 = this.parseNumber(bracketContent.trim());
-            console.log('Parsed implicit numbers:', { num1, num2 });
-            
-            // 執行乘法運算
-            const result = this.performMultiply(num1, num2);
-            console.log('Implicit multiplication result:', result);
-            
-            return this.formatResult(result);
-        });
-        
-        // 最後處理一般的乘除運算
-        const multiDivPattern = /(\\frac\{\d+\}\{\d+\}|\d+(?:\/\d+)?|\d+)\s*(\\times|\\div|\*|\/|×|÷)\s*(\\frac\{\d+\}\{\d+\}|\d+(?:\/\d+)?|\d+)/g;
-        
-        return expr.replace(multiDivPattern, (match, term1, operator, term2) => {
-            console.log('Found multiplication/division match:', { match, term1, operator, term2 });
-            
-            // 解析兩個數
-            const num1 = this.parseNumber(term1.trim());
-            const num2 = this.parseNumber(term2.trim());
-            console.log('Parsed numbers:', { num1, num2 });
-            
-            // 執行乘除運算
-            const result = (operator === '*' || operator === '×' || operator === '\\times') ? 
-                this.performMultiply(num1, num2) : 
-                this.performDivide(num1, num2);
-            console.log('Operation result:', result);
-            
-            // 返回格式化結果
-            const formattedResult = this.formatResult(result);
-            console.log('Formatted result:', formattedResult);
-            return formattedResult;  // 確保返回字符串
-        });
-    },
-
     parseNumber(str: string): NumberResult {
         console.log('Parsing number:', str);
         
@@ -2028,45 +1980,39 @@ export const NumberCalculator = {
         const isNegative = str.startsWith('-');
         str = str.replace(/^-/, '');
 
-        let result: NumberResult = {  // 给一个默认值
-            numerator: 0,
-            denominator: 1,
-            isNegative: false
-        };
-
-        // 檢查是否為分數
-        if (str.includes('\\frac')) {
-            const match = str.match(/\\frac\{(-?\d+)\}\{(-?\d+)\}/);
-            if (match) {
-                const [_, num, den] = match;
-                result = {
-                    numerator: Math.abs(parseInt(num)),
-                    denominator: parseInt(den),
-                    isNegative: isNegative || num.startsWith('-')
-                };
-            }
+        // 處理小數
+        if (str.includes('.')) {
+            // 將小數轉換為分數
+            const parts = str.split('.');
+            const integerPart = parseInt(parts[0] || '0');
+            const decimalPart = parts[1] || '';
+            const denominator = Math.pow(10, decimalPart.length);
+            const numerator = Math.abs(integerPart) * denominator + parseInt(decimalPart || '0');
+            
+            return {
+                numerator,
+                denominator,
+                isNegative
+            };
         }
-        // 檢查是否為普通分數形式 (a/b)
-        else if (str.includes('/')) {
+
+        // 處理分數
+        if (str.includes('/')) {
             const [num, den] = str.split('/').map(s => parseInt(s.trim()));
-            result = {
+            return {
                 numerator: Math.abs(num),
                 denominator: den,
                 isNegative: isNegative || num < 0
             };
         }
+
         // 處理整數
-        else {
-            const num = parseInt(str);
-            result = {
-                numerator: Math.abs(num),
-                denominator: 1,
-                isNegative: isNegative || num < 0
-            };
-        }
-        
-        console.log('Parse result:', result);
-        return result;
+        const num = parseInt(str);
+        return {
+            numerator: Math.abs(num),
+            denominator: 1,
+            isNegative: isNegative || num < 0
+        };
     },
 
     performAddSubtract(a: NumberResult, b: NumberResult, isAdd: boolean): NumberResult {
@@ -2141,5 +2087,37 @@ export const NumberCalculator = {
 
     _lcm(a: number, b: number): number {
         return Math.abs(a * b) / this._gcd(a, b);  // 使用 _gcd
-    }
+    },
+
+    /**
+     * 處理乘除運算
+     */
+    _handleMultiplicationDivision(expr: string): string {
+        console.log('Handling multiplication/division for:', expr);
+        
+        // 處理乘除運算
+        const multiDivPattern = /(-?\d*\.?\d+)\s*([\*\/×÷])\s*(-?\d*\.?\d+)/;
+        
+        // 持續處理所有乘除運算直到沒有更多匹配
+        while (multiDivPattern.test(expr)) {
+            expr = expr.replace(multiDivPattern, (match, num1, operator, num2) => {
+                console.log('Found multiplication/division match:', { num1, operator, num2 });
+                
+                // 解析數字
+                const n1 = this.parseNumber(num1.trim());
+                const n2 = this.parseNumber(num2.trim());
+                console.log('Parsed numbers:', { n1, n2 });
+                
+                // 執行運算
+                const result = (operator === '*' || operator === '×') ? 
+                    this.performMultiply(n1, n2) : 
+                    this.performDivide(n1, n2);
+                
+                // 返回結果
+                return this.formatResult(result);
+            });
+        }
+        
+        return expr;
+    },
 }; 
