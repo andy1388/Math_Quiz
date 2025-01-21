@@ -1061,76 +1061,92 @@ export const ExpressionAnalyzer = {
     },
 
     /**
-     * 將指數表達式化簡為正指數形式
-     * 處理規則：
-     * 1. a^0 = 1
-     * 2. a^{-n} = \frac{1}{a^n}
-     * 3. a^m · a^n = a^{m+n}
-     * 4. a^m ÷ a^n = a^{m-n}
+     * 將指數表達式化簡
      */
     simplifyIndices(latex: string): string {
         try {
-            // 移除所有空格
-            latex = latex.replace(/\s+/g, '');
-            console.log('Input after removing spaces:', latex);
-            
-            // 如果表達式包含等號，分開處理
             const [expr, equals] = latex.split('=');
+            
             if (!expr) {
                 throw new Error('表達式為空');
             }
+
             console.log('Expression before processing:', expr);
 
             let result = expr;
+            let previousResult;
 
-            // 處理指數乘法：a^m · a^n = a^{m+n}
-            const beforeMultiply = result;
-            result = result.replace(/(\d+)\^{(\d+)}\\cdot\1\^{(\d+)}/g, (match, base, exp1, exp2) => {
-                console.log('Multiply match found:', { match, base, exp1, exp2 });
-                const sumExp = parseInt(exp1) + parseInt(exp2);
-                return `${base}^{${sumExp}}`;
-            });
-            if (beforeMultiply !== result) {
-                console.log('After handling multiplication:', result);
+            // 處理分數形式中的指數，支援更多 LaTeX 格式
+            const fractionPatterns = [
+                // 標準 LaTeX 分數格式
+                /\\frac\{(\d+)\^{([^{}]+?)}\}\{(\d+)\^{([^{}]+?)}\}/g,
+                // 分數線格式
+                /(\d+)\^{([^{}]+?)}\/(\d+)\^{([^{}]+?)}/g,
+                // 分數中的指數可能沒有大括號
+                /\\frac\{(\d+)\^([^{}]+?)\}\{(\d+)\^([^{}]+?)\}/g,
+            ];
+
+            for (const pattern of fractionPatterns) {
+                result = result.replace(pattern, (match, base1, exp1, base2, exp2) => {
+                    console.log('Processing fraction power:', { base1, exp1, base2, exp2 });
+                    
+                    // 移除可能的額外大括號
+                    exp1 = exp1.replace(/[{}]/g, '');
+                    exp2 = exp2.replace(/[{}]/g, '');
+                    
+                    // 如果底數相同，指數相減
+                    if (base1 === base2) {
+                        return `${base1}^{${exp1}-${exp2}}`;
+                    }
+                    return match;
+                });
             }
 
-            // 處理指數除法：a^m ÷ a^n = a^{m-n}
-            const beforeDivide = result;
-            result = result.replace(/(\d+)\^{(\d+)}\\div\1\^{(\d+)}/g, (match, base, exp1, exp2) => {
-                console.log('Divide match found:', { match, base, exp1, exp2 });
-                const diffExp = parseInt(exp1) - parseInt(exp2);
-                if (diffExp === 0) return '1';
-                if (diffExp < 0) {
-                    return `\\frac{1}{${base}^{${-diffExp}}}`;
-                }
-                return `${base}^{${diffExp}}`;
-            });
-            if (beforeDivide !== result) {
-                console.log('After handling division:', result);
-            }
+            // 持續處理直到沒有更多變化
+            do {
+                previousResult = result;
+                
+                // 處理同底數的乘除，使用更靈活的匹配模式
+                result = result.replace(/(\d+)\^{?([^{}]+?)}?\s*(\\times|\\div)\s*\1\^{?([^{}]+?)}?/g, 
+                    (match, base, exp1, operator, exp2) => {
+                        console.log('Processing power operation:', { base, exp1, exp2, operator });
+                        
+                        // 移除可能的額外大括號
+                        exp1 = exp1.replace(/[{}]/g, '');
+                        exp2 = exp2.replace(/[{}]/g, '');
+                        
+                        // 檢查是否包含變量或運算符
+                        const hasVariables = exp1.match(/[a-zA-Z]/) || exp2.match(/[a-zA-Z]/);
+                        const hasOperations = exp1.includes('+') || exp1.includes('-') || 
+                                            exp2.includes('+') || exp2.includes('-');
+                        
+                        // 如果是純數字指數且沒有變量
+                        if (!hasVariables && !hasOperations) {
+                            const exp1Num = parseInt(exp1);
+                            const exp2Num = parseInt(exp2);
+                            const newExp = operator === '\\times' ? exp1Num + exp2Num : exp1Num - exp2Num;
+                            return `${base}^{${newExp}}`;
+                        }
+                        
+                        // 如果包含變量或運算，保持代數形式
+                        if (operator === '\\times') {
+                            return `${base}^{${exp1}+${exp2}}`;
+                        } else {
+                            return `${base}^{${exp1}-${exp2}}`;
+                        }
+                    }
+                );
 
-            // 處理負指數：a^{-n} = \frac{1}{a^n}
-            const beforeNegative = result;
-            result = result.replace(/(\d+)\^{-(\d+)}/g, (match, base, exp) => {
-                console.log('Negative exponent match found:', { match, base, exp });
-                return `\\frac{1}{${base}^{${exp}}}`;
-            });
-            if (beforeNegative !== result) {
-                console.log('After handling negative exponent:', result);
-            }
+                // 如果有多個乘號連接的項，嘗試重新排列以找到更多可合併的項
+                result = result.split('\\times')
+                    .map(term => term.trim())
+                    .sort()
+                    .join('\\times');
 
-            // 處理零指數：a^0 = 1
-            // 只在完全匹配 a^{0} 時才替換
-            const beforeZero = result;
-            if (result.match(/^\d+\^{0}$/)) {
-                result = '1';
-                console.log('After handling zero exponent:', result);
-            }
+            } while (result !== previousResult);
 
-            // 添加等號部分（如果有）
-            const finalResult = equals ? `${result}=${equals}` : result;
-            console.log('Final result:', finalResult);
-            return finalResult;
+            console.log('Final result:', result);
+            return equals ? `${result}=${equals}` : result;
         } catch (error) {
             console.error('Simplify indices error:', error);
             throw error;
