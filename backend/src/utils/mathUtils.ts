@@ -641,108 +641,121 @@ export const ExpressionAnalyzer = {
 
             console.log('Processing expression:', expr);
 
-            // 首先处理分数和根号
-            const parts = expr.split(/([+-])/g).filter(part => part.trim());
-            let processedExpr = '';
-            let currentSign = '+';
+            // 首先處理 LaTeX 格式
+            let processedExpr = expr;
 
-            for (let i = 0; i < parts.length; i++) {
-                let part = parts[i].trim();
-                
-                if (part === '+' || part === '-') {
-                    currentSign = part;
-                    continue;
-                }
-
-                // 处理根号
-                if (part.includes('\\sqrt')) {
-                    const standardRoot = this._standardizeRoot(part);
-                    processedExpr += currentSign + standardRoot;
-                } else if (part.includes('\\frac')) {
-                    const fractionMatch = part.match(/\\frac\{(\d+)\}\{(\d+)\}/);
-                    if (fractionMatch) {
-                        const [_, num, den] = fractionMatch;
-                        const decimal = parseInt(num) / parseInt(den);
-                        processedExpr += currentSign + decimal;
-                    }
-                } else {
-                    processedExpr += currentSign + part;
-                }
-            }
-
-            // 移除开头的加号
-            processedExpr = processedExpr.replace(/^\+/, '');
-
-            // 分离各项
-            const terms = processedExpr.replace(/\s+/g, '')
-                .replace(/([+-])((?:\\sin|\\cos|\\tan|\\csc|\\sec|\\cot|\\ln|\\log|[a-zA-Z\\]))/g, '$11$2')
-                .replace(/^((?:\\sin|\\cos|\\tan|\\csc|\\sec|\\cot|\\ln|\\log|[a-zA-Z\\]))/g, '1$1')
-                .match(/[+-]?(?:\d*\.?\d*)?(?:\\(?:sin|cos|tan|csc|sec|cot|ln|log)\{[^{}]+\}|\\sqrt\{[^{}]+\}|[a-zA-Z0-9^]+)|[+-]?\d+\.?\d*/g)
-                ?.filter(term => term !== '');
-
-            if (!terms) {
-                throw new Error('無效的表達式');
-            }
-
-            // 用于存储同类项的系数和
-            const termGroups = new Map<string, number>();
-
-            // 处理每一项
-            terms.forEach(term => {
-                // 处理纯数字项
-                if (/^[+-]?\d*\.?\d*$/.test(term)) {
-                    const num = parseFloat(term);
-                    termGroups.set('', (termGroups.get('') || 0) + num);
-                    return;
-                }
-
-                // 分离系数和变量/根号部分
-                const match = term.match(/([+-]?\d*\.?\d*)?(.+)/);
-                if (!match) return;
-
-                let [_, coefficient, variable] = match;
-                if (!coefficient || coefficient === '+') coefficient = '1';
-                if (coefficient === '-') coefficient = '-1';
-
-                // 标准化变量或函数部分
-                const standardTerm = 
-                    variable.match(/^\\(?:sin|cos|tan|csc|sec|cot|ln|log)\{[^{}]+\}$/) ? this._standardizeFunction(variable) :
-                    variable.includes('\\sqrt') ? this._standardizeRoot(variable) : 
-                    this._standardizeVariables(variable);
-                
-                // 累加系数
-                const coef = parseFloat(coefficient);
-                termGroups.set(standardTerm, (termGroups.get(standardTerm) || 0) + coef);
+            // 處理分數
+            processedExpr = processedExpr.replace(/\\frac\{(-?\d+)\}\{(\d+)\}/g, (_, num, den) => {
+                return `(${num}/${den})`;
             });
 
-            // 构建结果
-            let result = Array.from(termGroups.entries())
-                .filter(([_, coef]) => Math.abs(coef) > 1e-10)
-                .sort(([term1, _1], [term2, _2]) => {
-                    if (!term1) return 1;
-                    if (!term2) return -1;
-                    // 根号优先
-                    const isRoot1 = term1.startsWith('\\sqrt');
-                    const isRoot2 = term2.startsWith('\\sqrt');
-                    if (isRoot1 !== isRoot2) return isRoot2 ? 1 : -1;
-                    return term1.localeCompare(term2);
-                })
-                .map(([term, coefficient]) => {
-                    const formattedCoef = this._formatCoefficient(coefficient);
-                    if (term === '') {
-                        return coefficient > 0 ? `+${formattedCoef}` : formattedCoef;
-                    }
-                    if (coefficient === 1) return `+${term}`;
-                    if (coefficient === -1) return `-${term}`;
-                    return coefficient > 0 ? `+${formattedCoef}${term}` : `${formattedCoef}${term}`;
-                })
-                .join('');
+            // 處理根號
+            processedExpr = processedExpr.replace(/\\sqrt\{([^{}]+)\}/g, (_, content) => {
+                return this._standardizeRoot(content);
+            });
 
-            // 处理结果的开头的加号
-            result = result.replace(/^\+/, '');
+            // 處理三角函數
+            const trigFunctions = ['sin', 'cos', 'tan', 'csc', 'sec', 'cot'];
+            trigFunctions.forEach(func => {
+                const pattern = new RegExp(`\\\\${func}\\{([^{}]+)\\}`, 'g');
+                processedExpr = processedExpr.replace(pattern, (_, content) => {
+                    return this._standardizeFunction(`\\${func}{${content}}`);
+                });
+            });
+
+            // 處理對數函數
+            processedExpr = processedExpr.replace(/\\log\{([^{}]+)\}/g, (_, content) => {
+                return this._standardizeFunction(`\\log{${content}}`);
+            });
+            processedExpr = processedExpr.replace(/\\ln\{([^{}]+)\}/g, (_, content) => {
+                return this._standardizeFunction(`\\ln{${content}}`);
+            });
+
+            // 分割各項
+            const terms = processedExpr.split(/(?=[+-])/).filter(term => term.trim());
             
-            // 如果结果为空，返回0
-            if (!result) result = '0';
+            // 按變量分組
+            const termGroups = new Map<string, string[]>();
+            
+            // 分類各項
+            terms.forEach(term => {
+                // 移除開頭的加號
+                term = term.trim().replace(/^\+/, '');
+                
+                // 提取變量部分（包括函數）
+                let variable = '';
+                if (term.includes('\\')) {
+                    // 如果包含 LaTeX 命令，保留完整的函數形式
+                    const funcMatch = term.match(/\\[a-zA-Z]+\{[^{}]+\}/);
+                    if (funcMatch) {
+                        variable = funcMatch[0];
+                    }
+                } else {
+                    // 一般變量
+                    const variableMatch = term.match(/[a-zA-Z]+/);
+                    variable = variableMatch ? variableMatch[0] : '';
+                }
+                
+                // 將項加入對應的組
+                if (!termGroups.has(variable)) {
+                    termGroups.set(variable, []);
+                }
+                termGroups.get(variable)?.push(term);
+            });
+
+            // 處理每組同類項
+            const combinedTerms: string[] = [];
+            
+            for (const [variable, groupTerms] of termGroups) {
+                if (groupTerms.length > 0) {
+                    // 提取係數進行運算
+                    const coefficients = groupTerms.map(term => {
+                        // 處理括號中的分數
+                        if (term.includes('(') && term.includes('/')) {
+                            const fractionMatch = term.match(/\((-?\d+)\/(\d+)\)/);
+                            if (fractionMatch) {
+                                const [_, num, den] = fractionMatch;
+                                return `${num}/${den}`;
+                            }
+                        }
+                        // 處理一般係數
+                        const coefMatch = term.match(/^([+-]?\d*\.?\d*)/);
+                        return coefMatch ? (coefMatch[1] || '1') : '1';
+                    }).join('+');
+
+                    // 使用 NumberCalculator 計算係數和
+                    const combinedCoef = NumberCalculator.calculate(coefficients);
+                    
+                    // 如果係數不為0，則加入結果
+                    if (combinedCoef !== '0') {
+                        if (variable) {
+                            // 處理變量項
+                            if (combinedCoef === '1') {
+                                combinedTerms.push(variable);
+                            } else if (combinedCoef === '-1') {
+                                combinedTerms.push(`-${variable}`);
+                            } else {
+                                combinedTerms.push(`${combinedCoef}${variable}`);
+                            }
+                        } else {
+                            // 處理純數字項
+                            combinedTerms.push(combinedCoef);
+                        }
+                    }
+                }
+            }
+
+            // 組合最終結果
+            let result = combinedTerms.join('+')
+                // 修正正負號
+                .replace(/\+-/g, '-')
+                // 移除開頭的加號
+                .replace(/^\+/, '');
+            
+            // 如果結果為空，返回0
+            if (!result) {
+                result = '0';
+            }
 
             console.log('Combined result:', result);
 
