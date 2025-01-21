@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await typesetMath();
             
             // 更新表达式属性
-            await updateExpressionStatus(data.question);
+            await updateExpressionInfo(data.question);
             
             // 更新生成記錄
             const historyList = document.getElementById('history-list');
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 previewContent.innerHTML = `\\[${equation}\\]`;
                 
                 // 更新表达式属性
-                await updateExpressionStatus(equation);
+                await updateExpressionInfo(equation);
                 
                 MathJax.typesetPromise();
                 solveEquation(equation, operationType.value, difficulty.value);
@@ -150,33 +150,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    solveBtn.addEventListener('click', () => {
+    solveBtn.addEventListener('click', async () => {
         const equation = document.getElementById('equation-input').value.trim();
         if (!equation) {
             alert('請輸入算式');
             return;
         }
         
-        // 如果输入不是 LaTeX 格式，转换为 LaTeX 格式
+        // 如果輸入不是 LaTeX 格式，轉換為 LaTeX 格式
         const latexEquation = equation.startsWith('\\') ? equation : convertToLatex(equation);
         
-        // 清空实验区
+        // 清空實驗區
         const expressionHistory = document.querySelector('.expression-history');
         expressionHistory.innerHTML = '';
         
-        // 添加用户输入的公式作为初始表达式
+        // 添加用戶輸入的公式作為初始表達式
         const initialStep = document.createElement('div');
         initialStep.className = 'expression-step';
         initialStep.innerHTML = `<div class="math" data-latex="${latexEquation}">\\[${latexEquation}\\]</div>`;
         expressionHistory.appendChild(initialStep);
         
-        // 重新渲染数学公式
-        MathJax.typesetPromise().then(() => {
-            // 更新表达式属性
-            updateExpressionStatus(latexEquation);
-            // 更新操作按钮状态
-            updateOperationButtons(latexEquation);
-        });
+        // 重新渲染數學公式並更新表達式屬性
+        try {
+            await MathJax.typesetPromise();
+            await updateExpressionInfo();
+            await updateOperationButtons(latexEquation);
+        } catch (error) {
+            console.error('Error in solve button click:', error);
+        }
     });
 
     document.getElementById('equation-input').addEventListener('keypress', (e) => {
@@ -185,16 +186,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 添加输入监听器来更新预览
+    // 添加輸入監聽器來更新預覽
     equationInput.addEventListener('input', async () => {
         const input = equationInput.value.trim();
         const latex = input.startsWith('\\') ? input : convertToLatex(input);
+        
+        // 更新預覽區域
         previewContent.innerHTML = `\\[${latex}\\]`;
         
-        // 更新表达式属性
-        await updateExpressionStatus(latex);
-        
-        MathJax.typesetPromise();
+        // 等待 MathJax 渲染完成
+        if (window.MathJax) {
+            try {
+                await MathJax.typesetPromise([previewContent]);
+            } catch (error) {
+                console.error('MathJax rendering error:', error);
+            }
+        }
     });
 
     // 添加操作按钮事件处理
@@ -274,7 +281,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await typesetMath();
                 
                 // 更新表达式属性和同类项信息
-                await updateExpressionStatus(result.latex);
+                await updateExpressionInfo();
                 
                 // 更新操作按钮状态
                 await updateOperationButtons(result.latex);
@@ -285,6 +292,39 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     });
+
+    // 更新按鈕狀態
+    function updateOperationButtons(latex) {
+        document.querySelectorAll('.op-btn').forEach(btn => {
+            const operation = btn.dataset.op;
+            const isAvailable = checkOperationAvailability(operation, latex);
+            btn.disabled = !isAvailable;
+            btn.title = isAvailable ? btn.title : '當前表達式不支持此操作';
+        });
+    }
+
+    // 檢查操作是否可用
+    async function checkOperationAvailability(operation, latex) {
+        try {
+            const response = await fetch('/api/solver/check-operation', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ operation, latex })
+            });
+            
+            if (!response.ok) {
+                return false;
+            }
+            
+            const { available } = await response.json();
+            return available;
+        } catch (error) {
+            console.error('Error checking operation availability:', error);
+            return false;
+        }
+    }
 });
 
 async function solveEquation(equation, type, difficulty) {
@@ -342,79 +382,77 @@ function displaySolution(solution) {
 
 // 修改 convertToLatex 函数，使其更智能地处理各种输入
 function convertToLatex(input) {
-    // 移除多余的空格
+    // 移除多餘的空格
     input = input.trim();
     
-    // 如果已经是 LaTeX 格式，直接返回
-    if (input.includes('\\frac')) {
+    // 如果已經是 LaTeX 格式，直接返回
+    if (input.includes('\\')) {
         return input;
     }
     
-    // 检查是否是分数格式 (例如: 12/28)
-    const fractionMatch = input.match(/^(\d+)\/(\d+)$/);
+    // 檢查是否是分數格式 (例如: 12/28)
+    const fractionMatch = input.match(/^(-?\d+)\/(-?\d+)$/);
     if (fractionMatch) {
         return `\\frac{${fractionMatch[1]}}{${fractionMatch[2]}}`;
     }
     
-    // 如果是普通数字，直接返回
-    if (/^\d+$/.test(input)) {
-        return input;
-    }
+    // 檢查是否包含變量和指數 (例如: x^2)
+    input = input.replace(/([a-zA-Z])(\^?)(\d*)/g, (match, variable, power, exponent) => {
+        if (power && exponent) {
+            return `${variable}^{${exponent}}`;
+        }
+        return match;
+    });
     
+    // 如果是普通數字或表達式，直接返回
     return input;
 }
 
-// 更新按钮状态
-function updateOperationButtons(latex) {
-    document.querySelectorAll('.op-btn').forEach(btn => {
-        const operation = btn.dataset.op;
-        const isAvailable = checkOperationAvailability(operation, latex);
-        btn.disabled = !isAvailable;
-        btn.title = isAvailable ? btn.title : '當前表達式不支持此操作';
-    });
+// 類型文字轉換
+function getTypeText(type) {
+    if (!type) return '-';  // 如果類型為空，返回 '-'
+    
+    const typeMap = {
+        'constant': '常數',
+        'numerical': '數值多項式',
+        'monomial': '單項式',
+        'polynomial': '多項式'
+    };
+    return typeMap[type] || '-';  // 如果找不到對應的類型，返回 '-'
 }
 
-// 检查操作是否可用
-async function checkOperationAvailability(operation, latex) {
+// 更新表達式屬性的函數
+async function updateExpressionInfo(latex = null) {
     try {
-        const response = await fetch('/api/solver/check-operation', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ operation, latex })
-        });
-        
-        if (!response.ok) {
-            return false;
+        // 總是從實驗區獲取最新表達式，忽略傳入的參數
+        const expressionHistory = document.querySelector('.expression-history');
+        const lastStep = expressionHistory?.lastElementChild;
+        if (!lastStep) {
+            // 如果實驗區沒有表達式，清空所有屬性
+            document.querySelectorAll('.status-value').forEach(el => {
+                if (el) el.textContent = '-';
+            });
+            return;
         }
-        
-        const { available } = await response.json();
-        return available;
-    } catch (error) {
-        console.error('Error checking operation availability:', error);
-        return false;
-    }
-}
 
-// 在生成新题目或更新表达式时调用
-function updateExpressionAndButtons(latex) {
-    document.querySelector('.generated-content').innerHTML = `\\[${latex}\\]`;
-    MathJax.typesetPromise().then(() => {
-        updateExpressionStatus(latex);
-        updateOperationButtons(latex);
-    });
-}
+        const mathElement = lastStep.querySelector('.math');
+        const latestExpression = mathElement?.getAttribute('data-latex') || 
+                                mathElement?.textContent.trim().replace(/\\[|\[|\\]|\]/g, '');
 
-// 更新表达式状态显示
-async function updateExpressionStatus(latex) {
-    try {
+        if (!latestExpression) {
+            throw new Error('找不到表達式');
+        }
+
+        console.log('Analyzing latest expression:', latestExpression); // 調試日誌
+
         const response = await fetch('/api/solver/analyze', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ latex })
+            body: JSON.stringify({
+                latex: latestExpression
+            })
         });
 
         if (!response.ok) {
@@ -422,73 +460,77 @@ async function updateExpressionStatus(latex) {
         }
 
         const info = await response.json();
-        
-        // 更新类型和项数
-        document.getElementById('expr-type').textContent = getTypeText(info.type);
-        document.getElementById('term-count').textContent = info.termCount;
-        
-        // 更新分数相关信息
-        document.getElementById('fraction-status').textContent = 
-            info.fractionInfo.hasFraction ? '有' : '無';
-        document.getElementById('fraction-count').textContent = 
-            info.fractionInfo.fractionCount;
-        document.getElementById('nested-fraction').textContent = 
-            info.fractionInfo.hasNestedFraction ? '有' : '無';
-        document.getElementById('nested-level').textContent = 
-            info.fractionInfo.nestedLevel;
-        
-        // 更新无理数相关信息
-        document.getElementById('irrational-status').textContent = 
-            info.irrationalInfo.hasIrrational ? '有' : '無';
-        document.getElementById('sqrt-status').textContent = 
-            info.irrationalInfo.types.hasSquareRoot ? '有' : '無';
-        document.getElementById('pi-status').textContent = 
-            info.irrationalInfo.types.hasPi ? '有' : '無';
-        document.getElementById('e-status').textContent = 
-            info.irrationalInfo.types.hasE ? '有' : '無';
-        
-        // 更新变量相关信息
-        document.getElementById('variable-status').textContent = 
-            info.variables.hasVariables ? `有 (${info.variables.count}個)` : '無';
-        document.getElementById('variable-list').textContent = 
-            info.variables.list.length > 0 ? info.variables.list.join(', ') : '-';
+        console.log('Expression info:', info); // 調試日誌
 
-        // 更新同类项信息
-        document.getElementById('like-terms-status').textContent = 
-            info.likeTerms.hasLikeTerms ? '有' : '無';
+        // 使用安全的更新函數
+        const safeUpdateElement = (id, value) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value || '-';  // 如果值為空，顯示 '-'
+            } else {
+                console.warn(`Element with id '${id}' not found`);  // 添加警告日誌
+            }
+        };
+
+        // 更新表達式屬性顯示
+        safeUpdateElement('expression-type', getTypeText(info.type));
+        safeUpdateElement('term-count', info.termCount);
+        safeUpdateElement('fraction-count', info.fractionInfo.fractionCount);
         
-        // 显示同类项组信息
+        // 更新分數相關信息
+        safeUpdateElement('fraction-status', info.fractionInfo.hasFraction ? '有' : '無');
+        safeUpdateElement('nested-fraction', info.fractionInfo.hasNestedFraction ? '有' : '無');
+        safeUpdateElement('nested-level', info.fractionInfo.nestedLevel);
+        
+        // 更新無理數相關信息
+        safeUpdateElement('irrational-status', info.irrationalInfo.hasIrrational ? '有' : '無');
+        safeUpdateElement('sqrt-status', info.irrationalInfo.types.hasSquareRoot ? '有' : '無');
+        safeUpdateElement('pi-status', info.irrationalInfo.types.hasPi ? '有' : '無');
+        safeUpdateElement('e-status', info.irrationalInfo.types.hasE ? '有' : '無');
+        
+        // 更新變量相關信息
+        safeUpdateElement('variable-status', 
+            info.variables.hasVariables ? `有 (${info.variables.count}個)` : '無');
+        safeUpdateElement('variable-list', 
+            info.variables.list.length > 0 ? info.variables.list.join(', ') : '-');
+
+        // 更新同類項信息
+        safeUpdateElement('like-terms-status', info.likeTerms.hasLikeTerms ? '有' : '無');
+        
+        // 顯示同類項組信息
         const groupsText = info.likeTerms.groups.map(group => 
             `${group.variable}: ${group.count}項`
         ).join(', ');
         
-        document.getElementById('like-terms-groups').textContent = 
-            groupsText || '-';
+        safeUpdateElement('like-terms-groups', groupsText || '-');
+
+        // 更新括號相關信息
+        safeUpdateElement('bracket-status', 
+            info.bracketInfo.hasBrackets ? '有' : '無');
+        safeUpdateElement('bracket-count', 
+            info.bracketInfo.hasBrackets ? `${info.bracketInfo.bracketCount}對` : '-');
+        safeUpdateElement('expansion-status', 
+            info.bracketInfo.needsExpansion ? '需要' : '不需要');
+        safeUpdateElement('bracket-terms', 
+            info.bracketInfo.bracketTerms.length > 0 ? 
+            info.bracketInfo.bracketTerms.join(', ') : '-');
 
     } catch (error) {
-        console.error('Error:', error);
-        // 清空所有状态显示
+        console.error('Error updating expression info:', error);
+        // 清空所有狀態顯示
         document.querySelectorAll('.status-value').forEach(el => {
-            el.textContent = '-';
+            if (el) el.textContent = '-';
         });
     }
 }
 
-// 类型文字转换
-function getTypeText(type) {
-    const typeMap = {
-        'constant': '常數',
-        'numerical': '數值多項式',
-        'monomial': '單項式',
-        'polynomial': '多項式'
-    };
-    return typeMap[type] || type;
-}
-
+// 在每次操作後更新表達式屬性
 async function processOperation(operation) {
     try {
-        // 获取当前实验区的 LaTeX 表达式
-        const latex = getCurrentLatex();  // 这里需要确保获取完整的 LaTeX 格式
+        // 獲取實驗區最新的表達式
+        const experimentContent = document.querySelector('.experiment-content');
+        const latestExpression = experimentContent.querySelector('.MathJax').getAttribute('data-latex') || 
+                                experimentContent.textContent.trim();
         
         const response = await fetch('/api/solver/process', {
             method: 'POST',
@@ -496,7 +538,7 @@ async function processOperation(operation) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                latex: latex,  // 这里应该包含完整的 LaTeX 格式
+                latex: latestExpression,
                 operation: operation
             })
         });
@@ -506,16 +548,34 @@ async function processOperation(operation) {
         }
 
         const result = await response.json();
-        updateExperimentArea(result.latex);  // 更新实验区显示
+        
+        // 更新實驗區顯示
+        await updateExperimentArea(result.latex);
+        
+        // 更新表達式屬性
+        await updateExpressionInfo();
+        
     } catch (error) {
         console.error('Operation Error:', error);
-        // 显示错误信息
+        alert('操作失敗：' + error.message);
     }
 }
 
-// 获取当前实验区的 LaTeX 表达式
-function getCurrentLatex() {
-    const experimentArea = document.querySelector('.experiment-content');
-    // 这里需要确保我们获取的是原始的 LaTeX 格式，而不是渲染后的内容
-    return experimentArea.getAttribute('data-latex') || experimentArea.textContent;
+// 更新實驗區的函數
+async function updateExperimentArea(latex) {
+    // 獲取表達式歷史區域
+    const expressionHistory = document.querySelector('.expression-history');
+    
+    // 創建新的步驟元素
+    const stepElement = document.createElement('div');
+    stepElement.className = 'expression-step';
+    stepElement.innerHTML = `<div class="math" data-latex="${latex}">\\[${latex}\\]</div>`;
+    
+    // 添加到歷史記錄
+    expressionHistory.appendChild(stepElement);
+    
+    // 等待 MathJax 渲染完成
+    if (window.MathJax) {
+        await MathJax.typesetPromise([stepElement]);
+    }
 } 

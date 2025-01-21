@@ -7,6 +7,7 @@ import { Solver } from '../Solver';
 import { analyzeExpression } from '../controllers/analyzeController';
 import { ExpressionAnalyzer } from '../../utils/mathUtils';
 import { IndicesGenerator } from '../arithmetic/Indices';
+import { MultiplicationGenerator } from '../arithmetic/Multiplication';
 
 const router = express.Router();
 
@@ -76,6 +77,15 @@ router.post('/generate', async (req, res) => {
                 });
                 break;
 
+            case 'multiplication':
+                const multiplicationGenerator = new MultiplicationGenerator(difficulty);
+                const multiplicationOperation = multiplicationGenerator.generate();
+                res.json({
+                    question: multiplicationOperation.expression,
+                    operation: multiplicationOperation
+                });
+                break;
+
             default:
                 res.status(400).json({ error: '不支援的運算類型' });
         }
@@ -106,6 +116,9 @@ router.get('/difficulties/:type', async (req, res) => {
                 break;
             case 'indices':
                 res.json(IndicesGenerator.getDifficultyInfos());
+                break;
+            case 'multiplication':
+                res.json(MultiplicationGenerator.getDifficultyInfos());
                 break;
             default:
                 res.status(400).json({ error: '不支援的運算類型' });
@@ -162,6 +175,9 @@ router.post('/process', (req, res) => {
                 break;
             case 'simplify-indices':
                 result = ExpressionAnalyzer.simplifyIndices(latex);
+                break;
+            case 'expand':
+                result = ExpressionAnalyzer.expand(latex);
                 break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });

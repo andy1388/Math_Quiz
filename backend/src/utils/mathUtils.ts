@@ -203,8 +203,22 @@ export const ExpressionAnalyzer = {
             fractionInfo: this.analyzeFraction(latex),
             irrationalInfo: this.analyzeIrrational(latex),
             variables: this.findVariables(latex),
-            likeTerms: this.analyzeLikeTerms(latex)
+            likeTerms: this.analyzeLikeTerms(latex),
+            bracketInfo: this.analyzeBrackets(latex)
         };
+    },
+
+    /**
+     * 清理 LaTeX 表達式
+     */
+    _cleanLatex(latex: string): string {
+        // 移除空格
+        let clean = latex.replace(/\s+/g, '');
+        // 標準化負號
+        clean = clean.replace(/−/g, '-');
+        // 處理開頭的負號
+        clean = clean.replace(/^-/, 'NEG');  // 暫時替換開頭的負號
+        return clean;
     },
 
     /**
@@ -212,8 +226,33 @@ export const ExpressionAnalyzer = {
      */
     getExpressionType(latex: string): ExpressionType {
         const cleanLatex = this._cleanLatex(latex);
-        const hasVariable = /[a-zA-Z]/.test(cleanLatex);
-        const hasMultipleTerms = /[+\-]/.test(cleanLatex);
+        
+        // 還原 NEG 為負號
+        const finalLatex = cleanLatex.replace('NEG', '-');
+        
+        // 檢查是否有加號或減號（不在括號內的）
+        const hasOuterOperators = this._hasOuterOperators(finalLatex);
+        
+        if (hasOuterOperators) {
+            return 'polynomial';
+        }
+        
+        // 檢查是否是括號表達式
+        if (finalLatex.includes('(')) {
+            // 檢查括號前的部分是否為單項式
+            const beforeBracket = finalLatex.split('(')[0].replace('NEG', '-');
+            
+            // 檢查是否為單項式（包括負號情況）
+            const isSingleTerm = /^-?(\d*x?|\d+)$/.test(beforeBracket);
+            
+            if (isSingleTerm) {
+                return 'monomial';
+            }
+        }
+        
+        // 其他情況的判斷
+        const hasVariable = /[a-zA-Z]/.test(finalLatex);
+        const hasMultipleTerms = /[+\-]/.test(finalLatex.replace(/^-/, '')); // 忽略開頭的負號
 
         if (!hasVariable && !hasMultipleTerms) return 'constant';
         if (!hasVariable && hasMultipleTerms) return 'numerical';
@@ -226,10 +265,28 @@ export const ExpressionAnalyzer = {
      */
     countTerms(latex: string): number {
         const cleanLatex = this._cleanLatex(latex);
+        const finalLatex = cleanLatex.replace('NEG', '-');
+        
+        // 計算外部運算符的數量
+        const outerOperators = this._getOuterOperators(finalLatex);
+        if (outerOperators.length > 0) {
+            return outerOperators.length + 1;
+        }
+        
+        // 如果是單項式乘以括號，返回1
+        if (finalLatex.includes('(')) {
+            const beforeBracket = finalLatex.split('(')[0].replace('NEG', '-');
+            const isSingleTerm = /^-?(\d*x?|\d+)$/.test(beforeBracket);
+            if (isSingleTerm) {
+                return 1;
+            }
+        }
+        
         // 如果是常數或單項式，返回1
-        if (!this._hasMultipleTerms(cleanLatex)) return 1;
-        // 計算運算符數量並加1
-        const operators = cleanLatex.match(/[+\-]/g) || [];
+        if (!this._hasMultipleTerms(finalLatex.replace(/^-/, ''))) return 1;
+        
+        // 計算運算符數量並加1（忽略開頭的負號）
+        const operators = finalLatex.replace(/^-/, '').match(/[+\-]/g) || [];
         return operators.length + 1;
     },
 
@@ -297,10 +354,6 @@ export const ExpressionAnalyzer = {
     },
 
     // 輔助方法
-    _cleanLatex(latex: string): string {
-        return latex.replace(/\s+/g, '');
-    },
-
     _hasMultipleTerms(latex: string): boolean {
         return /[+\-]/.test(latex);
     },
@@ -1052,6 +1105,126 @@ export const ExpressionAnalyzer = {
             console.error('Simplify indices error:', error);
             throw error;
         }
+    },
+
+    /**
+     * 展開括號
+     */
+    expand(latex: string): string {
+        try {
+            // 移除等號及其後面的內容
+            const [expr, equals] = latex.split('=');
+            
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
+
+            console.log('Expanding expression:', expr);
+
+            // 清理表達式中的空格
+            let expression = expr.trim();
+
+            // 處理單項式乘以括號的情況：a(b+c) -> ab+ac
+            const bracketPattern = /^([^()]+)\(([^()]+)\)$/;
+            const match = expression.match(bracketPattern);
+
+            if (match) {
+                const [, outsideTerm, insideBracket] = match;
+                console.log('Bracket expansion:', { outsideTerm, insideBracket });
+
+                // 分割括號內的項
+                const terms = insideBracket.split(/(?=[+-])/).filter(term => term);
+                
+                // 對每一項添加外部項
+                const expandedTerms = terms.map(term => {
+                    // 如果項以 + 開頭，移除它
+                    term = term.replace(/^\+/, '');
+                    return `${outsideTerm}(${term})`;
+                });
+
+                // 組合結果
+                let result = expandedTerms.join('+');
+                
+                // 處理負號項
+                result = result.replace(/\+\-/g, '-');
+                
+                // 移除開頭的加號
+                result = result.replace(/^\+/, '');
+
+                console.log('Expanded result:', result);
+
+                // 添加等號部分（如果有）
+                return equals ? `${result}=${equals}` : result;
+            }
+
+            // 如果不符合任何模式，返回原表達式
+            return latex;
+        } catch (error) {
+            console.error('Expansion error:', error);
+            throw error;
+        }
+    },
+
+    // 新增輔助方法
+    _hasOuterOperators(latex: string): boolean {
+        let bracketCount = 0;
+        for (let i = 0; i < latex.length; i++) {
+            if (latex[i] === '(') bracketCount++;
+            else if (latex[i] === ')') bracketCount--;
+            else if (bracketCount === 0 && (latex[i] === '+' || latex[i] === '-' && i > 0)) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    _getOuterOperators(latex: string): string[] {
+        const operators: string[] = [];
+        let bracketCount = 0;
+        for (let i = 0; i < latex.length; i++) {
+            if (latex[i] === '(') bracketCount++;
+            else if (latex[i] === ')') bracketCount--;
+            else if (bracketCount === 0 && (latex[i] === '+' || latex[i] === '-' && i > 0)) {
+                operators.push(latex[i]);
+            }
+        }
+        return operators;
+    },
+
+    analyzeBrackets(latex: string): BracketInfo {
+        const cleanLatex = this._cleanLatex(latex);
+        const hasBrackets = cleanLatex.includes('(');
+        
+        if (!hasBrackets) {
+            return {
+                hasBrackets: false,
+                bracketCount: 0,
+                needsExpansion: false,
+                bracketTerms: []
+            };
+        }
+
+        // 計算括號對數
+        const bracketCount = (cleanLatex.match(/\(/g) || []).length;
+
+        // 檢查是否需要展開
+        // 如果括號前有係數或變量，則需要展開
+        const needsExpansion = /[0-9a-zA-Z\-]\(/.test(cleanLatex);
+
+        // 提取括號內的項
+        const bracketTerms = [];
+        const bracketPattern = /\((.*?)\)/g;
+        let match;
+        while ((match = bracketPattern.exec(cleanLatex)) !== null) {
+            bracketTerms.push(match[1]);
+        }
+
+        return {
+            hasBrackets,
+            bracketCount,
+            needsExpansion,
+            bracketTerms
+        };
     }
 };
 
@@ -1065,6 +1238,7 @@ export interface ExpressionInfo {
     irrationalInfo: IrrationalInfo;
     variables: VariableInfo;
     likeTerms: LikeTermsInfo;
+    bracketInfo: BracketInfo;
 }
 
 export interface FractionInfo {
@@ -1099,6 +1273,13 @@ export interface LikeTermGroup {
     variable: string;
     terms: string[];
     count: number;
+}
+
+export interface BracketInfo {
+    hasBrackets: boolean;
+    bracketCount: number;
+    needsExpansion: boolean;
+    bracketTerms: string[];
 }
 
 /**
@@ -1218,4 +1399,108 @@ export function roundUp(num: number, decimals: number): number {
 export function roundDown(num: number, decimals: number): number {
     const factor = Math.pow(10, decimals);
     return Math.floor(num * factor) / factor;
+}
+
+/**
+ * 因子组合接口
+ */
+export interface FactorCombination {
+    factors: number[];      // 所有因子的数组
+}
+
+/**
+ * 获取一个数的所有质因数（包括重复的）
+ * @param n 要分解的数
+ * @returns 所有质因数数组
+ */
+function getAllPrimeFactors(n: number): number[] {
+    const factors: number[] = [];
+    let num = n;
+    
+    // 处理2的因数
+    while (num % 2 === 0) {
+        factors.push(2);
+        num = num / 2;
+    }
+    
+    // 处理其他质因数
+    for (let i = 3; i <= Math.sqrt(num); i += 2) {
+        while (num % i === 0) {
+            factors.push(i);
+            num = num / i;
+        }
+    }
+    
+    // 如果最后剩余的数大于2，它本身就是质数
+    if (num > 2) {
+        factors.push(num);
+    }
+    
+    return factors;
+}
+
+export interface FactorCombinationOptions {
+    minFactor?: number;      // 最小因子
+    maxFactor?: number;      // 最大因子
+    maxQuotient?: number;    // 最大商
+    maxFactors?: number;     // 最多因子数量
+}
+
+export function generateFactorCombinations(
+    number: number, 
+    options: FactorCombinationOptions = {}
+): FactorCombination[] {
+    const {
+        minFactor = 2,
+        maxFactor = 9,
+        maxQuotient = 9,
+        maxFactors = 3
+    } = options;
+
+    // 获取所有质因数（包括重复的）
+    const allPrimeFactors = getAllPrimeFactors(number);
+    
+    // 调整maxFactors为实际可能的最大因子数量
+    const actualMaxFactors = Math.min(maxFactors, allPrimeFactors.length);
+
+    const combinations: FactorCombination[] = [];
+    
+    // 递归函数来生成因子组合
+    function generateCombinations(
+        remainingNumber: number,
+        currentFactors: number[],
+        remainingFactors: number
+    ) {
+        // 如果已经达到目标因子数量
+        if (remainingFactors === 1) {
+            if (remainingNumber >= minFactor && remainingNumber <= maxFactor) {
+                combinations.push({
+                    factors: [...currentFactors, remainingNumber]
+                });
+            }
+            return;
+        }
+
+        // 尝试不同的因子
+        for (let f = minFactor; f <= Math.min(maxFactor, remainingNumber); f++) {
+            if (remainingNumber % f === 0) {
+                const nextNumber = remainingNumber / f;
+                // 确保剩余的数不会超过maxQuotient
+                if (nextNumber <= maxQuotient || remainingFactors === 2) {
+                    generateCombinations(
+                        nextNumber,
+                        [...currentFactors, f],
+                        remainingFactors - 1
+                    );
+                }
+            }
+        }
+    }
+
+    // 从2个因子开始尝试到actualMaxFactors个因子
+    for (let numFactors = 2; numFactors <= actualMaxFactors; numFactors++) {
+        generateCombinations(number, [], numFactors);
+    }
+
+    return combinations;
 } 
