@@ -1617,6 +1617,92 @@ export const ExpressionAnalyzer = {
         return Math.abs(a * b) / this._gcd(a, b);  // 使用 _gcd
     },
 
+    /**
+     * 合併同底項
+     */
+    simplifyOneTerm(latex: string): string {
+        try {
+            // 移除等號及其後面的內容
+            const [expr, equals] = latex.split('=');
+            
+            if (!expr) {
+                throw new Error('表達式為空');
+            }
+
+            console.log('Simplifying one term:', expr);
+
+            // 標準化運算符和括號
+            let normalizedExpr = expr
+                .replace(/\s+/g, '')  // 移除空格
+                .replace(/\\times|\\cdot|\]\[|\)\(/g, '*')  // 標準化乘號和相鄰括號
+                .replace(/\\div/g, '/')   // 標準化除號
+                .replace(/[\[\]()]/g, ''); // 移除括號
+
+            // 分割項並保留運算符
+            const terms = normalizedExpr.split(/([*/])/);
+            
+            // 按底數分組，記錄每項是乘還是除
+            const baseGroups = new Map<string, Array<{term: string, isDiv: boolean}>>();
+
+            // 收集所有項
+            for (let i = 0; i < terms.length; i++) {
+                const term = terms[i].trim();
+                if (term === '*' || term === '/') continue;
+                
+                // 確定這一項是乘還是除
+                const isDiv = i > 0 && terms[i-1] === '/';
+                
+                // 獲取底數
+                let base;
+                if (term.includes('^{')) {
+                    base = term.split('^{')[0];
+                } else {
+                    base = term;
+                }
+
+                if (!baseGroups.has(base)) {
+                    baseGroups.set(base, []);
+                }
+                baseGroups.get(base)?.push({term, isDiv});
+            }
+
+            // 按底數排序並組合結果
+            const resultTerms: string[] = [];
+            Array.from(baseGroups.entries())
+                .sort(([a], [b]) => a.localeCompare(b))  // 按底數字母順序排序
+                .forEach(([_, items]) => {
+                    items.forEach((item, index) => {
+                        if (index === 0 && resultTerms.length === 0) {
+                            // 第一項不需要運算符
+                            resultTerms.push(item.term);
+                        } else {
+                            // 其他項根據是乘還是除添加運算符
+                            resultTerms.push(item.isDiv ? '\\div' : '\\times');
+                            resultTerms.push(item.term);
+                        }
+                    });
+                });
+
+            // 組合結果，確保運算符前後有空格
+            let result = resultTerms.join(' ');
+            
+            // 如果結果為空，返回1
+            if (!result) {
+                result = '1';
+            }
+            
+            // 如果有等號，添加回去
+            if (equals) {
+                result += '=' + equals;
+            }
+
+            console.log('Simplified result:', result);
+            return result;
+        } catch (error) {
+            console.error('Simplify one term error:', error);
+            throw error;
+        }
+    },
 };
 
 // 類型定義

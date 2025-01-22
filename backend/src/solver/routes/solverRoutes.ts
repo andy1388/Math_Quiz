@@ -185,6 +185,9 @@ router.post('/process', (req, res) => {
             case 'number-calculate':
                 result = NumberCalculator.calculate(latex);
                 break;
+            case 'simplify-one-term':
+                result = ExpressionAnalyzer.simplifyOneTerm(latex);
+                break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }
@@ -258,6 +261,11 @@ router.post('/check-operation', (req, res) => {
             case 'number-calculate':
                 // 检查是否包含数字或分数
                 available = /(\d+|\\frac\{\d+\}\{\d+\}|\/)\s*[+\-]\s*(\d+|\\frac\{\d+\}\{\d+\}|\/)/.test(latex);
+                break;
+            case 'simplify-one-term':
+                // 檢查是否包含指數和運算符
+                available = (latex.includes('^') || latex.includes('\\sqrt')) && 
+                           (latex.includes('\\times') || latex.includes('\\div'));
                 break;
             default:
                 available = false;
