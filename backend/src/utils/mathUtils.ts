@@ -1630,10 +1630,19 @@ export const ExpressionAnalyzer = {
 
             console.log('Input expression:', expr);
 
+            // 首先處理分數，將分數轉換為乘除形式
             let normalizedExpr = expr
                 .replace(/\s+/g, '')  // 移除空格
-                .replace(/\\times|\\cdot|\]\[|\)\(|\]|\[|\)|\(/g, '*')  // 標準化所有乘號和括號
+                .replace(/\\div\s*\\frac{([^{}]+)}{([^{}]+)}/g, (_, num, den) => {
+                    // 將 \div \frac{a}{b} 轉換為 × b/a
+                    return `*${den}/${num}`;
+                })
+                .replace(/\\frac{([^{}]+)}{([^{}]+)}/g, (_, num, den) => {
+                    // 將其他 \frac{a}{b} 轉換為 a/b
+                    return `${num}/${den}`;
+                })
                 .replace(/\\div/g, '/')   // 標準化除號
+                .replace(/\\times|\\cdot|\]\[|\)\(|\]|\[|\)|\(/g, '*')  // 標準化所有乘號和括號
                 .replace(/[\[\]()]/g, '')  // 移除任何剩餘的括號
                 .replace(/\*+/g, '*')     // 合併連續的乘號
                 .replace(/^\*|\*$/g, ''); // 移除開頭和結尾的乘號
@@ -1651,13 +1660,17 @@ export const ExpressionAnalyzer = {
 
             // 收集所有項
             for (let i = 0; i < terms.length; i++) {
-                const term = terms[i].trim();
+                let term = terms[i].trim();
                 if (term === '*' || term === '/') continue;
                 
+                // 判斷是否為除法項
                 const isDiv = i > 0 && terms[i-1] === '/';
                 
-                // 修改提取基底的邏輯
-                let base = term.replace(/\^{[^}]*}|\^[a-zA-Z0-9]+/g, '');  // 移除所有指數部分，包括 ^a 形式
+                // 提取基底，移除所有指數部分
+                let base = term.replace(/\^{[^}]*}|\^[a-zA-Z0-9]+/g, '');
+                
+                // 跳過係數為1的項
+                if (base === '1') continue;
                 
                 if (!baseGroups.has(base)) {
                     baseGroups.set(base, {
@@ -1672,12 +1685,11 @@ export const ExpressionAnalyzer = {
                 } else {
                     group.multiply.push(term);
                 }
-                
-                console.log(`Processing term: ${term}, base: ${base}, isDiv: ${isDiv}`);
             }
 
             console.log('Base groups:', Object.fromEntries(baseGroups));
 
+            // 按底數排序並組合結果
             const resultTerms: string[] = [];
             Array.from(baseGroups.entries())
                 .sort(([a], [b]) => a.localeCompare(b))
@@ -1692,40 +1704,32 @@ export const ExpressionAnalyzer = {
 
                     let isFirstTermInGroup = true;
                     
-                    // Sort and process multiply items
-                    const sortedMultiply = items.multiply.sort((a, b) => {
-                        const result = this._compareExponents(a, b);
-                        console.log(`Comparing multiply: ${a} vs ${b} = ${result}`);
-                        return result;
-                    });
-                    console.log('Multiply items after sort:', sortedMultiply);
-
-                    sortedMultiply.forEach((term) => {
-                        if (!isFirstTermInGroup) {
-                            resultTerms.push('\\times');
-                        }
-                        resultTerms.push(term);
-                        isFirstTermInGroup = false;
-                    });
-
-                    // Sort and process divide items
-                    if (items.divide.length > 0) {
-                        const sortedDivide = items.divide.sort((a, b) => {
-                            const result = this._compareExponents(a, b);
-                            console.log(`Comparing divide: ${a} vs ${b} = ${result}`);
-                            return result;
-                        });
-                        console.log('Divide items after sort:', sortedDivide);
-
-                        sortedDivide.forEach((term) => {
-                            resultTerms.push('\\div');
+                    // 處理乘法項和除法項
+                    items.multiply
+                        .sort((a, b) => this._compareExponents(a, b))
+                        .forEach((term) => {
+                            if (!isFirstTermInGroup) {
+                                resultTerms.push('\\times');
+                            }
                             resultTerms.push(term);
+                            isFirstTermInGroup = false;
                         });
+
+                    // 處理除法項
+                    if (items.divide.length > 0) {
+                        items.divide
+                            .sort((a, b) => this._compareExponents(a, b))
+                            .forEach((term) => {
+                                resultTerms.push('\\div');
+                                resultTerms.push(term);
+                            });
                     }
+
                 });
 
             console.log('Result terms array:', resultTerms);
 
+            // 組合最終結果
             let result = resultTerms.join(' ');
             if (!result) {
                 result = '1';
@@ -1776,6 +1780,13 @@ export const ExpressionAnalyzer = {
         // 如果都是字母，按字母順序排序
         return String(exp1).localeCompare(String(exp2));
     },
+
+    /**
+     * 獲取項的基底（輔助方法）
+     */
+    _getBase(term: string): string {
+        return term.replace(/\^{[^}]*}|\^[a-zA-Z0-9]+/g, '');
+    }
 };
 
 // 類型定義
