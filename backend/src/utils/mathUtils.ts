@@ -1631,14 +1631,17 @@ export const ExpressionAnalyzer = {
             console.log('Input expression:', expr);
 
             let normalizedExpr = expr
-                .replace(/\s+/g, '')
-                .replace(/\\times|\\cdot|\]\[|\)\(/g, '*')
-                .replace(/\\div/g, '/')
-                .replace(/[\[\]()]/g, '');
-            
+                .replace(/\s+/g, '')  // 移除空格
+                .replace(/\\times|\\cdot|\]\[|\)\(|\]|\[|\)|\(/g, '*')  // 標準化所有乘號和括號
+                .replace(/\\div/g, '/')   // 標準化除號
+                .replace(/[\[\]()]/g, '')  // 移除任何剩餘的括號
+                .replace(/\*+/g, '*')     // 合併連續的乘號
+                .replace(/^\*|\*$/g, ''); // 移除開頭和結尾的乘號
+
             console.log('Normalized expression:', normalizedExpr);
 
-            const terms = normalizedExpr.split(/([*/])/);
+            // 分割項並過濾空項
+            const terms = normalizedExpr.split(/([*/])/).filter(term => term.trim());
             console.log('Split terms:', terms);
 
             const baseGroups = new Map<string, {
@@ -1654,7 +1657,7 @@ export const ExpressionAnalyzer = {
                 const isDiv = i > 0 && terms[i-1] === '/';
                 
                 // 修改提取基底的邏輯
-                let base = term.replace(/\^{[^}]*}|\^[0-9]+/g, '');  // 移除所有指數部分
+                let base = term.replace(/\^{[^}]*}|\^[a-zA-Z0-9]+/g, '');  // 移除所有指數部分，包括 ^a 形式
                 
                 if (!baseGroups.has(base)) {
                     baseGroups.set(base, {
