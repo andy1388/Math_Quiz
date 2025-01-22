@@ -1630,23 +1630,8 @@ export const ExpressionAnalyzer = {
 
             console.log('Input expression:', expr);
 
-            // 首先處理分數，將分數轉換為乘除形式
-            let normalizedExpr = expr
-                .replace(/\s+/g, '')  // 移除空格
-                .replace(/\\div\s*\\frac{([^{}]+)}{([^{}]+)}/g, (_, num, den) => {
-                    // 將 \div \frac{a}{b} 轉換為 × b/a
-                    return `*${den}/${num}`;
-                })
-                .replace(/\\frac{([^{}]+)}{([^{}]+)}/g, (_, num, den) => {
-                    // 將其他 \frac{a}{b} 轉換為 a/b
-                    return `${num}/${den}`;
-                })
-                .replace(/\\div/g, '/')   // 標準化除號
-                .replace(/\\times|\\cdot|\]\[|\)\(|\]|\[|\)|\(/g, '*')  // 標準化所有乘號和括號
-                .replace(/[\[\]()]/g, '')  // 移除任何剩餘的括號
-                .replace(/\*+/g, '*')     // 合併連續的乘號
-                .replace(/^\*|\*$/g, ''); // 移除開頭和結尾的乘號
-
+            // 標準化表達式
+            const normalizedExpr = this._normalizeExpression(expr);
             console.log('Normalized expression:', normalizedExpr);
 
             // 分割項並過濾空項
@@ -1783,7 +1768,29 @@ export const ExpressionAnalyzer = {
      */
     _getBase(term: string): string {
         return term.replace(/\^{[^}]*}|\^[a-zA-Z0-9]+/g, '');
-    }
+    },
+
+    /**
+     * 標準化表達式，移除指數中不必要的大括號
+     */
+    _normalizeExpression(expr: string): string {
+        return expr
+            .replace(/\s+/g, '')  // 移除空格
+            .replace(/\^{(\d+|\w+)}/g, '^$1')  // 将 ^{a} 转换为 ^a
+            .replace(/\\div\s*\\frac{([^{}]+)}{([^{}]+)}/g, (_, num, den) => {
+                // 將 \div \frac{a}{b} 轉換為 × b/a
+                return `*${den}/${num}`;
+            })
+            .replace(/\\frac{([^{}]+)}{([^{}]+)}/g, (_, num, den) => {
+                // 將其他 \frac{a}{b} 轉換為 a/b
+                return `${num}/${den}`;
+            })
+            .replace(/\\div/g, '/')   // 標準化除號
+            .replace(/\\times|\\cdot|\]\[|\)\(|\]|\[|\)|\(/g, '*')  // 標準化所有乘號和括號
+            .replace(/[\[\]()]/g, '')  // 移除任何剩餘的括號
+            .replace(/\*+/g, '*')     // 合併連續的乘號
+            .replace(/^\*|\*$/g, ''); // 移除開頭和結尾的乘號
+    },
 };
 
 // 類型定義
