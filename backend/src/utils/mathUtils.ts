@@ -1698,21 +1698,19 @@ export const ExpressionAnalyzer = {
                     console.log('Multiply items before sort:', items.multiply);
                     console.log('Divide items before sort:', items.divide);
 
-                    if (baseIndex > 0 && resultTerms.length > 0) {
+                    // 只有当这个组有乘法项时，才考虑添加乘号
+                    if (baseIndex > 0 && resultTerms.length > 0 && items.multiply.length > 0) {
                         resultTerms.push('\\times');
                     }
 
-                    let isFirstTermInGroup = true;
-                    
-                    // 處理乘法項和除法項
+                    // 處理乘法項
                     items.multiply
                         .sort((a, b) => this._compareExponents(a, b))
-                        .forEach((term) => {
-                            if (!isFirstTermInGroup) {
+                        .forEach((term, index) => {
+                            if (index > 0) {  // 只在同一组内的非第一项前添加乘号
                                 resultTerms.push('\\times');
                             }
                             resultTerms.push(term);
-                            isFirstTermInGroup = false;
                         });
 
                     // 處理除法項
@@ -1724,7 +1722,6 @@ export const ExpressionAnalyzer = {
                                 resultTerms.push(term);
                             });
                     }
-
                 });
 
             console.log('Result terms array:', resultTerms);
