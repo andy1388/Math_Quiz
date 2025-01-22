@@ -1784,7 +1784,7 @@ export const ExpressionAnalyzer = {
             // 處理分數
             .replace(/\\frac{([^{}]+)}{([^{}]+)}/g, (_, num, den) => {
                 // 將分數轉換為 a/b 格式，但保留括號內的內容
-                return `(${num})/(${den})`;
+                return `${num}/${den}`;  // 只移除括號
             })
             // 標準化運算符
             .replace(/\\div/g, '/')   
