@@ -1622,86 +1622,156 @@ export const ExpressionAnalyzer = {
      */
     simplifyOneTerm(latex: string): string {
         try {
-            // 移除等號及其後面的內容
             const [expr, equals] = latex.split('=');
             
             if (!expr) {
                 throw new Error('表達式為空');
             }
 
-            console.log('Simplifying one term:', expr);
+            console.log('Input expression:', expr);
 
-            // 標準化運算符和括號
             let normalizedExpr = expr
-                .replace(/\s+/g, '')  // 移除空格
-                .replace(/\\times|\\cdot|\]\[|\)\(/g, '*')  // 標準化乘號和相鄰括號
-                .replace(/\\div/g, '/')   // 標準化除號
-                .replace(/[\[\]()]/g, ''); // 移除括號
-
-            // 分割項並保留運算符
-            const terms = normalizedExpr.split(/([*/])/);
+                .replace(/\s+/g, '')
+                .replace(/\\times|\\cdot|\]\[|\)\(/g, '*')
+                .replace(/\\div/g, '/')
+                .replace(/[\[\]()]/g, '');
             
-            // 按底數分組，記錄每項是乘還是除
-            const baseGroups = new Map<string, Array<{term: string, isDiv: boolean}>>();
+            console.log('Normalized expression:', normalizedExpr);
+
+            const terms = normalizedExpr.split(/([*/])/);
+            console.log('Split terms:', terms);
+
+            const baseGroups = new Map<string, {
+                multiply: string[],
+                divide: string[]
+            }>();
 
             // 收集所有項
             for (let i = 0; i < terms.length; i++) {
                 const term = terms[i].trim();
                 if (term === '*' || term === '/') continue;
                 
-                // 確定這一項是乘還是除
                 const isDiv = i > 0 && terms[i-1] === '/';
                 
-                // 獲取底數
-                let base;
-                if (term.includes('^{')) {
-                    base = term.split('^{')[0];
-                } else {
-                    base = term;
+                // 修改提取基底的邏輯
+                let base = term.replace(/\^{[^}]*}|\^[0-9]+/g, '');  // 移除所有指數部分
+                
+                if (!baseGroups.has(base)) {
+                    baseGroups.set(base, {
+                        multiply: [],
+                        divide: []
+                    });
                 }
 
-                if (!baseGroups.has(base)) {
-                    baseGroups.set(base, []);
+                const group = baseGroups.get(base)!;
+                if (isDiv) {
+                    group.divide.push(term);
+                } else {
+                    group.multiply.push(term);
                 }
-                baseGroups.get(base)?.push({term, isDiv});
+                
+                console.log(`Processing term: ${term}, base: ${base}, isDiv: ${isDiv}`);
             }
 
-            // 按底數排序並組合結果
+            console.log('Base groups:', Object.fromEntries(baseGroups));
+
             const resultTerms: string[] = [];
             Array.from(baseGroups.entries())
-                .sort(([a], [b]) => a.localeCompare(b))  // 按底數字母順序排序
-                .forEach(([_, items]) => {
-                    items.forEach((item, index) => {
-                        if (index === 0 && resultTerms.length === 0) {
-                            // 第一項不需要運算符
-                            resultTerms.push(item.term);
-                        } else {
-                            // 其他項根據是乘還是除添加運算符
-                            resultTerms.push(item.isDiv ? '\\div' : '\\times');
-                            resultTerms.push(item.term);
-                        }
+                .sort(([a], [b]) => a.localeCompare(b))
+                .forEach(([base, items], baseIndex) => {
+                    console.log(`\nProcessing base: ${base}`);
+                    console.log('Multiply items before sort:', items.multiply);
+                    console.log('Divide items before sort:', items.divide);
+
+                    if (baseIndex > 0 && resultTerms.length > 0) {
+                        resultTerms.push('\\times');
+                    }
+
+                    let isFirstTermInGroup = true;
+                    
+                    // Sort and process multiply items
+                    const sortedMultiply = items.multiply.sort((a, b) => {
+                        const result = this._compareExponents(a, b);
+                        console.log(`Comparing multiply: ${a} vs ${b} = ${result}`);
+                        return result;
                     });
+                    console.log('Multiply items after sort:', sortedMultiply);
+
+                    sortedMultiply.forEach((term) => {
+                        if (!isFirstTermInGroup) {
+                            resultTerms.push('\\times');
+                        }
+                        resultTerms.push(term);
+                        isFirstTermInGroup = false;
+                    });
+
+                    // Sort and process divide items
+                    if (items.divide.length > 0) {
+                        const sortedDivide = items.divide.sort((a, b) => {
+                            const result = this._compareExponents(a, b);
+                            console.log(`Comparing divide: ${a} vs ${b} = ${result}`);
+                            return result;
+                        });
+                        console.log('Divide items after sort:', sortedDivide);
+
+                        sortedDivide.forEach((term) => {
+                            resultTerms.push('\\div');
+                            resultTerms.push(term);
+                        });
+                    }
                 });
 
-            // 組合結果，確保運算符前後有空格
+            console.log('Result terms array:', resultTerms);
+
             let result = resultTerms.join(' ');
-            
-            // 如果結果為空，返回1
             if (!result) {
                 result = '1';
             }
             
-            // 如果有等號，添加回去
             if (equals) {
                 result += '=' + equals;
             }
 
-            console.log('Simplified result:', result);
+            console.log('Final result:', result);
             return result;
         } catch (error) {
             console.error('Simplify one term error:', error);
             throw error;
         }
+    },
+
+    /**
+     * 獲取指數值
+     */
+    _getExponent(term: string): string | number {
+        const match = term.match(/\^{([^}]+)}/);
+        if (match) {
+            // 如果是數字，轉換為數字類型進行比較
+            const exp = match[1];
+            const numExp = Number(exp);
+            return isNaN(numExp) ? exp : numExp;
+        }
+        return 1; // 如果沒有指數，默認為1
+    },
+
+    /**
+     * 比較兩個項的指數
+     */
+    _compareExponents(term1: string, term2: string): number {
+        const exp1 = this._getExponent(term1);
+        const exp2 = this._getExponent(term2);
+        
+        // 如果都是數字，直接比較
+        if (typeof exp1 === 'number' && typeof exp2 === 'number') {
+            return exp2 - exp1; // 降序排列
+        }
+        
+        // 如果有字母，字母排在數字前面
+        if (typeof exp1 === 'string' && typeof exp2 === 'number') return -1;
+        if (typeof exp1 === 'number' && typeof exp2 === 'string') return 1;
+        
+        // 如果都是字母，按字母順序排序
+        return String(exp1).localeCompare(String(exp2));
     },
 };
 
