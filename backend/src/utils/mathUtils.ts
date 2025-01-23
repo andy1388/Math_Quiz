@@ -1833,6 +1833,94 @@ export const ExpressionAnalyzer = {
             innermostBrackets
         };
     },
+
+    /**
+     * 标准化并排序多项式
+     */
+    normalizePolynomial(expr: string): string {
+        console.log('\n=== Starting polynomial normalization ===');
+        console.log('Input expression:', expr);
+
+        // 清理表达式
+        expr = expr.trim().replace(/\s+/g, '');
+        
+        // 分割项
+        const terms = expr.split(/(?=[-+])/);
+        console.log('Split terms:', terms);
+
+        // 处理每一项并提取信息
+        const processedTerms = terms.map(term => {
+            // 移除开头的+号
+            term = term.replace(/^\+/, '');
+            
+            // 提取系数和变量部分
+            const coefficientMatch = term.match(/^-?\d*\.?\d*/);
+            const coefficient = coefficientMatch ? (coefficientMatch[0] || '1') : '1';
+            const variable = term.replace(/^-?\d*\.?\d*/, '');
+            
+            // 提取指数
+            let exponent = 0;
+            if (variable) {
+                const expMatch = variable.match(/\^(\d+)/);
+                exponent = expMatch ? parseInt(expMatch[1]) : 1;
+            }
+
+            return {
+                original: term,
+                coefficient: coefficient === '-' ? '-1' : (coefficient || '1'),
+                variable: variable.replace(/\^\d+/, '') || '',
+                exponent: exponent,
+                isConstant: !variable
+            };
+        });
+
+        console.log('Processed terms:', processedTerms);
+
+        // 排序规则：
+        // 1. 指数降序
+        // 2. 变量字母顺序
+        // 3. 常数项放最后
+        processedTerms.sort((a, b) => {
+            if (a.isConstant && !b.isConstant) return 1;
+            if (!a.isConstant && b.isConstant) return -1;
+            if (a.isConstant && b.isConstant) return 0;
+            
+            if (a.exponent !== b.exponent) {
+                return b.exponent - a.exponent;
+            }
+            return a.variable.localeCompare(b.variable);
+        });
+
+        console.log('Sorted terms:', processedTerms);
+
+        // 重建表达式
+        let result = processedTerms.map((term, index) => {
+            let termStr = '';
+            
+            // 处理系数
+            if (term.coefficient !== '1' || term.isConstant) {
+                termStr += term.coefficient;
+            }
+            
+            // 添加变量和指数
+            if (!term.isConstant) {
+                termStr += term.variable;
+                if (term.exponent > 1) {
+                    termStr += `^${term.exponent}`;
+                }
+            }
+
+            // 添加加号（第一项如果是正数则不需要加号）
+            if (index > 0 && !termStr.startsWith('-')) {
+                termStr = '+' + termStr;
+            }
+
+            return termStr;
+        }).join('');
+
+        console.log('Normalized result:', result);
+        return result;
+    },
 };
 
 // 類型定義
@@ -1902,7 +1990,8 @@ export const MathOperations = {
     DECIMAL_FRACTION_CONVERSION: 'decimal-fraction',
     PRIME_FACTORIZE: 'prime-factorize',
     CALCULATE: 'calculate',
-    NUMBER_CALCULATE: 'number-calculate'
+    NUMBER_CALCULATE: 'number-calculate',
+    NORMALIZE_POLYNOMIAL: 'normalize'
 } as const;
 
 export interface OperationButton {
@@ -1995,6 +2084,13 @@ export const OPERATION_BUTTONS: OperationButton[] = [
         isAvailable: (latex: string) => {
             return /(\d+|\\frac\{\d+\}\{\d+\}|\/)\s*[+\-]\s*(\d+|\\frac\{\d+\}\{\d+\}|\/)/.test(latex);
         }
+    },
+    {
+        id: 'normalize',
+        label: '標準化',
+        description: '標準化並排序多項式',
+        operation: 'NORMALIZE_POLYNOMIAL',
+        isAvailable: (latex: string) => ExpressionAnalyzer.getExpressionType(latex) === 'polynomial'
     },
 ];
 
@@ -2147,8 +2243,8 @@ interface NumberResult {
 export const NumberCalculator = {
     calculate(expr: string): string {
         try {
-            console.log('Input expression:', expr);
-            
+        console.log('Input expression:', expr);
+
             // 首先處理括號內的運算
             expr = expr.replace(/\(([^()]+)\)/g, (match, content) => {
                 console.log('Processing bracket content:', content);
@@ -2220,7 +2316,7 @@ export const NumberCalculator = {
             const decimalPart = parts[1] || '';
             const denominator = Math.pow(10, decimalPart.length);
             const numerator = Math.abs(integerPart) * denominator + parseInt(decimalPart || '0');
-            
+
             return {
                 numerator,
                 denominator,
@@ -2372,7 +2468,7 @@ function findInnermostBracket(expr: string): { content: string; start: number; e
         const char = expr[i];
         
         // 处理左括号 (包括方括号)
-        if (char === '(' || char === '（' || char === '[') {
+        if (char === '(' || char === '（' || char === '[' || char === '{') {
             currentDepth++;
             console.log(`Found opening bracket '${char}' at ${i}, currentDepth: ${currentDepth}, maxDepth: ${maxDepth}`);
             
@@ -2383,7 +2479,7 @@ function findInnermostBracket(expr: string): { content: string; start: number; e
             }
         } 
         // 处理右括号 (包括方括号)
-        else if (char === ')' || char === '）' || char === ']') {
+        else if (char === ')' || char === '）' || char === ']' || char === '}') {
             console.log(`Found closing bracket '${char}' at ${i}, currentDepth: ${currentDepth}, maxDepth: ${maxDepth}`);
             if (currentDepth === maxDepth && lastMaxDepthStart !== -1) {
                 // 找到一个最深层级的完整括号对
@@ -2427,9 +2523,9 @@ function hasCompleteBrackets(str: string): boolean {
     console.log('Checking for complete brackets in:', str);
     let depth = 0;
     for (let i = 0; i < str.length; i++) {
-        if (str[i] === '(' || str[i] === '（') {
+        if (str[i] === '(' || str[i] === '（' || str[i] === '{' || str[i] === '[') {
             depth++;
-        } else if (str[i] === ')' || str[i] === '）') {
+        } else if (str[i] === ')' || str[i] === '）' || str[i] === '}' || str[i] === ']') {
             depth--;
             if (depth < 0) {
                 console.log('Invalid bracket sequence (too many closing brackets)');
@@ -2512,7 +2608,7 @@ export function analyzeBracketLayers(expr: string): string {
     // 扫描找到所有括号层级
     for (let i = 0; i < expr.length; i++) {
         const char = expr[i];
-        if (char === '(' || char === '（' || char === '[') {
+        if (char === '(' || char === '（' || char === '[' || char === '{') {
             currentDepth++;
             openBrackets.push(i);
             console.log(`Found opening bracket '${char}' at ${i}, depth: ${currentDepth}`);
@@ -2521,7 +2617,7 @@ export function analyzeBracketLayers(expr: string): string {
                 maxDepth = currentDepth;
             }
         } 
-        else if (char === ')' || char === '）' || char === ']') {
+        else if (char === ')' || char === '）' || char === ']' || char === '}') {
             if (openBrackets.length > 0) {
                 const start = openBrackets.pop()!;
                 const content = expr.substring(start + 1, i);

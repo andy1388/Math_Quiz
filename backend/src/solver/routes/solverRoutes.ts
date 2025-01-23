@@ -86,6 +86,14 @@ router.post('/generate', async (req, res) => {
                 });
                 break;
 
+            case 'normalize':
+                const normalizedResult = ExpressionAnalyzer.normalizePolynomial(req.body.latex);
+                res.json({
+                    question: normalizedResult,
+                    operation: { type: 'normalize' }
+                });
+                break;
+
             default:
                 res.status(400).json({ error: '不支援的運算類型' });
         }
@@ -191,6 +199,9 @@ router.post('/process', (req, res) => {
             case 'find-innermost':
                 result = ExpressionAnalyzer.analyzeBracketLayers(latex);
                 break;
+            case 'normalize':
+                result = ExpressionAnalyzer.normalizePolynomial(latex);
+                break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }
@@ -269,6 +280,14 @@ router.post('/check-operation', (req, res) => {
                 // 檢查是否包含指數和運算符
                 available = (latex.includes('^') || latex.includes('\\sqrt')) && 
                            (latex.includes('\\times') || latex.includes('\\div'));
+                break;
+            case 'normalize':
+                try {
+                    const normalizedResult = ExpressionAnalyzer.normalizePolynomial(latex);
+                    available = !!normalizedResult;
+                } catch (error) {
+                    available = false;
+                }
                 break;
             default:
                 available = false;
