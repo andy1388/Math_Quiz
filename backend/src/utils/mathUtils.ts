@@ -1780,7 +1780,8 @@ export const ExpressionAnalyzer = {
         // 扫描找到所有括号层级
         for (let i = 0; i < expr.length; i++) {
             const char = expr[i];
-            if (char === '(' || char === '（' || char === '[') {
+            // 处理左括号 (包括圆括号、方括号和大括号)
+            if (char === '(' || char === '（' || char === '[' || char === '{') {
                 currentDepth++;
                 openBrackets.push(i);
                 console.log(`Found opening bracket '${char}' at ${i}, depth: ${currentDepth}`);
@@ -1789,7 +1790,8 @@ export const ExpressionAnalyzer = {
                     maxDepth = currentDepth;
                 }
             } 
-            else if (char === ')' || char === '）' || char === ']') {
+            // 处理右括号 (包括圆括号、方括号和大括号)
+            else if (char === ')' || char === '）' || char === ']' || char === '}') {
                 if (openBrackets.length > 0) {
                     const start = openBrackets.pop()!;
                     const content = expr.substring(start + 1, i);
