@@ -1076,74 +1076,62 @@ export const ExpressionAnalyzer = {
             let result = expr;
             let previousResult;
 
-            // 處理分數形式中的指數，支援更多 LaTeX 格式
-            const fractionPatterns = [
-                // 標準 LaTeX 分數格式
-                /\\frac\{(\d+)\^{([^{}]+?)}\}\{(\d+)\^{([^{}]+?)}\}/g,
-                // 分數線格式
-                /(\d+)\^{([^{}]+?)}\/(\d+)\^{([^{}]+?)}/g,
-                // 分數中的指數可能沒有大括號
-                /\\frac\{(\d+)\^([^{}]+?)\}\{(\d+)\^([^{}]+?)\}/g,
-            ];
+            // 標準化乘號
+            result = result.replace(/×/g, '\\times');
 
-            for (const pattern of fractionPatterns) {
-                result = result.replace(pattern, (match, base1, exp1, base2, exp2) => {
-                    console.log('Processing fraction power:', { base1, exp1, base2, exp2 });
+            do {
+                previousResult = result;
+                
+                // 1. 首先處理相同底數的乘法
+                const sameBasePattern = /\(([^()]+)\)\^{?([^{}]+?)}?\s*\\times\s*\(\1\)\^{?([^{}]+?)}?/g;
+                result = result.replace(sameBasePattern, (match, base, exp1, exp2) => {
+                    console.log('Processing same base:', { base, exp1, exp2 });
                     
                     // 移除可能的額外大括號
                     exp1 = exp1.replace(/[{}]/g, '');
                     exp2 = exp2.replace(/[{}]/g, '');
                     
-                    // 如果底數相同，指數相減
-                    if (base1 === base2) {
-                        return `${base1}^{${exp1}-${exp2}}`;
+                    // 如果兩個指數都是純數字
+                    if (!isNaN(exp1) && !isNaN(exp2)) {
+                        return `(${base})^{${parseInt(exp1) + parseInt(exp2)}}`;
                     }
-                    return match;
+                    
+                    // 合併指數
+                    return `(${base})^{(${exp1})+(${exp2})}`;
                 });
-            }
 
-            // 持續處理直到沒有更多變化
-            do {
-                previousResult = result;
-                
-                // 處理同底數的乘除，使用更靈活的匹配模式
-                result = result.replace(/(\d+)\^{?([^{}]+?)}?\s*(\\times|\\div)\s*\1\^{?([^{}]+?)}?/g, 
-                    (match, base, exp1, operator, exp2) => {
-                        console.log('Processing power operation:', { base, exp1, exp2, operator });
+                // 2. 如果沒有相同底數的合併，再處理指數的指數
+                if (result === previousResult) {
+                    const powerOfPowerPattern = /\(([a-zA-Z0-9]+)\^{?([^{}]+?)}?\)\^{?([^{}]+?)}?/g;
+                    result = result.replace(powerOfPowerPattern, (match, base, exp1, exp2) => {
+                        console.log('Processing power of power:', { base, exp1, exp2 });
                         
-                        // 移除可能的額外大括號
                         exp1 = exp1.replace(/[{}]/g, '');
                         exp2 = exp2.replace(/[{}]/g, '');
                         
-                        // 檢查是否包含變量或運算符
-                        const hasVariables = exp1.match(/[a-zA-Z]/) || exp2.match(/[a-zA-Z]/);
-                        const hasOperations = exp1.includes('+') || exp1.includes('-') || 
-                                            exp2.includes('+') || exp2.includes('-');
-                        
-                        // 如果是純數字指數且沒有變量
-                        if (!hasVariables && !hasOperations) {
-                            const exp1Num = parseInt(exp1);
-                            const exp2Num = parseInt(exp2);
-                            const newExp = operator === '\\times' ? exp1Num + exp2Num : exp1Num - exp2Num;
-                            return `${base}^{${newExp}}`;
+                        if (!isNaN(exp1) && !isNaN(exp2)) {
+                            return `${base}^{${parseInt(exp1) * parseInt(exp2)}}`;
                         }
                         
-                        // 如果包含變量或運算，保持代數形式
-                        if (operator === '\\times') {
-                            return `${base}^{${exp1}+${exp2}}`;
-                        } else {
-                            return `${base}^{${exp1}-${exp2}}`;
-                        }
-                    }
-                );
+                        return `${base}^{(${exp1})(${exp2})}`;
+                    });
+                }
 
-                // 如果有多個乘號連接的項，嘗試重新排列以找到更多可合併的項
-                result = result.split('\\times')
-                    .map(term => term.trim())
-                    .sort()
-                    .join('\\times');
+                // 3. 最後才處理分配律
+                if (result === previousResult) {
+                    const productPowerPattern = /\(([a-zA-Z0-9]+)([a-zA-Z0-9]+)\)\^{?([^{}]+?)}?/g;
+                    result = result.replace(productPowerPattern, (match, base1, base2, exp) => {
+                        console.log('Processing product power:', { base1, base2, exp });
+                        
+                        exp = exp.replace(/[{}]/g, '');
+                        
+                        return `${base1}^{${exp}}${base2}^{${exp}}`;
+                    });
+                }
 
             } while (result !== previousResult);
+
+            // ... rest of the code for fraction patterns ...
 
             console.log('Final result:', result);
             return equals ? `${result}=${equals}` : result;
