@@ -1330,38 +1330,12 @@ export const ExpressionAnalyzer = {
     },
 
     analyzeBrackets(latex: string): BracketInfo {
-        const cleanLatex = this._cleanLatex(latex);
-        const hasBrackets = cleanLatex.includes('(');
-        
-        if (!hasBrackets) {
-            return {
-                hasBrackets: false,
-                bracketCount: 0,
-                needsExpansion: false,
-                bracketTerms: []
-            };
-        }
-
-        // 計算括號對數
-        const bracketCount = (cleanLatex.match(/\(/g) || []).length;
-
-        // 檢查是否需要展開
-        // 如果括號前有係數或變量，則需要展開
-        const needsExpansion = /[0-9a-zA-Z\-]\(/.test(cleanLatex);
-
-        // 提取括號內的項
-        const bracketTerms = [];
-        const bracketPattern = /\((.*?)\)/g;
-        let match;
-        while ((match = bracketPattern.exec(cleanLatex)) !== null) {
-            bracketTerms.push(match[1]);
-        }
-
+        const result = this.analyzeBracketLayers(latex);
         return {
-            hasBrackets,
-            bracketCount,
-            needsExpansion,
-            bracketTerms
+            hasBrackets: result.innermostBrackets.length > 0,
+            bracketCount: result.innermostBrackets.length,
+            needsExpansion: result.innermostBrackets.some(content => /[+\-*\/]/.test(content)),
+            bracketTerms: result.innermostBrackets
         };
     },
 
@@ -1787,7 +1761,7 @@ export const ExpressionAnalyzer = {
     /**
      * 分析括号层级并返回分析结果
      */
-    analyzeBracketLayers(expr: string): string {
+    analyzeBracketLayers(expr: string): { report: string; innermostBrackets: string[] } {
         console.log('\n=== Starting bracket layer analysis ===');
         console.log('Input expression:', expr);
         
@@ -1834,6 +1808,11 @@ export const ExpressionAnalyzer = {
         // 按深度排序
         layers.sort((a, b) => b.depth - a.depth);
 
+        // 获取最内层括号的内容
+        const innermostBrackets = layers
+            .filter(layer => layer.depth === maxDepth)
+            .map(layer => layer.content);
+
         // 生成分析报告
         let report = '括号层级分析:\n';
         let lastDepth = -1;
@@ -1847,7 +1826,10 @@ export const ExpressionAnalyzer = {
         });
 
         console.log(report);
-        return report;
+        return {
+            report,
+            innermostBrackets
+        };
     },
 };
 
