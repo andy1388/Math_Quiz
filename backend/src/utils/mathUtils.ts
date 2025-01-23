@@ -1783,6 +1783,72 @@ export const ExpressionAnalyzer = {
             .replace(/\*+/g, '*')     
             .replace(/^\*|\*$/g, ''); // 移除開頭和結尾的乘號
     },
+
+    /**
+     * 分析括号层级并返回分析结果
+     */
+    analyzeBracketLayers(expr: string): string {
+        console.log('\n=== Starting bracket layer analysis ===');
+        console.log('Input expression:', expr);
+        
+        // 清理表达式
+        expr = expr.trim()
+            .replace(/\s+/g, '')
+            .replace(/\[/g, '(')
+            .replace(/\]/g, ')');
+        console.log('Cleaned expression:', expr);
+        
+        let maxDepth = 0;
+        let currentDepth = 0;
+        let layers: { depth: number; content: string; start: number; end: number }[] = [];
+        let openBrackets: number[] = [];
+
+        // 扫描找到所有括号层级
+        for (let i = 0; i < expr.length; i++) {
+            const char = expr[i];
+            if (char === '(' || char === '（' || char === '[') {
+                currentDepth++;
+                openBrackets.push(i);
+                console.log(`Found opening bracket '${char}' at ${i}, depth: ${currentDepth}`);
+                
+                if (currentDepth > maxDepth) {
+                    maxDepth = currentDepth;
+                }
+            } 
+            else if (char === ')' || char === '）' || char === ']') {
+                if (openBrackets.length > 0) {
+                    const start = openBrackets.pop()!;
+                    const content = expr.substring(start + 1, i);
+                    layers.push({
+                        depth: currentDepth,
+                        content: content,
+                        start: start,
+                        end: i
+                    });
+                    console.log(`Found bracket pair at depth ${currentDepth}: ${content}`);
+                }
+                currentDepth--;
+            }
+        }
+
+        // 按深度排序
+        layers.sort((a, b) => b.depth - a.depth);
+
+        // 生成分析报告
+        let report = '括号层级分析:\n';
+        let lastDepth = -1;
+        
+        layers.forEach(layer => {
+            if (layer.depth !== lastDepth) {
+                report += `\n第 ${layer.depth} 层括号:\n`;
+                lastDepth = layer.depth;
+            }
+            report += `  内容: ${layer.content}\n`;
+        });
+
+        console.log(report);
+        return report;
+    },
 };
 
 // 類型定義
@@ -2303,3 +2369,205 @@ export const NumberCalculator = {
         return expr;
     },
 }; 
+
+/**
+ * 找到最内层括号的内容
+ */
+function findInnermostBracket(expr: string): { content: string; start: number; end: number } | null {
+    console.log('\n=== Starting findInnermostBracket ===');
+    console.log('Input expression:', expr);
+    
+    let maxDepth = 0;
+    let currentDepth = 0;
+    let innermostStart = -1;
+    let innermostEnd = -1;
+    let lastMaxDepthStart = -1;
+
+    // 扫描找到最深层的括号
+    for (let i = 0; i < expr.length; i++) {
+        const char = expr[i];
+        
+        // 处理左括号 (包括方括号)
+        if (char === '(' || char === '（' || char === '[') {
+            currentDepth++;
+            console.log(`Found opening bracket '${char}' at ${i}, currentDepth: ${currentDepth}, maxDepth: ${maxDepth}`);
+            
+            if (currentDepth >= maxDepth) {
+                maxDepth = currentDepth;
+                lastMaxDepthStart = i;
+                console.log(`New max depth bracket found at ${i}, depth: ${maxDepth}`);
+            }
+        } 
+        // 处理右括号 (包括方括号)
+        else if (char === ')' || char === '）' || char === ']') {
+            console.log(`Found closing bracket '${char}' at ${i}, currentDepth: ${currentDepth}, maxDepth: ${maxDepth}`);
+            if (currentDepth === maxDepth && lastMaxDepthStart !== -1) {
+                // 找到一个最深层级的完整括号对
+                innermostStart = lastMaxDepthStart;
+                innermostEnd = i;
+                console.log(`Found complete bracket pair at depth ${maxDepth}: ${innermostStart} to ${i}`);
+                console.log(`Content: ${expr.substring(innermostStart + 1, i)}`);
+                // 不立即退出，继续寻找同深度的其他括号
+            }
+            currentDepth--;
+        }
+    }
+
+    console.log('Scan complete:', {
+        maxDepth,
+        currentDepth,
+        innermostStart,
+        innermostEnd,
+        foundContent: innermostStart !== -1 ? expr.substring(innermostStart + 1, innermostEnd) : 'none'
+    });
+
+    // 如果找到有效的括号
+    if (innermostStart !== -1 && innermostEnd !== -1) {
+        const content = expr.substring(innermostStart + 1, innermostEnd);
+        console.log('Found innermost bracket content:', content);
+        return {
+            content: content,
+            start: innermostStart,
+            end: innermostEnd
+        };
+    }
+
+    console.log('No valid brackets found, returning null');
+    return null;
+}
+
+/**
+ * 检查字符串中是否包含完整的括号对
+ */
+function hasCompleteBrackets(str: string): boolean {
+    console.log('Checking for complete brackets in:', str);
+    let depth = 0;
+    for (let i = 0; i < str.length; i++) {
+        if (str[i] === '(' || str[i] === '（') {
+            depth++;
+        } else if (str[i] === ')' || str[i] === '）') {
+            depth--;
+            if (depth < 0) {
+                console.log('Invalid bracket sequence (too many closing brackets)');
+                return false;
+            }
+        }
+    }
+    const result = depth === 0 && str.includes('(');
+    console.log('Complete brackets check result:', result, 'final depth:', depth);
+    return result;
+}
+
+/**
+ * 计算数字运算
+ */
+export function calculate(expr: string): string {
+    try {
+        console.log('\n=== Starting calculation ===');
+        console.log('Input expression:', expr);
+        
+        // 清理表达式中的空格和替换方括号为圆括号
+        expr = expr.trim()
+            .replace(/\s+/g, '')
+            .replace(/\[/g, '(')
+            .replace(/\]/g, ')');
+        console.log('Cleaned expression:', expr);
+        
+        // 首先处理括号内的运算
+        const bracket = findInnermostBracket(expr);
+        if (bracket) {
+            console.log('Found innermost bracket:', {
+                content: bracket.content,
+                start: bracket.start,
+                end: bracket.end,
+                fullExpr: expr
+            });
+            
+            // 计算括号内的内容
+            const result = NumberCalculator.calculate(bracket.content);
+            console.log('Bracket calculation result:', result);
+            
+            // 替换括号及其内容
+            const newExpr = expr.substring(0, bracket.start) + 
+                          result + 
+                          expr.substring(bracket.end + 1);
+            console.log('New expression after bracket replacement:', newExpr);
+            
+            // 递归处理剩余的括号
+            return calculate(newExpr);
+        }
+
+        console.log('No more brackets, calculating final expression');
+        // 如果没有括号，直接计算
+        return NumberCalculator.calculate(expr);
+    } catch (error) {
+        console.error('Calculation error:', error);
+        throw error;
+    }
+}
+
+/**
+ * 分析括号层级并返回分析结果
+ */
+export function analyzeBracketLayers(expr: string): string {
+    console.log('\n=== Starting bracket layer analysis ===');
+    console.log('Input expression:', expr);
+    
+    // 清理表达式
+    expr = expr.trim()
+        .replace(/\s+/g, '')
+        .replace(/\[/g, '(')
+        .replace(/\]/g, ')');
+    console.log('Cleaned expression:', expr);
+    
+    let maxDepth = 0;
+    let currentDepth = 0;
+    let layers: { depth: number; content: string; start: number; end: number }[] = [];
+    let openBrackets: number[] = [];
+
+    // 扫描找到所有括号层级
+    for (let i = 0; i < expr.length; i++) {
+        const char = expr[i];
+        if (char === '(' || char === '（' || char === '[') {
+            currentDepth++;
+            openBrackets.push(i);
+            console.log(`Found opening bracket '${char}' at ${i}, depth: ${currentDepth}`);
+            
+            if (currentDepth > maxDepth) {
+                maxDepth = currentDepth;
+            }
+        } 
+        else if (char === ')' || char === '）' || char === ']') {
+            if (openBrackets.length > 0) {
+                const start = openBrackets.pop()!;
+                const content = expr.substring(start + 1, i);
+                layers.push({
+                    depth: currentDepth,
+                    content: content,
+                    start: start,
+                    end: i
+                });
+                console.log(`Found bracket pair at depth ${currentDepth}: ${content}`);
+            }
+            currentDepth--;
+        }
+    }
+
+    // 按深度排序
+    layers.sort((a, b) => b.depth - a.depth);
+
+    // 生成分析报告
+    let report = '括号层级分析:\n';
+    let lastDepth = -1;
+    
+    layers.forEach(layer => {
+        if (layer.depth !== lastDepth) {
+            report += `\n第 ${layer.depth} 层括号:\n`;
+            lastDepth = layer.depth;
+        }
+        report += `  内容: ${layer.content}\n`;
+    });
+
+    console.log(report);
+    return report;
+}

@@ -188,6 +188,9 @@ router.post('/process', (req, res) => {
             case 'simplify-one-term':
                 result = ExpressionAnalyzer.simplifyOneTerm(latex);
                 break;
+            case 'find-innermost':
+                result = ExpressionAnalyzer.analyzeBracketLayers(latex);
+                break;
             default:
                 return res.status(400).json({ error: '不支持的操作' });
         }
