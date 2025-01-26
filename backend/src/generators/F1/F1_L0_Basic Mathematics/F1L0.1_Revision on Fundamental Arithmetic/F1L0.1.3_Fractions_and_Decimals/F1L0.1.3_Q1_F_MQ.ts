@@ -2,7 +2,8 @@ import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenera
 import {
     getRandomInt,
     getNonZeroRandomInt,
-    NumberCalculator
+    calculate,
+    LaTeX
 } from '@/utils/mathUtils';
 
 interface FractionOperation {
@@ -51,11 +52,14 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const explanation = this.generateExplanation(operation);
 
         return {
-            content,
+            content: `\\[${content}\\]`,
             correctAnswer,
             wrongAnswers,
             explanation,
-            type: 'text'
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
         };
     }
 
@@ -86,9 +90,9 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const num2 = getNonZeroRandomInt(1, den2 - 1);
         const fraction2 = `\\frac{${num2}}{${den2}}`;
         
-        // 计算结果
+        // 计算结果，使用 calculate 函数
         const calcExpr = `${num1}/${den1} ${isAdd ? '+' : '-'} ${num2}/${den2}`;
-        const result = NumberCalculator.calculate(calcExpr);
+        const result = calculate(calcExpr);
         
         // 将结果转换为LaTeX格式
         const latexResult = this.convertToLatex(result);
@@ -98,17 +102,6 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
             result: latexResult,
             type: isAdd ? 'add' : 'subtract'
         };
-    }
-
-    private convertToLatex(result: string): string {
-        // 处理整数
-        if (!result.includes('/')) {
-            return result;
-        }
-        
-        // 处理分数
-        const [num, den] = result.split('/').map(Number);
-        return `\\frac{${num}}{${den}}`;
     }
 
     private generateLevel2(): FractionOperation {
@@ -124,13 +117,13 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const fraction1 = `${num1}/${den1}`;
         const fraction2 = `${num2}/${den2}`;
         
-        const result = NumberCalculator.calculate(
+        const result = calculate(
             `${fraction1} ${isAdd ? '+' : '-'} ${fraction2}`
         );
 
         return {
-            numbers: [fraction1, fraction2],
-            result,
+            numbers: [`\\frac{${num1}}{${den1}}`, `\\frac{${num2}}{${den2}}`],
+            result: this.convertToLatex(result),
             type: isAdd ? 'add' : 'subtract'
         };
     }
@@ -146,7 +139,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const op2 = operators[getRandomInt(0, 1)];
         
         const expression = `${whole} ${op1} ${fraction1} ${op2} ${fraction2}`;
-        const result = NumberCalculator.calculate(expression);
+        const result = calculate(expression);
 
         return {
             numbers: [whole.toString(), fraction1, fraction2],
@@ -166,7 +159,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const op2 = operators[getRandomInt(0, 1)];
         
         const expression = `${mixed1} ${op1} ${mixed2} ${op2} ${mixed3}`;
-        const result = NumberCalculator.calculate(expression);
+        const result = calculate(expression);
 
         return {
             numbers: [mixed1, mixed2, mixed3],
@@ -181,7 +174,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const fraction2 = this.generateFraction(36);
         
         const expression = `${fraction1} × ${fraction2}`;
-        const result = NumberCalculator.calculate(expression);
+        const result = calculate(expression);
 
         return {
             numbers: [fraction1, fraction2],
@@ -197,7 +190,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const mixed2 = this.generateMixedNumber(5, 30);
         
         const expression = `${fraction1} ÷ (${mixed1} + ${mixed2})`;
-        const result = NumberCalculator.calculate(expression);
+        const result = calculate(expression);
 
         return {
             numbers: [fraction1, mixed1, mixed2],
@@ -212,14 +205,48 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const mixed2 = this.generateMixedNumber(5, 35);
         const mixed3 = this.generateMixedNumber(5, 35);
         
-        const expression = `${mixed1} + ${mixed2} × ${mixed3}`;
-        const result = NumberCalculator.calculate(expression);
+        // 将 LaTeX 格式转换为计算格式
+        const calc1 = this.convertFromLatex(mixed1);
+        const calc2 = this.convertFromLatex(mixed2);
+        const calc3 = this.convertFromLatex(mixed3);
+        
+        const expression = `${calc1} + ${calc2} × ${calc3}`;
+        const result = calculate(expression);
 
         return {
             numbers: [mixed1, mixed2, mixed3],
-            result,
+            result: this.convertToLatex(result),
             type: 'mixed'
         };
+    }
+
+    private convertFromLatex(latex: string): string {
+        // 处理带分数
+        if (latex.includes('\\frac')) {
+            const wholePart = latex.match(/^(-?\d+)/);
+            const fractionPart = latex.match(/\\frac\{(\d+)\}\{(\d+)\}/);
+            
+            if (wholePart && fractionPart) {
+                const whole = parseInt(wholePart[1]);
+                const [_, num, den] = fractionPart;
+                return `${whole} ${num}/${den}`;
+            } else if (fractionPart) {
+                const [_, num, den] = fractionPart;
+                return `${num}/${den}`;
+            }
+        }
+        return latex;
+    }
+
+    private convertToLatex(result: string): string {
+        // 处理整数
+        if (!result.includes('/')) {
+            return result;
+        }
+        
+        // 处理分数
+        const [num, den] = result.split('/').map(Number);
+        return `\\frac{${num}}{${den}}`;
     }
 
     private formatQuestion(operation: FractionOperation): string {
