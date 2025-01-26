@@ -43,14 +43,8 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
             case 7:
                 operation = this.generateLevel7();
                 break;
-            case 8:
-                operation = this.generateLevel8();
-                break;
-            case 9:
-                operation = this.generateLevel9();
-                break;
             default:
-                throw new Error(`不支援的难度等级: ${this.difficulty}`);
+                throw new Error(`不支援的難度等級: ${this.difficulty}`);
         }
 
         // 生成错误答案
@@ -124,9 +118,16 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel5(): NumberOperation {
-        // 混合HCF和LCM计算
-        const num1 = getRandomInt(2, 40);
-        const num2 = getRandomInt(2, 40);
+        // 混合HCF和LCM计算（合并原来的Level 5-7）
+        const difficultyRanges = [
+            { min: 2, max: 40 },  // 原Level 5
+            { min: 2, max: 60 },  // 原Level 6
+            { min: 2, max: 100 }  // 原Level 7
+        ];
+        
+        const range = difficultyRanges[Math.floor(Math.random() * 3)];
+        const num1 = getRandomInt(range.min, range.max);
+        const num2 = getRandomInt(range.min, range.max);
         const hcf = this.calculateHCF(num1, num2);
         const lcm = this.calculateLCM(num1, num2);
         
@@ -138,34 +139,7 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel6(): NumberOperation {
-        // 较大数字的HCF和LCM
-        const num1 = getRandomInt(2, 60);
-        const num2 = getRandomInt(2, 60);
-        const hcf = this.calculateHCF(num1, num2);
-        const lcm = this.calculateLCM(num1, num2);
-        
-        return {
-            numbers: [num1, num2],
-            result: [hcf, lcm],
-            type: 'mixed'
-        };
-    }
-
-    private generateLevel7(): NumberOperation {
-        // 复杂数字组合
-        const num1 = getRandomInt(2, 100);
-        const num2 = getRandomInt(2, 100);
-        const hcf = this.calculateHCF(num1, num2);
-        const lcm = this.calculateLCM(num1, num2);
-        
-        return {
-            numbers: [num1, num2],
-            result: [hcf, lcm],
-            type: 'mixed'
-        };
-    }
-
-    private generateLevel8(): NumberOperation {
+        // 将原来的Level 8改为Level 6
         // 倍数或因数的求和应用
         const isMultipleSum = Math.random() < 0.5;
         
@@ -196,7 +170,8 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
         }
     }
 
-    private generateLevel9(): NumberOperation {
+    private generateLevel7(): NumberOperation {
+        // 将原来的Level 9改为Level 7
         // 因数或倍数的乘积应用
         const isFactorProduct = Math.random() < 0.5;
         
