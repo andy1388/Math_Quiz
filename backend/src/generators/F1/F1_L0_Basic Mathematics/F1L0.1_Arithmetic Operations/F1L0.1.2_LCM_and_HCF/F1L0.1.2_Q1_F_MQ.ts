@@ -98,10 +98,10 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
         // 基础HCF计算
         let num1, num2, hcf;
         do {
-            num1 = getRandomInt(2, 30);
-            num2 = getRandomInt(2, 30);
-            hcf = this.calculateHCF(Math.abs(num1), Math.abs(num2)); // 使用绝对值计算
-        } while (hcf <= 0); // 确保HCF为正数
+            num1 = Math.abs(getRandomInt(2, 30)); // 直接使用绝对值
+            num2 = Math.abs(getRandomInt(2, 30));
+            hcf = this.calculateHCF(num1, num2);
+        } while (hcf <= 1); // 确保HCF大于1，使题目更有意义
         
         return {
             numbers: [num1, num2],
@@ -166,29 +166,64 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel8(): NumberOperation {
-        // 倍数求和应用
-        const number = getRandomInt(2, 12);
-        const multiples = Array.from({length: 5}, (_, i) => number * (i + 1));
-        const sum = multiples.reduce((a, b) => a + b, 0);
+        // 倍数或因数的求和应用
+        const isMultipleSum = Math.random() < 0.5;
         
-        return {
-            numbers: [number],
-            result: [sum],
-            type: 'sum'
-        };
+        if (isMultipleSum) {
+            // 倍数求和
+            const number = getRandomInt(2, 12);
+            const count = getRandomInt(3, 6); // 随机选择求前3-6个倍数的和
+            const multiples = Array.from({length: count}, (_, i) => number * (i + 1));
+            const sum = multiples.reduce((a, b) => a + b, 0);
+            
+            return {
+                numbers: [number, count], // 保存数字和需要计算的倍数个数
+                result: [sum],
+                type: 'sum'
+            };
+        } else {
+            // 部分因数求和
+            const number = getRandomInt(12, 30); // 选择较大的数以有更多因数
+            const factors = this.getFactors(number);
+            const selectedFactors = factors.filter(f => f <= 10); // 只求10以内的因数之和
+            const sum = selectedFactors.reduce((a, b) => a + b, 0);
+            
+            return {
+                numbers: [number],
+                result: [sum],
+                type: 'sum'
+            };
+        }
     }
 
     private generateLevel9(): NumberOperation {
-        // 因数乘积应用
-        const number = getRandomInt(10, 30);
-        const factors = this.getFactors(number);
-        const product = factors.reduce((a, b) => a * b, 1);
+        // 因数或倍数的乘积应用
+        const isFactorProduct = Math.random() < 0.5;
         
-        return {
-            numbers: [number],
-            result: [product],
-            type: 'product'
-        };
+        if (isFactorProduct) {
+            // 因数乘积
+            const number = getRandomInt(10, 30);
+            const factors = this.getFactors(number);
+            const product = factors.reduce((a, b) => a * b, 1);
+            
+            return {
+                numbers: [number],
+                result: [product],
+                type: 'product'
+            };
+        } else {
+            // 连续倍数乘积
+            const number = getRandomInt(2, 8); // 选择较小的数
+            const count = getRandomInt(2, 4); // 随机选择求前2-4个倍数的乘积
+            const multiples = Array.from({length: count}, (_, i) => number * (i + 1));
+            const product = multiples.reduce((a, b) => a * b, 1);
+            
+            return {
+                numbers: [number, count], // 保存数字和需要计算的倍数个数
+                result: [product],
+                type: 'product'
+            };
+        }
     }
 
     private calculateHCF(a: number, b: number): number {
@@ -227,8 +262,14 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
             case 'mixed':
                 return `求${operation.numbers[0]}和${operation.numbers[1]}的最大公因數和最小公倍數。`;
             case 'sum':
-                return `求${operation.numbers[0]}的前五個倍數之和。`;
+                if (operation.numbers.length > 1) {
+                    return `求${operation.numbers[0]}的前${operation.numbers[1]}個倍數之和。`;
+                }
+                return `求${operation.numbers[0]}的10以內所有因數之和。`;
             case 'product':
+                if (operation.numbers.length > 1) {
+                    return `求${operation.numbers[0]}的前${operation.numbers[1]}個倍數的乘積。`;
+                }
                 return `求${operation.numbers[0]}的所有因數的乘積。`;
             default:
                 throw new Error('未知的運算類型');
@@ -371,19 +412,41 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
                 break;
 
             case 'sum':
-                const multiples = Array.from({length: 5}, (_, i) => operation.numbers[0] * (i + 1));
-                steps.push(
-                    `1. 列出${operation.numbers[0]}的前五個倍數：${multiples.join(', ')}<br>`,
-                    `2. 計算這些數的和：${multiples.join(' + ')} = ${(operation.result as number[])[0]}`
-                );
+                if (operation.numbers.length > 1) {
+                    // 倍数求和
+                    const count = operation.numbers[1];
+                    const multiples = Array.from({length: count}, (_, i) => operation.numbers[0] * (i + 1));
+                    steps.push(
+                        `1. 列出${operation.numbers[0]}的前${count}個倍數：${multiples.join(', ')}<br>`,
+                        `2. 計算這些數的和：${multiples.join(' + ')} = ${(operation.result as number[])[0]}`
+                    );
+                } else {
+                    // 因数求和
+                    const factors = this.getFactors(operation.numbers[0]).filter(f => f <= 10);
+                    steps.push(
+                        `1. 找出${operation.numbers[0]}的10以內的因數：${factors.join(', ')}<br>`,
+                        `2. 計算這些因數的和：${factors.join(' + ')} = ${(operation.result as number[])[0]}`
+                    );
+                }
                 break;
 
             case 'product':
-                const factors = this.getFactors(operation.numbers[0]);
-                steps.push(
-                    `1. 找出${operation.numbers[0]}的所有因數：${factors.join(', ')}<br>`,
-                    `2. 計算這些數的乘積：${factors.join(' × ')} = ${(operation.result as number[])[0]}`
-                );
+                if (operation.numbers.length > 1) {
+                    // 倍数乘积
+                    const count = operation.numbers[1];
+                    const multiples = Array.from({length: count}, (_, i) => operation.numbers[0] * (i + 1));
+                    steps.push(
+                        `1. 列出${operation.numbers[0]}的前${count}個倍數：${multiples.join(', ')}<br>`,
+                        `2. 計算這些數的乘積：${multiples.join(' × ')} = ${(operation.result as number[])[0]}`
+                    );
+                } else {
+                    // 因数乘积
+                    const factors = this.getFactors(operation.numbers[0]);
+                    steps.push(
+                        `1. 找出${operation.numbers[0]}的所有因數：${factors.join(', ')}<br>`,
+                        `2. 計算這些因數的乘積：${factors.join(' × ')} = ${(operation.result as number[])[0]}`
+                    );
+                }
                 break;
         }
         
