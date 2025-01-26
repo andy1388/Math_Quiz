@@ -88,54 +88,120 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
         };
     }
 
+    private getUniqueNumbers(min: number, max: number, count: number): number[] {
+        const numbers: number[] = [];
+        while (numbers.length < count) {
+            const num = Math.abs(getRandomInt(min, max));
+            if (!numbers.includes(num)) {
+                numbers.push(num);
+            }
+        }
+        return numbers;
+    }
+
     private generateLevel3(): NumberOperation {
-        // 基础HCF计算
-        let num1, num2, hcf;
-        do {
-            num1 = Math.abs(getRandomInt(2, 30)); // 直接使用绝对值
-            num2 = Math.abs(getRandomInt(2, 30));
-            hcf = this.calculateHCF(num1, num2);
-        } while (hcf <= 1); // 确保HCF大于1，使题目更有意义
+        // 基础HCF和LCM计算（三个数）
+        const isThreeNumbers = Math.random() < 0.3; // 30%概率生成三个数的题目
         
-        return {
-            numbers: [num1, num2],
-            result: [hcf],
-            type: 'hcf'
-        };
+        if (isThreeNumbers) {
+            let numbers: number[], hcf: number, lcm: number;
+            do {
+                numbers = this.getUniqueNumbers(2, 20, 3);
+                hcf = this.calculateHCFForThree(numbers[0], numbers[1], numbers[2]);
+                lcm = this.calculateLCMForThree(numbers[0], numbers[1], numbers[2]);
+            } while (hcf <= 1 || lcm > 200);
+            
+            const isHCF = Math.random() < 0.5;
+            
+            return {
+                numbers: numbers,
+                result: [isHCF ? hcf : lcm],
+                type: isHCF ? 'hcf' : 'lcm'
+            };
+        } else {
+            let numbers: number[], hcf: number;
+            do {
+                numbers = this.getUniqueNumbers(2, 30, 2);
+                hcf = this.calculateHCF(numbers[0], numbers[1]);
+            } while (hcf <= 1);
+            
+            return {
+                numbers: numbers,
+                result: [hcf],
+                type: 'hcf'
+            };
+        }
     }
 
     private generateLevel4(): NumberOperation {
         // 基础LCM计算
-        const num1 = getRandomInt(2, 30);
-        const num2 = getRandomInt(2, 30);
-        const lcm = this.calculateLCM(num1, num2);
+        const isThreeNumbers = Math.random() < 0.3;
         
-        return {
-            numbers: [num1, num2],
-            result: [lcm],
-            type: 'lcm'
-        };
+        if (isThreeNumbers) {
+            let numbers: number[], lcm: number;
+            do {
+                numbers = this.getUniqueNumbers(2, 20, 3);
+                lcm = this.calculateLCMForThree(numbers[0], numbers[1], numbers[2]);
+            } while (lcm > 200);
+            
+            return {
+                numbers: numbers,
+                result: [lcm],
+                type: 'lcm'
+            };
+        } else {
+            let numbers: number[], lcm: number;
+            do {
+                numbers = this.getUniqueNumbers(2, 30, 2);
+                lcm = this.calculateLCM(numbers[0], numbers[1]);
+            } while (lcm > 300);
+            
+            return {
+                numbers: numbers,
+                result: [lcm],
+                type: 'lcm'
+            };
+        }
     }
 
     private generateLevel5(): NumberOperation {
-        // 混合HCF和LCM计算（合并原来的Level 5-7）
+        // 混合HCF和LCM计算
+        const isThreeNumbers = Math.random() < 0.3;
         const difficultyRanges = [
-            { min: 2, max: 40 },  // 原Level 5
-            { min: 2, max: 60 },  // 原Level 6
-            { min: 2, max: 100 }  // 原Level 7
+            { min: 2, max: 40 },
+            { min: 2, max: 60 },
+            { min: 2, max: 100 }
         ];
         
         const range = difficultyRanges[Math.floor(Math.random() * 3)];
-        const num1 = getRandomInt(range.min, range.max);
-        const num2 = getRandomInt(range.min, range.max);
-        const hcf = this.calculateHCF(num1, num2);
-        const lcm = this.calculateLCM(num1, num2);
         
-        return {
-            numbers: [num1, num2],
-            result: [hcf, lcm],
-            type: 'mixed'
-        };
+        if (isThreeNumbers) {
+            let numbers: number[], hcf: number, lcm: number;
+            do {
+                numbers = this.getUniqueNumbers(range.min, Math.min(range.max, 30), 3);
+                hcf = this.calculateHCFForThree(numbers[0], numbers[1], numbers[2]);
+                lcm = this.calculateLCMForThree(numbers[0], numbers[1], numbers[2]);
+            } while (hcf <= 1 || lcm > 500);
+            
+            return {
+                numbers: numbers,
+                result: [hcf, lcm],
+                type: 'mixed'
+            };
+        } else {
+            let numbers: number[], hcf: number, lcm: number;
+            do {
+                numbers = this.getUniqueNumbers(range.min, range.max, 2);
+                hcf = this.calculateHCF(numbers[0], numbers[1]);
+                lcm = this.calculateLCM(numbers[0], numbers[1]);
+            } while (hcf <= 1 || lcm > 1000);
+            
+            return {
+                numbers: numbers,
+                result: [hcf, lcm],
+                type: 'mixed'
+            };
+        }
     }
 
     private generateLevel6(): NumberOperation {
@@ -214,6 +280,14 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
         return Math.abs(a * b) / this.calculateHCF(a, b);
     }
 
+    private calculateHCFForThree(a: number, b: number, c: number): number {
+        return this.calculateHCF(this.calculateHCF(a, b), c);
+    }
+
+    private calculateLCMForThree(a: number, b: number, c: number): number {
+        return this.calculateLCM(this.calculateLCM(a, b), c);
+    }
+
     private getFactors(n: number): number[] {
         const factors: number[] = [];
         for (let i = 1; i <= n; i++) {
@@ -231,10 +305,19 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
             case 'factors':
                 return `求${operation.numbers[0]}的所有因數。`;
             case 'hcf':
+                if (operation.numbers.length === 3) {
+                    return `求${operation.numbers[0]}、${operation.numbers[1]}和${operation.numbers[2]}的最大公因數。`;
+                }
                 return `求${operation.numbers[0]}和${operation.numbers[1]}的最大公因數。`;
             case 'lcm':
+                if (operation.numbers.length === 3) {
+                    return `求${operation.numbers[0]}、${operation.numbers[1]}和${operation.numbers[2]}的最小公倍數。`;
+                }
                 return `求${operation.numbers[0]}和${operation.numbers[1]}的最小公倍數。`;
             case 'mixed':
+                if (operation.numbers.length === 3) {
+                    return `求${operation.numbers[0]}、${operation.numbers[1]}和${operation.numbers[2]}的最大公因數和最小公倍數。`;
+                }
                 return `求${operation.numbers[0]}和${operation.numbers[1]}的最大公因數和最小公倍數。`;
             case 'sum':
                 if (operation.numbers.length > 1) {
@@ -357,33 +440,68 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
                 break;
                 
             case 'hcf':
-                steps.push(
-                    `1. 找出${operation.numbers[0]}的所有因數：${this.getFactors(operation.numbers[0]).join(', ')}<br>`,
-                    `2. 找出${operation.numbers[1]}的所有因數：${this.getFactors(operation.numbers[1]).join(', ')}<br>`,
-                    `3. 找出兩數的共同因數<br>`,
-                    `4. 最大公因數是：${(operation.result as number[])[0]}`
-                );
+                if (operation.numbers.length === 3) {
+                    steps.push(
+                        `1. 找出${operation.numbers[0]}的所有因數：${this.getFactors(operation.numbers[0]).join(', ')}<br>`,
+                        `2. 找出${operation.numbers[1]}的所有因數：${this.getFactors(operation.numbers[1]).join(', ')}<br>`,
+                        `3. 找出${operation.numbers[2]}的所有因數：${this.getFactors(operation.numbers[2]).join(', ')}<br>`,
+                        `4. 找出三個數的共同因數<br>`,
+                        `5. 最大公因數是：${(operation.result as number[])[0]}`
+                    );
+                } else {
+                    steps.push(
+                        `1. 找出${operation.numbers[0]}的所有因數：${this.getFactors(operation.numbers[0]).join(', ')}<br>`,
+                        `2. 找出${operation.numbers[1]}的所有因數：${this.getFactors(operation.numbers[1]).join(', ')}<br>`,
+                        `3. 找出兩數的共同因數<br>`,
+                        `4. 最大公因數是：${(operation.result as number[])[0]}`
+                    );
+                }
                 break;
 
             case 'lcm':
-                steps.push(
-                    `1. 列出${operation.numbers[0]}的倍數：${operation.numbers[0]}, ${operation.numbers[0]*2}, ${operation.numbers[0]*3}, ...<br>`,
-                    `2. 列出${operation.numbers[1]}的倍數：${operation.numbers[1]}, ${operation.numbers[1]*2}, ${operation.numbers[1]*3}, ...<br>`,
-                    `3. 找出兩數的共同倍數<br>`,
-                    `4. 最小公倍數是：${(operation.result as number[])[0]}`
-                );
+                if (operation.numbers.length === 3) {
+                    steps.push(
+                        `1. 列出${operation.numbers[0]}的倍數：${operation.numbers[0]}, ${operation.numbers[0]*2}, ${operation.numbers[0]*3}, ...<br>`,
+                        `2. 列出${operation.numbers[1]}的倍數：${operation.numbers[1]}, ${operation.numbers[1]*2}, ${operation.numbers[1]*3}, ...<br>`,
+                        `3. 列出${operation.numbers[2]}的倍數：${operation.numbers[2]}, ${operation.numbers[2]*2}, ${operation.numbers[2]*3}, ...<br>`,
+                        `4. 找出三個數的共同倍數<br>`,
+                        `5. 最小公倍數是：${(operation.result as number[])[0]}`
+                    );
+                } else {
+                    steps.push(
+                        `1. 列出${operation.numbers[0]}的倍數：${operation.numbers[0]}, ${operation.numbers[0]*2}, ${operation.numbers[0]*3}, ...<br>`,
+                        `2. 列出${operation.numbers[1]}的倍數：${operation.numbers[1]}, ${operation.numbers[1]*2}, ${operation.numbers[1]*3}, ...<br>`,
+                        `3. 找出兩數的共同倍數<br>`,
+                        `4. 最小公倍數是：${(operation.result as number[])[0]}`
+                    );
+                }
                 break;
 
             case 'mixed':
                 const [hcf, lcm] = operation.result as number[];
-                steps.push(
-                    '求最大公因數：<br>',
-                    `1. 找出${operation.numbers[0]}和${operation.numbers[1]}的共同因數<br>`,
-                    `2. 最大公因數(H.C.F.)是：${hcf}<br>`,
-                    '求最小公倍數：<br>',
-                    `3. 找出${operation.numbers[0]}和${operation.numbers[1]}的共同倍數<br>`,
-                    `4. 最小公倍數(L.C.M.)是：${lcm}`
-                );
+                if (operation.numbers.length === 3) {
+                    steps.push(
+                        '求最大公因數：<br>',
+                        `1. 找出${operation.numbers[0]}的所有因數：${this.getFactors(operation.numbers[0]).join(', ')}<br>`,
+                        `2. 找出${operation.numbers[1]}的所有因數：${this.getFactors(operation.numbers[1]).join(', ')}<br>`,
+                        `3. 找出${operation.numbers[2]}的所有因數：${this.getFactors(operation.numbers[2]).join(', ')}<br>`,
+                        `4. 找出三個數的共同因數<br>`,
+                        `5. 最大公因數(H.C.F.)是：${hcf}<br>`,
+                        '求最小公倍數：<br>',
+                        `6. 列出各數的倍數<br>`,
+                        `7. 找出三個數的共同倍數<br>`,
+                        `8. 最小公倍數(L.C.M.)是：${lcm}`
+                    );
+                } else {
+                    steps.push(
+                        '求最大公因數：<br>',
+                        `1. 找出${operation.numbers[0]}和${operation.numbers[1]}的共同因數<br>`,
+                        `2. 最大公因數(H.C.F.)是：${hcf}<br>`,
+                        '求最小公倍數：<br>',
+                        `3. 找出${operation.numbers[0]}和${operation.numbers[1]}的共同倍數<br>`,
+                        `4. 最小公倍數(L.C.M.)是：${lcm}`
+                    );
+                }
                 break;
 
             case 'sum':
