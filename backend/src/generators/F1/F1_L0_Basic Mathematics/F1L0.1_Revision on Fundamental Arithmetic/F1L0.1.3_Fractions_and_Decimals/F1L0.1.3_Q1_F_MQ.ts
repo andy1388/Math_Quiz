@@ -2,7 +2,7 @@ import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenera
 import {
     getRandomInt,
     getNonZeroRandomInt,
-    calculate,
+    NumberCalculator,
     LaTeX
 } from '@/utils/mathUtils';
 
@@ -77,35 +77,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
     }
 
     private generateLevel1(): FractionOperation {
-        // 基础分数加减
-        const isAdd = Math.random() < 0.5;
-        
-        // 生成第一个分数
-        const den1 = getNonZeroRandomInt(2, 25);
-        const num1 = getNonZeroRandomInt(1, den1 - 1);
-        const fraction1 = `\\frac{${num1}}{${den1}}`;
-        
-        // 生成第二个分数
-        const den2 = getNonZeroRandomInt(2, 25);
-        const num2 = getNonZeroRandomInt(1, den2 - 1);
-        const fraction2 = `\\frac{${num2}}{${den2}}`;
-        
-        // 计算结果，使用 calculate 函数
-        const calcExpr = `${num1}/${den1} ${isAdd ? '+' : '-'} ${num2}/${den2}`;
-        const result = calculate(calcExpr);
-        
-        // 将结果转换为LaTeX格式
-        const latexResult = this.convertToLatex(result);
-
-        return {
-            numbers: [fraction1, fraction2],
-            result: latexResult,
-            type: isAdd ? 'add' : 'subtract'
-        };
-    }
-
-    private generateLevel2(): FractionOperation {
-        // 需要通分的加减
+        // 需要通分的加減（原本的Level 2）
         const denominators = [2, 3, 4, 5, 6, 8, 9, 12, 15, 16];
         const den1 = denominators[getRandomInt(0, denominators.length - 1)];
         const den2 = denominators[getRandomInt(0, denominators.length - 1)];
@@ -117,12 +89,34 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const fraction1 = `${num1}/${den1}`;
         const fraction2 = `${num2}/${den2}`;
         
-        const result = calculate(
+        const result = NumberCalculator.calculate(
             `${fraction1} ${isAdd ? '+' : '-'} ${fraction2}`
         );
 
         return {
             numbers: [`\\frac{${num1}}{${den1}}`, `\\frac{${num2}}{${den2}}`],
+            result: this.convertToLatex(result),
+            type: isAdd ? 'add' : 'subtract'
+        };
+    }
+
+    private generateLevel2(): FractionOperation {
+        // 基础分数加减（原本的Level 1）
+        const isAdd = Math.random() < 0.5;
+        
+        const den1 = getNonZeroRandomInt(2, 25);
+        const num1 = getNonZeroRandomInt(1, den1 - 1);
+        const fraction1 = `\\frac{${num1}}{${den1}}`;
+        
+        const den2 = getNonZeroRandomInt(2, 25);
+        const num2 = getNonZeroRandomInt(1, den2 - 1);
+        const fraction2 = `\\frac{${num2}}{${den2}}`;
+        
+        const calcExpr = `${num1}/${den1} ${isAdd ? '+' : '-'} ${num2}/${den2}`;
+        const result = NumberCalculator.calculate(calcExpr);
+        
+        return {
+            numbers: [fraction1, fraction2],
             result: this.convertToLatex(result),
             type: isAdd ? 'add' : 'subtract'
         };
@@ -139,7 +133,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const op2 = operators[getRandomInt(0, 1)];
         
         const expression = `${whole} ${op1} ${fraction1} ${op2} ${fraction2}`;
-        const result = calculate(expression);
+        const result = NumberCalculator.calculate(expression);
 
         return {
             numbers: [whole.toString(), fraction1, fraction2],
@@ -159,7 +153,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const op2 = operators[getRandomInt(0, 1)];
         
         const expression = `${mixed1} ${op1} ${mixed2} ${op2} ${mixed3}`;
-        const result = calculate(expression);
+        const result = NumberCalculator.calculate(expression);
 
         return {
             numbers: [mixed1, mixed2, mixed3],
@@ -174,7 +168,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const fraction2 = this.generateFraction(36);
         
         const expression = `${fraction1} × ${fraction2}`;
-        const result = calculate(expression);
+        const result = NumberCalculator.calculate(expression);
 
         return {
             numbers: [fraction1, fraction2],
@@ -190,7 +184,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const mixed2 = this.generateMixedNumber(5, 30);
         
         const expression = `${fraction1} ÷ (${mixed1} + ${mixed2})`;
-        const result = calculate(expression);
+        const result = NumberCalculator.calculate(expression);
 
         return {
             numbers: [fraction1, mixed1, mixed2],
@@ -211,7 +205,7 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
         const calc3 = this.convertFromLatex(mixed3);
         
         const expression = `${calc1} + ${calc2} × ${calc3}`;
-        const result = calculate(expression);
+        const result = NumberCalculator.calculate(expression);
 
         return {
             numbers: [mixed1, mixed2, mixed3],
@@ -321,37 +315,42 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
             case 'subtract':
                 steps.push(
                     '1. 通分：找出分母的最小公倍數<br>',
+                    `\\[${operation.numbers[0]} ${operation.type === 'add' ? '+' : '-'} ${operation.numbers[1]}\\]`,
                     '2. 將分子乘以相應的數<br>',
+                    `\\[\\text{通分後：}${this.convertToLatex(operation.result)}\\]`,
                     '3. 進行加減運算<br>',
                     '4. 化簡結果<br>',
-                    `答案：${operation.result}`
+                    `\\[\\text{答案：}${operation.result}\\]`
                 );
                 break;
                 
             case 'multiply':
                 steps.push(
                     '1. 分子相乘<br>',
+                    `\\[${operation.numbers[0]} \\times ${operation.numbers[1]}\\]`,
                     '2. 分母相乘<br>',
                     '3. 約分化簡<br>',
-                    `答案：${operation.result}`
+                    `\\[\\text{答案：}${operation.result}\\]`
                 );
                 break;
                 
             case 'divide':
                 steps.push(
                     '1. 先計算括號內的加法<br>',
+                    `\\[${operation.numbers[0]} \\div (${operation.numbers[1]} + ${operation.numbers[2]})\\]`,
                     '2. 除法轉換為乘以倒數<br>',
                     '3. 約分化簡<br>',
-                    `答案：${operation.result}`
+                    `\\[\\text{答案：}${operation.result}\\]`
                 );
                 break;
                 
             case 'mixed':
                 steps.push(
                     '1. 將帶分數轉換為假分數<br>',
+                    `\\[${operation.numbers.join(' ')}\\]`,
                     '2. 按運算順序進行計算<br>',
                     '3. 約分並轉換為帶分數<br>',
-                    `答案：${operation.result}`
+                    `\\[\\text{答案：}${operation.result}\\]`
                 );
                 break;
         }
