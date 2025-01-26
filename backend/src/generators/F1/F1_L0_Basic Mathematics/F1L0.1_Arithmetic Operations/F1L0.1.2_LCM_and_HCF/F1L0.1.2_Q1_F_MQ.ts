@@ -96,9 +96,12 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
 
     private generateLevel3(): NumberOperation {
         // 基础HCF计算
-        const num1 = getRandomInt(2, 30);
-        const num2 = getRandomInt(2, 30);
-        const hcf = this.calculateHCF(num1, num2);
+        let num1, num2, hcf;
+        do {
+            num1 = getRandomInt(2, 30);
+            num2 = getRandomInt(2, 30);
+            hcf = this.calculateHCF(Math.abs(num1), Math.abs(num2)); // 使用绝对值计算
+        } while (hcf <= 0); // 确保HCF为正数
         
         return {
             numbers: [num1, num2],
@@ -214,28 +217,28 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
     private formatQuestion(operation: NumberOperation): string {
         switch (operation.type) {
             case 'multiples':
-                return `求${operation.numbers[0]}的前四个倍数。`;
+                return `求${operation.numbers[0]}的前四個倍數。`;
             case 'factors':
-                return `求${operation.numbers[0]}的所有因数。`;
+                return `求${operation.numbers[0]}的所有因數。`;
             case 'hcf':
-                return `求${operation.numbers[0]}和${operation.numbers[1]}的最大公约数。`;
+                return `求${operation.numbers[0]}和${operation.numbers[1]}的最大公因數。`;
             case 'lcm':
-                return `求${operation.numbers[0]}和${operation.numbers[1]}的最小公倍数。`;
+                return `求${operation.numbers[0]}和${operation.numbers[1]}的最小公倍數。`;
             case 'mixed':
-                return `求${operation.numbers[0]}和${operation.numbers[1]}的最大公约数和最小公倍数。`;
+                return `求${operation.numbers[0]}和${operation.numbers[1]}的最大公因數和最小公倍數。`;
             case 'sum':
-                return `求${operation.numbers[0]}的前五个倍数之和。`;
+                return `求${operation.numbers[0]}的前五個倍數之和。`;
             case 'product':
-                return `求${operation.numbers[0]}的所有因数的乘积。`;
+                return `求${operation.numbers[0]}的所有因數的乘積。`;
             default:
-                throw new Error('未知的运算类型');
+                throw new Error('未知的運算類型');
         }
     }
 
     private formatAnswer(operation: NumberOperation): string {
         if (Array.isArray(operation.result)) {
             if (operation.type === 'mixed') {
-                return `HCF=${operation.result[0]}, LCM=${operation.result[1]}`;
+                return `H.C.F.=${operation.result[0]}, L.C.M.=${operation.result[1]}`;
             }
             return operation.result.join(', ');
         }
@@ -251,12 +254,37 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
             
             switch (operation.type) {
                 case 'multiples':
+                    // 生成更具迷惑性的错误倍数
+                    const number = operation.numbers[0];
+                    const wrongTypes = [
+                        // 从0开始计算的倍数
+                        [0, number, number * 2, number * 3],
+                        // 跳过一个倍数
+                        [number, number * 2, number * 4, number * 5],
+                        // 算错一个数字的倍数
+                        [number, number * 2, number * 3 + 1, number * 4],
+                        // 递增数列（不是倍数）
+                        [number, number + number, number + number + number, number + number + number + number]
+                    ];
+                    const randomType = wrongTypes[Math.floor(Math.random() * wrongTypes.length)];
+                    wrongAnswer = randomType.join(', ');
+                    break;
+                    
                 case 'factors':
-                    // 生成错误的数列
-                    const numbers = (operation.result as number[]).map(n => 
-                        n + getNonZeroRandomInt(-2, 2)
-                    );
-                    wrongAnswer = numbers.join(', ');
+                    // 生成更具迷惑性的错误因数
+                    const factors = operation.result as number[];
+                    const wrongFactorTypes = [
+                        // 包含不是因数的数
+                        [...factors, factors[factors.length - 1] + 1],
+                        // 遗漏某个因数
+                        factors.filter((_, i) => i !== Math.floor(factors.length / 2)),
+                        // 包含附近的数字
+                        [...factors.slice(0, -1), factors[factors.length - 1] + 2],
+                        // 把某个因数算错
+                        factors.map((f, i) => i === factors.length - 2 ? f + 1 : f)
+                    ];
+                    const randomFactorType = wrongFactorTypes[Math.floor(Math.random() * wrongFactorTypes.length)];
+                    wrongAnswer = randomFactorType.join(', ');
                     break;
                     
                 case 'hcf':
@@ -267,9 +295,9 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
                     break;
                     
                 case 'mixed':
-                    // 生成错误的HCF和LCM组合
+                    // 生成错误的HCF和LCM组合，使用新格式
                     const [hcf, lcm] = operation.result as number[];
-                    wrongAnswer = `HCF=${hcf + getNonZeroRandomInt(-2, 2)}, LCM=${lcm + getNonZeroRandomInt(-10, 10)}`;
+                    wrongAnswer = `H.C.F.=${hcf + getNonZeroRandomInt(-2, 2)}, L.C.M.=${lcm + getNonZeroRandomInt(-10, 10)}`;
                     break;
                     
                 case 'sum':
@@ -280,7 +308,7 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
                     break;
                     
                 default:
-                    throw new Error('未知的运算类型');
+                    throw new Error('未知的運算類型');
             }
             
             if (!wrongAnswers.includes(wrongAnswer) && wrongAnswer !== correctAnswer) {
@@ -297,24 +325,66 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
         switch (operation.type) {
             case 'multiples':
                 steps.push(
-                    '解题步骤：',
-                    `1. ${operation.numbers[0]}的第一个倍数是：${operation.numbers[0]} × 1 = ${operation.numbers[0]}`,
-                    `2. ${operation.numbers[0]}的第二个倍数是：${operation.numbers[0]} × 2 = ${operation.numbers[0] * 2}`,
-                    `3. ${operation.numbers[0]}的第三个倍数是：${operation.numbers[0]} × 3 = ${operation.numbers[0] * 3}`,
-                    `4. ${operation.numbers[0]}的第四个倍数是：${operation.numbers[0]} × 4 = ${operation.numbers[0] * 4}`
+                    `1. ${operation.numbers[0]}的第一個倍數是：${operation.numbers[0]} × 1 = ${operation.numbers[0]}<br>`,
+                    `2. ${operation.numbers[0]}的第二個倍數是：${operation.numbers[0]} × 2 = ${operation.numbers[0] * 2}<br>`,
+                    `3. ${operation.numbers[0]}的第三個倍數是：${operation.numbers[0]} × 3 = ${operation.numbers[0] * 3}<br>`,
+                    `4. ${operation.numbers[0]}的第四個倍數是：${operation.numbers[0]} × 4 = ${operation.numbers[0] * 4}`
                 );
                 break;
                 
             case 'factors':
                 steps.push(
-                    '解题步骤：',
-                    `1. 找出${operation.numbers[0]}的所有因数：`,
-                    `2. 从1开始尝试，如果能整除${operation.numbers[0]}，就是因数`,
-                    `3. ${operation.numbers[0]}的因数有：${(operation.result as number[]).join(', ')}`
+                    `1. 找出${operation.numbers[0]}的所有因數：<br>`,
+                    `2. 從1開始嘗試，如果能整除${operation.numbers[0]}，就是因數<br>`,
+                    `3. ${operation.numbers[0]}的因數有：${(operation.result as number[]).join(', ')}`
                 );
                 break;
                 
-            // ... 其他情况的解释步骤 ...
+            case 'hcf':
+                steps.push(
+                    `1. 找出${operation.numbers[0]}的所有因數：${this.getFactors(operation.numbers[0]).join(', ')}<br>`,
+                    `2. 找出${operation.numbers[1]}的所有因數：${this.getFactors(operation.numbers[1]).join(', ')}<br>`,
+                    `3. 找出兩數的共同因數<br>`,
+                    `4. 最大公因數是：${(operation.result as number[])[0]}`
+                );
+                break;
+
+            case 'lcm':
+                steps.push(
+                    `1. 列出${operation.numbers[0]}的倍數：${operation.numbers[0]}, ${operation.numbers[0]*2}, ${operation.numbers[0]*3}, ...<br>`,
+                    `2. 列出${operation.numbers[1]}的倍數：${operation.numbers[1]}, ${operation.numbers[1]*2}, ${operation.numbers[1]*3}, ...<br>`,
+                    `3. 找出兩數的共同倍數<br>`,
+                    `4. 最小公倍數是：${(operation.result as number[])[0]}`
+                );
+                break;
+
+            case 'mixed':
+                const [hcf, lcm] = operation.result as number[];
+                steps.push(
+                    '求最大公因數：<br>',
+                    `1. 找出${operation.numbers[0]}和${operation.numbers[1]}的共同因數<br>`,
+                    `2. 最大公因數(H.C.F.)是：${hcf}<br>`,
+                    '求最小公倍數：<br>',
+                    `3. 找出${operation.numbers[0]}和${operation.numbers[1]}的共同倍數<br>`,
+                    `4. 最小公倍數(L.C.M.)是：${lcm}`
+                );
+                break;
+
+            case 'sum':
+                const multiples = Array.from({length: 5}, (_, i) => operation.numbers[0] * (i + 1));
+                steps.push(
+                    `1. 列出${operation.numbers[0]}的前五個倍數：${multiples.join(', ')}<br>`,
+                    `2. 計算這些數的和：${multiples.join(' + ')} = ${(operation.result as number[])[0]}`
+                );
+                break;
+
+            case 'product':
+                const factors = this.getFactors(operation.numbers[0]);
+                steps.push(
+                    `1. 找出${operation.numbers[0]}的所有因數：${factors.join(', ')}<br>`,
+                    `2. 計算這些數的乘積：${factors.join(' × ')} = ${(operation.result as number[])[0]}`
+                );
+                break;
         }
         
         return steps.join('\n');
