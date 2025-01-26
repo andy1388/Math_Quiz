@@ -353,16 +353,12 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
             
             switch (operation.type) {
                 case 'multiples':
-                    // 生成更具迷惑性的错误倍数
+                    // 倍数必然为正数，保持不变
                     const number = operation.numbers[0];
                     const wrongTypes = [
-                        // 从0开始计算的倍数
                         [0, number, number * 2, number * 3],
-                        // 跳过一个倍数
                         [number, number * 2, number * 4, number * 5],
-                        // 算错一个数字的倍数
                         [number, number * 2, number * 3 + 1, number * 4],
-                        // 递增数列（不是倍数）
                         [number, number + number, number + number + number, number + number + number + number]
                     ];
                     const randomType = wrongTypes[Math.floor(Math.random() * wrongTypes.length)];
@@ -370,16 +366,12 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
                     break;
                     
                 case 'factors':
-                    // 生成更具迷惑性的错误因数
+                    // 因数列表保持不变，因为已经是正数
                     const factors = operation.result as number[];
                     const wrongFactorTypes = [
-                        // 包含不是因数的数
                         [...factors, factors[factors.length - 1] + 1],
-                        // 遗漏某个因数
                         factors.filter((_, i) => i !== Math.floor(factors.length / 2)),
-                        // 包含附近的数字
                         [...factors.slice(0, -1), factors[factors.length - 1] + 2],
-                        // 把某个因数算错
                         factors.map((f, i) => i === factors.length - 2 ? f + 1 : f)
                     ];
                     const randomFactorType = wrongFactorTypes[Math.floor(Math.random() * wrongFactorTypes.length)];
@@ -388,22 +380,26 @@ export default class F1L0_1_2_Q1_F_MQ extends QuestionGenerator {
                     
                 case 'hcf':
                 case 'lcm':
-                    // 生成接近的错误数字
+                    // 确保结果为正数
                     const baseNum = (operation.result as number[])[0];
-                    wrongAnswer = (baseNum + getNonZeroRandomInt(-5, 5)).toString();
+                    const offset = getNonZeroRandomInt(-Math.min(5, baseNum - 1), 5);
+                    wrongAnswer = Math.max(1, baseNum + offset).toString();
                     break;
                     
                 case 'mixed':
-                    // 生成错误的HCF和LCM组合，使用新格式
+                    // 确保HCF和LCM都为正数
                     const [hcf, lcm] = operation.result as number[];
-                    wrongAnswer = `H.C.F.=${hcf + getNonZeroRandomInt(-2, 2)}, L.C.M.=${lcm + getNonZeroRandomInt(-10, 10)}`;
+                    const hcfOffset = getNonZeroRandomInt(-Math.min(2, hcf - 1), 2);
+                    const lcmOffset = getNonZeroRandomInt(-Math.min(10, lcm - 1), 10);
+                    wrongAnswer = `H.C.F.=${Math.max(1, hcf + hcfOffset)}, L.C.M.=${Math.max(1, lcm + lcmOffset)}`;
                     break;
                     
                 case 'sum':
                 case 'product':
-                    // 生成接近的错误结果
+                    // 确保结果为正数
                     const baseResult = (operation.result as number[])[0];
-                    wrongAnswer = (baseResult + getNonZeroRandomInt(-20, 20)).toString();
+                    const resultOffset = getNonZeroRandomInt(-Math.min(20, baseResult - 1), 20);
+                    wrongAnswer = Math.max(1, baseResult + resultOffset).toString();
                     break;
                     
                 default:
