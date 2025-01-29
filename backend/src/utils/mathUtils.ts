@@ -2,6 +2,12 @@
  * 數學工具模組 - 提供常用的數學運算和工具函數
  */
 
+import { create, all } from 'mathjs';
+import type { Fraction, MathJsStatic } from 'mathjs';
+
+// 创建一个新的 math 实例
+const math: MathJsStatic = create(all);
+
 // 常用數學常數
 export const MATH_CONSTANTS = {
     PI: Math.PI,
@@ -1781,7 +1787,7 @@ export const ExpressionAnalyzer = {
         for (let i = 0; i < expr.length; i++) {
             const char = expr[i];
             // 处理左括号 (包括圆括号、方括号和大括号)
-            if (char === '(' || char === '（' || char === '[' || char === '{') {
+            if (char === '(' || char === '（' || char === '[') {
                 currentDepth++;
                 openBrackets.push(i);
                 console.log(`Found opening bracket '${char}' at ${i}, depth: ${currentDepth}`);
@@ -1791,7 +1797,7 @@ export const ExpressionAnalyzer = {
                 }
             } 
             // 处理右括号 (包括圆括号、方括号和大括号)
-            else if (char === ')' || char === '）' || char === ']' || char === '}') {
+            else if (char === ')' || char === '）' || char === ']') {
                 if (openBrackets.length > 0) {
                     const start = openBrackets.pop()!;
                     const content = expr.substring(start + 1, i);
@@ -1832,94 +1838,6 @@ export const ExpressionAnalyzer = {
             report,
             innermostBrackets
         };
-    },
-
-    /**
-     * 标准化并排序多项式
-     */
-    normalizePolynomial(expr: string): string {
-        console.log('\n=== Starting polynomial normalization ===');
-        console.log('Input expression:', expr);
-
-        // 清理表达式
-        expr = expr.trim().replace(/\s+/g, '');
-        
-        // 分割项
-        const terms = expr.split(/(?=[-+])/);
-        console.log('Split terms:', terms);
-
-        // 处理每一项并提取信息
-        const processedTerms = terms.map(term => {
-            // 移除开头的+号
-            term = term.replace(/^\+/, '');
-            
-            // 提取系数和变量部分
-            const coefficientMatch = term.match(/^-?\d*\.?\d*/);
-            const coefficient = coefficientMatch ? (coefficientMatch[0] || '1') : '1';
-            const variable = term.replace(/^-?\d*\.?\d*/, '');
-            
-            // 提取指数
-            let exponent = 0;
-            if (variable) {
-                const expMatch = variable.match(/\^(\d+)/);
-                exponent = expMatch ? parseInt(expMatch[1]) : 1;
-            }
-
-            return {
-                original: term,
-                coefficient: coefficient === '-' ? '-1' : (coefficient || '1'),
-                variable: variable.replace(/\^\d+/, '') || '',
-                exponent: exponent,
-                isConstant: !variable
-            };
-        });
-
-        console.log('Processed terms:', processedTerms);
-
-        // 排序规则：
-        // 1. 指数降序
-        // 2. 变量字母顺序
-        // 3. 常数项放最后
-        processedTerms.sort((a, b) => {
-            if (a.isConstant && !b.isConstant) return 1;
-            if (!a.isConstant && b.isConstant) return -1;
-            if (a.isConstant && b.isConstant) return 0;
-            
-            if (a.exponent !== b.exponent) {
-                return b.exponent - a.exponent;
-            }
-            return a.variable.localeCompare(b.variable);
-        });
-
-        console.log('Sorted terms:', processedTerms);
-
-        // 重建表达式
-        let result = processedTerms.map((term, index) => {
-            let termStr = '';
-            
-            // 处理系数
-            if (term.coefficient !== '1' || term.isConstant) {
-                termStr += term.coefficient;
-            }
-            
-            // 添加变量和指数
-            if (!term.isConstant) {
-                termStr += term.variable;
-                if (term.exponent > 1) {
-                    termStr += `^${term.exponent}`;
-                }
-            }
-
-            // 添加加号（第一项如果是正数则不需要加号）
-            if (index > 0 && !termStr.startsWith('-')) {
-                termStr = '+' + termStr;
-            }
-
-            return termStr;
-        }).join('');
-
-        console.log('Normalized result:', result);
-        return result;
     },
 };
 
@@ -1990,8 +1908,7 @@ export const MathOperations = {
     DECIMAL_FRACTION_CONVERSION: 'decimal-fraction',
     PRIME_FACTORIZE: 'prime-factorize',
     CALCULATE: 'calculate',
-    NUMBER_CALCULATE: 'number-calculate',
-    NORMALIZE_POLYNOMIAL: 'normalize'
+    NUMBER_CALCULATE: 'number-calculate'
 } as const;
 
 export interface OperationButton {
@@ -2084,13 +2001,6 @@ export const OPERATION_BUTTONS: OperationButton[] = [
         isAvailable: (latex: string) => {
             return /(\d+|\\frac\{\d+\}\{\d+\}|\/)\s*[+\-]\s*(\d+|\\frac\{\d+\}\{\d+\}|\/)/.test(latex);
         }
-    },
-    {
-        id: 'normalize',
-        label: '標準化',
-        description: '標準化並排序多項式',
-        operation: 'NORMALIZE_POLYNOMIAL',
-        isAvailable: (latex: string) => ExpressionAnalyzer.getExpressionType(latex) === 'polynomial'
     },
 ];
 
@@ -2237,417 +2147,93 @@ interface NumberResult {
     isNegative: boolean;  // 是否為負數
 }
 
-/**
- * 數字運算工具
- */
-export const NumberCalculator = {
-    calculate(expr: string): string {
+export class NumberCalculator {
+    static calculate(expression: string): string {
         try {
-        console.log('Input expression:', expr);
+            // 预处理表达式
+            let processedExpr = expression
+                .replace(/×/g, '*')
+                .replace(/÷/g, '/')
+                .replace(/(\d+)\s+(\d+)\/(\d+)/g, '($1+$2/$3)')
+                .replace(/\s+/g, '');
 
-            // 首先處理括號內的運算
-            expr = expr.replace(/\(([^()]+)\)/g, (match, content) => {
-                console.log('Processing bracket content:', content);
-                if (content.includes('\\frac') || content.includes('+') || 
-                    content.includes('-') || content.includes('*') || 
-                    content.includes('\\times')) {
-                    return '(' + this.calculate(content) + ')';
+            // 使用 math.js 计算结果
+            const result = math.evaluate(processedExpr);
+
+            // 如果结果是分数
+            if (math.typeOf(result) === 'Fraction') {
+                const fraction = result as Fraction;
+                const n = Number(fraction.n);
+                const d = Number(fraction.d);
+
+                // 如果分子大于分母，转换为带分数
+                if (Math.abs(n) >= Math.abs(d)) {
+                    const whole = Math.floor(Math.abs(n) / Math.abs(d));
+                    const remainder = Math.abs(n) % Math.abs(d);
+                    if (remainder === 0) {
+                        return (n < 0 ? '-' : '') + whole.toString();
+                    }
+                    return `${(n < 0 ? '-' : '')}${whole} ${remainder}/${Math.abs(d)}`;
                 }
-                return match;
-            });
-
-            // 標準化表達式
-            expr = expr
-                // 處理連續的加減號
-                .replace(/\+\+/g, '+')
-                .replace(/\+-/g, '-')
-                .replace(/-\+/g, '-')
-                .replace(/--/g, '+')
-                // 確保數字之間有運算符
-                .replace(/(\d)\s+(\d)/g, '$1+$2');
-
-            // 處理乘除運算
-            expr = this._handleMultiplicationDivision(expr);
-            console.log('After multiplication/division:', expr);
-            
-            // 分割項並過濾空項
-            const terms = expr.match(/[+-]?\s*\d*\.?\d+/g);
-            console.log('Matched terms:', terms);
-            
-            if (!terms || terms.length === 0) {
-                throw new Error('無效的運算式');
+                return `${n}/${d}`;
             }
 
-            // 處理第一項
-            let result = this.parseNumber(terms[0]);
-            console.log('First term parsed:', result);
-
-            // 處理剩餘項
-            for (let i = 1; i < terms.length; i++) {
-                const term = terms[i].trim();
-                const isAdd = !term.startsWith('-');
-                const number = this.parseNumber(term.replace(/^[+-]\s*/, ''));
-                console.log(`Processing term ${i}:`, { term, isAdd, parsed: number });
-                result = this.performAddSubtract(result, number, isAdd);
-                console.log(`Result after term ${i}:`, result);
+            // 如果结果是数字
+            if (typeof result === 'number') {
+                if (Number.isInteger(result)) {
+                    return result.toString();
+                }
+                const fraction = math.fraction(result) as Fraction;
+                return `${Number(fraction.n)}/${Number(fraction.d)}`;
             }
 
-            const finalResult = this.formatResult(result);
-            console.log('Final formatted result:', finalResult);
-            return finalResult;
+            throw new Error('Unsupported result type');
         } catch (error) {
             console.error('Calculation error:', error);
             throw error;
         }
-    },
+    }
 
-    parseNumber(str: string): NumberResult {
-        console.log('Parsing number:', str);
-        
-        // 處理負號
-        const isNegative = str.startsWith('-');
-        str = str.replace(/^-/, '');
-
-        // 處理小數
-        if (str.includes('.')) {
-            // 將小數轉換為分數
-            const parts = str.split('.');
-            const integerPart = parseInt(parts[0] || '0');
-            const decimalPart = parts[1] || '';
-            const denominator = Math.pow(10, decimalPart.length);
-            const numerator = Math.abs(integerPart) * denominator + parseInt(decimalPart || '0');
-
+    static simplifyFraction(numerator: number, denominator: number): { numerator: number; denominator: number } {
+        try {
+            const fraction = math.fraction(numerator, denominator) as Fraction;
             return {
-                numerator,
-                denominator,
-                isNegative
+                numerator: Number(fraction.n),
+                denominator: Number(fraction.d)
             };
+        } catch (error) {
+            console.error('Fraction simplification error:', error);
+            throw error;
         }
+    }
 
-        // 處理分數
-        if (str.includes('/')) {
-            const [num, den] = str.split('/').map(s => parseInt(s.trim()));
+    static addFractions(n1: number, d1: number, n2: number, d2: number): { numerator: number; denominator: number } {
+        try {
+            const f1 = math.fraction(n1, d1) as Fraction;
+            const f2 = math.fraction(n2, d2) as Fraction;
+            const result = math.add(f1, f2) as Fraction;
             return {
-                numerator: Math.abs(num),
-                denominator: den,
-                isNegative: isNegative || num < 0
+                numerator: Number(result.n),
+                denominator: Number(result.d)
             };
-        }
-
-        // 處理整數
-        const num = parseInt(str);
-        return {
-            numerator: Math.abs(num),
-            denominator: 1,
-            isNegative: isNegative || num < 0
-        };
-    },
-
-    performAddSubtract(a: NumberResult, b: NumberResult, isAdd: boolean): NumberResult {
-        // 通分
-        const lcm = this._lcm(a.denominator, b.denominator);  // 使用 _lcm
-        const aNum = a.numerator * (lcm / a.denominator) * (a.isNegative ? -1 : 1);
-        const bNum = b.numerator * (lcm / b.denominator) * (b.isNegative ? -1 : 1);
-
-        // 執行加減運算
-        const resultNum = isAdd ? aNum + bNum : aNum - bNum;
-        const isNegative = resultNum < 0;
-
-        // 約分結果
-        const gcdValue = this._gcd(Math.abs(resultNum), lcm);  // 使用 _gcd
-        
-        return {
-            numerator: Math.abs(resultNum / gcdValue),
-            denominator: lcm / gcdValue,
-            isNegative: isNegative
-        };
-    },
-
-    performMultiply(a: NumberResult, b: NumberResult): NumberResult {
-        // 乘法：分子相乘，分母相乘
-        const numerator = a.numerator * b.numerator;
-        const denominator = a.denominator * b.denominator;
-        
-        // 判断结果的正负
-        const isNegative = a.isNegative !== b.isNegative;
-        
-        // 约分结果
-        const gcdValue = this._gcd(numerator, denominator);  // 使用 _gcd
-        
-        return {
-            numerator: Math.abs(numerator / gcdValue),
-            denominator: denominator / gcdValue,
-            isNegative: isNegative
-        };
-    },
-
-    performDivide(a: NumberResult, b: NumberResult): NumberResult {
-        // 除法：分子乘以除数的分母，分母乘以除数的分子
-        const numerator = a.numerator * b.denominator;
-        const denominator = a.denominator * b.numerator;
-        
-        // 判断结果的正负
-        const isNegative = a.isNegative !== b.isNegative;
-        
-        // 约分结果
-        const gcdValue = this._gcd(numerator, denominator);  // 使用 _gcd
-        
-        return {
-            numerator: Math.abs(numerator / gcdValue),
-            denominator: denominator / gcdValue,
-            isNegative: isNegative
-        };
-    },
-
-    formatResult(result: NumberResult): string {
-        if (result.denominator === 1) {
-            // 整數結果
-            return `${result.isNegative ? '-' : ''}${result.numerator}`;
-        }
-        // 分數結果
-        return `${result.isNegative ? '-' : ''}\\frac{${result.numerator}}{${result.denominator}}`;
-    },
-
-    // 重命名為私有方法
-    _gcd(a: number, b: number): number {
-        return b === 0 ? a : this._gcd(b, a % b);
-    },
-
-    _lcm(a: number, b: number): number {
-        return Math.abs(a * b) / this._gcd(a, b);  // 使用 _gcd
-    },
-
-    /**
-     * 處理乘除運算
-     */
-    _handleMultiplicationDivision(expr: string): string {
-        console.log('Handling multiplication/division for:', expr);
-        
-        // 處理乘除運算
-        const multiDivPattern = /(-?\d*\.?\d+)\s*([\*\/×÷])\s*(-?\d*\.?\d+)/;
-        
-        // 持續處理所有乘除運算直到沒有更多匹配
-        while (multiDivPattern.test(expr)) {
-            expr = expr.replace(multiDivPattern, (match, num1, operator, num2) => {
-                console.log('Found multiplication/division match:', { num1, operator, num2 });
-                
-                // 解析數字
-                const n1 = this.parseNumber(num1.trim());
-                const n2 = this.parseNumber(num2.trim());
-                console.log('Parsed numbers:', { n1, n2 });
-                
-                // 執行運算
-                const result = (operator === '*' || operator === '×') ? 
-                    this.performMultiply(n1, n2) : 
-                    this.performDivide(n1, n2);
-                
-                // 返回結果
-                return this.formatResult(result);
-            });
-        }
-        
-        return expr;
-    },
-}; 
-
-/**
- * 找到最内层括号的内容
- */
-function findInnermostBracket(expr: string): { content: string; start: number; end: number } | null {
-    console.log('\n=== Starting findInnermostBracket ===');
-    console.log('Input expression:', expr);
-    
-    let maxDepth = 0;
-    let currentDepth = 0;
-    let innermostStart = -1;
-    let innermostEnd = -1;
-    let lastMaxDepthStart = -1;
-
-    // 扫描找到最深层的括号
-    for (let i = 0; i < expr.length; i++) {
-        const char = expr[i];
-        
-        // 处理左括号 (包括方括号)
-        if (char === '(' || char === '（' || char === '[' || char === '{') {
-            currentDepth++;
-            console.log(`Found opening bracket '${char}' at ${i}, currentDepth: ${currentDepth}, maxDepth: ${maxDepth}`);
-            
-            if (currentDepth >= maxDepth) {
-                maxDepth = currentDepth;
-                lastMaxDepthStart = i;
-                console.log(`New max depth bracket found at ${i}, depth: ${maxDepth}`);
-            }
-        } 
-        // 处理右括号 (包括方括号)
-        else if (char === ')' || char === '）' || char === ']' || char === '}') {
-            console.log(`Found closing bracket '${char}' at ${i}, currentDepth: ${currentDepth}, maxDepth: ${maxDepth}`);
-            if (currentDepth === maxDepth && lastMaxDepthStart !== -1) {
-                // 找到一个最深层级的完整括号对
-                innermostStart = lastMaxDepthStart;
-                innermostEnd = i;
-                console.log(`Found complete bracket pair at depth ${maxDepth}: ${innermostStart} to ${i}`);
-                console.log(`Content: ${expr.substring(innermostStart + 1, i)}`);
-                // 不立即退出，继续寻找同深度的其他括号
-            }
-            currentDepth--;
+        } catch (error) {
+            console.error('Fraction addition error:', error);
+            throw error;
         }
     }
 
-    console.log('Scan complete:', {
-        maxDepth,
-        currentDepth,
-        innermostStart,
-        innermostEnd,
-        foundContent: innermostStart !== -1 ? expr.substring(innermostStart + 1, innermostEnd) : 'none'
-    });
-
-    // 如果找到有效的括号
-    if (innermostStart !== -1 && innermostEnd !== -1) {
-        const content = expr.substring(innermostStart + 1, innermostEnd);
-        console.log('Found innermost bracket content:', content);
-        return {
-            content: content,
-            start: innermostStart,
-            end: innermostEnd
-        };
-    }
-
-    console.log('No valid brackets found, returning null');
-    return null;
-}
-
-/**
- * 检查字符串中是否包含完整的括号对
- */
-function hasCompleteBrackets(str: string): boolean {
-    console.log('Checking for complete brackets in:', str);
-    let depth = 0;
-    for (let i = 0; i < str.length; i++) {
-        if (str[i] === '(' || str[i] === '（' || str[i] === '{' || str[i] === '[') {
-            depth++;
-        } else if (str[i] === ')' || str[i] === '）' || str[i] === '}' || str[i] === ']') {
-            depth--;
-            if (depth < 0) {
-                console.log('Invalid bracket sequence (too many closing brackets)');
-                return false;
-            }
+    static multiplyFractions(n1: number, d1: number, n2: number, d2: number): { numerator: number; denominator: number } {
+        try {
+            const f1 = math.fraction(n1, d1) as Fraction;
+            const f2 = math.fraction(n2, d2) as Fraction;
+            const result = math.multiply(f1, f2) as Fraction;
+            return {
+                numerator: Number(result.n),
+                denominator: Number(result.d)
+            };
+        } catch (error) {
+            console.error('Fraction multiplication error:', error);
+            throw error;
         }
     }
-    const result = depth === 0 && str.includes('(');
-    console.log('Complete brackets check result:', result, 'final depth:', depth);
-    return result;
-}
-
-/**
- * 计算数字运算
- */
-export function calculate(expr: string): string {
-    try {
-        console.log('\n=== Starting calculation ===');
-        console.log('Input expression:', expr);
-        
-        // 清理表达式中的空格和替换方括号为圆括号
-        expr = expr.trim()
-            .replace(/\s+/g, '')
-            .replace(/\[/g, '(')
-            .replace(/\]/g, ')');
-        console.log('Cleaned expression:', expr);
-        
-        // 首先处理括号内的运算
-        const bracket = findInnermostBracket(expr);
-        if (bracket) {
-            console.log('Found innermost bracket:', {
-                content: bracket.content,
-                start: bracket.start,
-                end: bracket.end,
-                fullExpr: expr
-            });
-            
-            // 计算括号内的内容
-            const result = NumberCalculator.calculate(bracket.content);
-            console.log('Bracket calculation result:', result);
-            
-            // 替换括号及其内容
-            const newExpr = expr.substring(0, bracket.start) + 
-                          result + 
-                          expr.substring(bracket.end + 1);
-            console.log('New expression after bracket replacement:', newExpr);
-            
-            // 递归处理剩余的括号
-            return calculate(newExpr);
-        }
-
-        console.log('No more brackets, calculating final expression');
-        // 如果没有括号，直接计算
-        return NumberCalculator.calculate(expr);
-    } catch (error) {
-        console.error('Calculation error:', error);
-        throw error;
-    }
-}
-
-/**
- * 分析括号层级并返回分析结果
- */
-export function analyzeBracketLayers(expr: string): string {
-    console.log('\n=== Starting bracket layer analysis ===');
-    console.log('Input expression:', expr);
-    
-    // 清理表达式
-    expr = expr.trim()
-        .replace(/\s+/g, '')
-        .replace(/\[/g, '(')
-        .replace(/\]/g, ')');
-    console.log('Cleaned expression:', expr);
-    
-    let maxDepth = 0;
-    let currentDepth = 0;
-    let layers: { depth: number; content: string; start: number; end: number }[] = [];
-    let openBrackets: number[] = [];
-
-    // 扫描找到所有括号层级
-    for (let i = 0; i < expr.length; i++) {
-        const char = expr[i];
-        if (char === '(' || char === '（' || char === '[' || char === '{') {
-            currentDepth++;
-            openBrackets.push(i);
-            console.log(`Found opening bracket '${char}' at ${i}, depth: ${currentDepth}`);
-            
-            if (currentDepth > maxDepth) {
-                maxDepth = currentDepth;
-            }
-        } 
-        else if (char === ')' || char === '）' || char === ']' || char === '}') {
-            if (openBrackets.length > 0) {
-                const start = openBrackets.pop()!;
-                const content = expr.substring(start + 1, i);
-                layers.push({
-                    depth: currentDepth,
-                    content: content,
-                    start: start,
-                    end: i
-                });
-                console.log(`Found bracket pair at depth ${currentDepth}: ${content}`);
-            }
-            currentDepth--;
-        }
-    }
-
-    // 按深度排序
-    layers.sort((a, b) => b.depth - a.depth);
-
-    // 生成分析报告
-    let report = '括号层级分析:\n';
-    let lastDepth = -1;
-    
-    layers.forEach(layer => {
-        if (layer.depth !== lastDepth) {
-            report += `\n第 ${layer.depth} 层括号:\n`;
-            lastDepth = layer.depth;
-        }
-        report += `  内容: ${layer.content}\n`;
-    });
-
-    console.log(report);
-    return report;
 }

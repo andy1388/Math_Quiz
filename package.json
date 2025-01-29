@@ -7,6 +7,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "helmet": "^8.0.0",
+    "mathjs": "^14.1.0",
     "module-alias": "^2.2.3",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",

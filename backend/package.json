@@ -11,12 +11,16 @@
     "generate-index": "ts-node src/utils/generateIndex.ts"
   },
   "dependencies": {
+    "@types/mathjs": "^9.4.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-validator": "^7.0.1",
     "helmet": "^7.2.0",
+    "katex": "^0.16.9",
+    "@types/katex": "^0.16.7",
     "mathjax": "^3.2.2",
+    "mathjs": "^14.1.0",
     "module-alias": "^2.2.3",
     "mongoose": "^7.6.3"
   },
