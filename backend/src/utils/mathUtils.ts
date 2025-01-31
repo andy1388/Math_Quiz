@@ -1839,6 +1839,55 @@ export const ExpressionAnalyzer = {
             innermostBrackets
         };
     },
+
+    /**
+     * 标准化多项式表达式
+     */
+    normalizePolynomial(latex: string): string {
+        try {
+            const [expr, equals] = latex.split('=');
+            
+            if (!expr) {
+                throw new Error('表达式为空');
+            }
+
+            // 清理表达式
+            let processedExpr = this._normalizeExpression(expr);
+            
+            // 分割各项
+            const terms = processedExpr.split(/(?=[+-])/).filter(term => term.trim());
+            
+            // 按变量和指数排序
+            terms.sort((a, b) => {
+                // 获取基底
+                const baseA = this._getBase(a);
+                const baseB = this._getBase(b);
+                
+                if (baseA === baseB) {
+                    // 如果基底相同，按指数降序排列
+                    return this._compareExponents(a, b);
+                }
+                
+                // 按基底字母顺序排序
+                return baseA.localeCompare(baseB);
+            });
+            
+            // 组合结果
+            let result = terms.join('')
+                .replace(/\+-/g, '-')  // 修正正负号
+                .replace(/^\+/, '');   // 移除开头的加号
+            
+            // 如果结果为空，返回0
+            if (!result) {
+                result = '0';
+            }
+            
+            return equals ? `${result}=${equals}` : result;
+        } catch (error) {
+            console.error('Normalize polynomial error:', error);
+            throw error;
+        }
+    },
 };
 
 // 類型定義

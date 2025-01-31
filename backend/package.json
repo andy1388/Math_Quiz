@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@types/mathjs": "^9.4.2",
+    "algebra.js": "^0.2.6",
+    "polynomial": "^1.4.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
