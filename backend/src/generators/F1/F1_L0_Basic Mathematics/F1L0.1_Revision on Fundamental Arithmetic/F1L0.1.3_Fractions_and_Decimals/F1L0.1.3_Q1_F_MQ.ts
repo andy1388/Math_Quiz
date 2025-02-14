@@ -316,13 +316,30 @@ export default class F1L0_1_3_Q1_F_MQ extends QuestionGenerator {
                     // 生成错误答案的策略
                     const strategies = [
                         // 分子加减一个小数
-                        () => `\\frac{${numValue + getNonZeroRandomInt(-2, 2)}}{${denValue}}`,
+                        () => {
+                            const newNum = numValue + getNonZeroRandomInt(-2, 2);
+                            // 确保分子小于分母且不为负数
+                            return newNum > 0 && newNum < denValue ? 
+                                `\\frac{${newNum}}{${denValue}}` : undefined;
+                        },
                         // 分母加减一个小数
-                        () => `\\frac{${numValue}}{${denValue + getNonZeroRandomInt(1, 3)}}`
+                        () => {
+                            const newDen = denValue + getNonZeroRandomInt(1, 3);
+                            // 确保分母大于分子且不等于分子
+                            return newDen > numValue ? 
+                                `\\frac{${numValue}}{${newDen}}` : undefined;
+                        }
                     ];
                     
-                    const strategy = strategies[Math.floor(Math.random() * strategies.length)];
-                    wrongAnswer = strategy();
+                    // 随机尝试不同策略直到生成有效答案
+                    for (let i = 0; i < 3; i++) {
+                        const strategy = strategies[Math.floor(Math.random() * strategies.length)];
+                        const result = strategy();
+                        if (result) {
+                            wrongAnswer = result;
+                            break;
+                        }
+                    }
                 } else {
                     // 处理整数结果
                     const value = parseInt(correctResult);
