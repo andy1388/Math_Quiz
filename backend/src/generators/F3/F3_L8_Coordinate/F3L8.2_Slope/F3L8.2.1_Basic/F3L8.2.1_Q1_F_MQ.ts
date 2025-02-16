@@ -259,12 +259,17 @@ export default class F3L8_2_1_Q1_F_MQ extends QuestionGenerator {
         const dx = pointB.x - pointA.x;
         const dy = pointB.y - pointA.y;
 
+        // 处理坐标值的显示，负数加括号
+        const formatNumber = (num: number): string => {
+            return num < 0 ? `(${num})` : num.toString();
+        };
+
         let explanation = `解題步驟：
 \\[1.\\space 使用斜率公式：m = \\frac{y_2-y_1}{x_2-x_1}\\]
 
 \\[2.\\space 代入座標：\\]
-\\[x_2-x_1 = ${pointB.x}-${pointA.x} = ${dx}\\]
-\\[y_2-y_1 = ${pointB.y}-${pointA.y} = ${dy}\\]`;
+\\[x_2-x_1 = ${formatNumber(pointB.x)}-${formatNumber(pointA.x)} = ${formatNumber(dx)}\\]
+\\[y_2-y_1 = ${formatNumber(pointB.y)}-${formatNumber(pointA.y)} = ${formatNumber(dy)}\\]`;
 
         if (dx === 0) {
             explanation += `
@@ -275,7 +280,7 @@ export default class F3L8_2_1_Q1_F_MQ extends QuestionGenerator {
         } else {
             explanation += `
 \\[3.\\space 計算斜率：\\]
-\\[m = \\frac{y_2-y_1}{x_2-x_1} = \\frac{${dy}}{${dx}}\\]`;
+\\[m = \\frac{y_2-y_1}{x_2-x_1} = \\frac{${formatNumber(dy)}}{${formatNumber(dx)}}\\]`;
 
             if (question.slope.includes('\\frac{')) {
                 explanation += `
