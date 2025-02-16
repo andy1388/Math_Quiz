@@ -42,7 +42,9 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
             case 3:
                 return this.generatePointSlopeEquation();
             case 4:
-                return this.generateTwoPointsEquation();
+                return this.generateTwoPointsEquation(false); // 普通斜率
+            case 5:
+                return this.generateTwoPointsEquation(true);  // 特殊情况（垂直线、水平线）
             default:
                 throw new Error(`不支援的難度等級: ${this.difficulty}`);
         }
@@ -52,10 +54,15 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
         // 将斜率转换为分数形式（分子/分母）
         let slopeNum: number, slopeDen: number;
         if (slope.includes('\\frac{')) {
-            const matches = slope.match(/\\frac\{(-?\d+)\}\{(\d+)\}/);
+            // 处理负号在分数前面的情况
+            const isNegative = slope.startsWith('-');
+            const matches = slope.match(/\\frac\{(\d+)\}\{(\d+)\}/);
             if (matches) {
                 slopeNum = parseInt(matches[1]);
                 slopeDen = parseInt(matches[2]);
+                if (isNegative) {
+                    slopeNum = -slopeNum;
+                }
             } else {
                 slopeNum = parseInt(slope);
                 slopeDen = 1;
@@ -66,28 +73,35 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
         }
 
         // 计算截距：c = y₁ - mx₁
-        // 为了避免浮点数计算，我们使用分数运算
-        // c = y₁ - (slopeNum/slopeDen) * x₁
-        // c = (y₁ * slopeDen - slopeNum * x₁) / slopeDen
         const numerator = point.y * slopeDen - slopeNum * point.x;
         const denominator = slopeDen;
 
-        // 约分
+        return this.formatStandardFraction(numerator, denominator);
+    }
+
+    private formatStandardFraction(numerator: number, denominator: number): string {
+        // 先约分
         const gcdValue = gcd(Math.abs(numerator), Math.abs(denominator));
-        const reducedNum = numerator / gcdValue;
-        const reducedDen = denominator / gcdValue;
+        let num = numerator / gcdValue;
+        let den = denominator / gcdValue;
+
+        // 确保分母为正
+        if (den < 0) {
+            num = -num;
+            den = -den;
+        }
 
         // 如果分母为1，直接返回分子
-        if (reducedDen === 1) {
-            return reducedNum.toString();
+        if (den === 1) {
+            return num.toString();
         }
 
-        // 如果分母为负数，将负号移到分子
-        if (reducedDen < 0) {
-            return `\\frac{${-reducedNum}}{${-reducedDen}}`;
+        // 如果是负数，将负号放在分数前面
+        if (num < 0) {
+            return `-\\frac{${Math.abs(num)}}{${den}}`;
         }
 
-        return `\\frac{${reducedNum}}{${reducedDen}}`;
+        return `\\frac{${num}}{${den}}`;
     }
 
     private generatePointSlopeEquation(): LineEquation {
@@ -112,7 +126,7 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
                 // 生成简单分数，分母为2,3,4,5
                 const den = getNonZeroRandomInt(2, 5);
                 const num = getNonZeroRandomInt(-5, 5);
-                slope = `\\frac{${num}}{${den}}`;
+                slope = this.formatStandardFraction(num, den);
                 break;
             case 3:
                 // 给定点和斜率（整数或分数）
@@ -125,7 +139,7 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
                 } else {
                     const den = getNonZeroRandomInt(2, 5);
                     const num = getNonZeroRandomInt(-5, 5);
-                    slope = `\\frac{${num}}{${den}}`;
+                    slope = this.formatStandardFraction(num, den);
                 }
                 break;
             default:
@@ -142,57 +156,87 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
         };
     }
 
-    private generateTwoPointsEquation(): LineEquation {
+    private generateTwoPointsEquation(allowSpecialCases: boolean): LineEquation {
         let pointA: Point, pointB: Point;
         let slope = '0';  // 初始化斜率
         let intercept = '0';  // 初始化截距
 
-        do {
-            // 生成整数坐标点
-            pointA = {
-                x: getRandomInt(-5, 5),
-                y: getRandomInt(-5, 5)
-            };
-            pointB = {
-                x: getRandomInt(-5, 5),
-                y: getRandomInt(-5, 5)
-            };
-
-            // 计算斜率
-            const dx = pointB.x - pointA.x;
-            const dy = pointB.y - pointA.y;
-
-            if (dx === 0) continue; // 避免垂直线
-
-            // 计算斜率
-            const slopeGcd = gcd(Math.abs(dy), Math.abs(dx));
-            let slopeNum = dy / slopeGcd;
-            let slopeDen = dx / slopeGcd;
-
-            // 确保分母为正
-            if (slopeDen < 0) {
-                slopeNum = -slopeNum;
-                slopeDen = -slopeDen;
+        if (allowSpecialCases) {  // 难度5的情况
+            // 随机决定是生成垂直线还是水平线
+            const isVertical = Math.random() < 0.5;
+            
+            if (isVertical) {
+                // 生成垂直线：两点具有相同的x坐标
+                const x = getRandomInt(-5, 5);
+                let y1, y2;
+                do {
+                    y1 = getRandomInt(-5, 5);
+                    y2 = getRandomInt(-5, 5);
+                } while (y1 === y2);  // 确保y坐标不同
+                
+                pointA = { x, y: y1 };
+                pointB = { x, y: y2 };
+                
+                return {
+                    slope: '不存在',
+                    intercept: x.toString(),
+                    points: { pointA, pointB }
+                };
+            } else {
+                // 生成水平线：两点具有相同的y坐标
+                const y = getRandomInt(-5, 5);
+                let x1, x2;
+                do {
+                    x1 = getRandomInt(-5, 5);
+                    x2 = getRandomInt(-5, 5);
+                } while (x1 === x2);  // 确保x坐标不同
+                
+                pointA = { x: x1, y };
+                pointB = { x: x2, y };
+                
+                return {
+                    slope: '0',
+                    intercept: y.toString(),
+                    points: { pointA, pointB }
+                };
             }
+        } else {  // 难度4的情况
+            do {
+                // 生成整数坐标点
+                pointA = {
+                    x: getRandomInt(-5, 5),
+                    y: getRandomInt(-5, 5)
+                };
+                pointB = {
+                    x: getRandomInt(-5, 5),
+                    y: getRandomInt(-5, 5)
+                };
 
-            // 如果分母不是简单分数，继续循环
-            if (slopeDen > 5) continue;
+                // 计算斜率
+                const dx = pointB.x - pointA.x;
+                const dy = pointB.y - pointA.y;
 
-            // 格式化斜率
-            slope = slopeDen === 1 ? 
-                slopeNum.toString() : 
-                `\\frac{${slopeNum}}{${slopeDen}}`;
+                // 避免相同x坐标或y坐标
+                if (dx === 0 || dy === 0) continue;
 
-            // 使用新的方法计算截距
-            intercept = this.calculateIntercept(pointA, slope);
+                // 格式化斜率
+                slope = this.formatStandardFraction(dy, dx);
 
-        } while (!this.isValidEquation(slope, intercept));
+                // 如果分母超过5，重新生成点
+                const slopeParts = slope.match(/\\frac\{(\d+)\}\{(\d+)\}/);
+                if (slopeParts && parseInt(slopeParts[2]) > 5) continue;
 
-        return {
-            slope,
-            intercept,
-            points: { pointA, pointB }
-        };
+                // 计算截距
+                intercept = this.calculateIntercept(pointA, slope);
+
+            } while (!this.isValidEquation(slope, intercept));
+
+            return {
+                slope,
+                intercept,
+                points: { pointA, pointB }
+            };
+        }
     }
 
     private generateFraction(maxDenominator: number): string {
@@ -240,6 +284,8 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     }
 
     private isValidEquation(slope: string, intercept: string): boolean {
+        if (slope === '不存在') return true;  // 垂直线总是有效的
+        
         const m = this.evaluateFraction(slope);
         const c = this.evaluateFraction(intercept);
 
@@ -253,6 +299,8 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
             case 3:
             case 4:
                 return Math.abs(m) <= 5 && Math.abs(c) <= 10;
+            case 5:
+                return true; // 特殊情况不需要限制
             default:
                 return true;
         }
@@ -261,32 +309,44 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     private formatQuestion(equation: LineEquation): string {
         if (this.difficulty <= 3) {
             return `\\[\\text{求通過點 }P(${equation.points?.pointA?.x}, ${equation.points?.pointA?.y})\\text{ 且斜率為 }${equation.slope}\\text{ 的直線方程（斜率截距式）}\\]`;
-        } else if (this.difficulty === 4 && equation.points?.pointA && equation.points?.pointB) {
-            return `\\[\\text{求通過以下兩點的直線方程（斜率截距式）：}A(${equation.points.pointA.x}, ${equation.points.pointA.y}), B(${equation.points.pointB.x}, ${equation.points.pointB.y})\\]`;
+        } else if ((this.difficulty === 4 || this.difficulty === 5) && equation.points?.pointA && equation.points?.pointB) {
+            return `\\[\\text{求通過以下兩點的直線方程：}A(${equation.points.pointA.x}, ${equation.points.pointA.y}), B(${equation.points.pointB.x}, ${equation.points.pointB.y})\\]`;
         }
         return '';
     }
 
+    private simplifyEquation(equation: string): string {
+        // 简化 y = x + -3 形式为 y = x - 3
+        return equation.replace(/\+ -/g, '- ');
+    }
+
     private formatAnswer(equation: LineEquation): string {
-        let slope = equation.slope;
-        let intercept = equation.intercept;
+        let result: string;
+        if (equation.slope === '不存在') {
+            result = `x = ${equation.intercept}`;
+        } else if (this.difficulty === 5 && equation.slope === '0') {
+            result = `y = ${equation.intercept}`;
+        } else {
+            let slope = equation.slope;
+            let intercept = equation.intercept;
 
-        // 处理斜率为1或-1的情况
-        if (slope === '1') {
-            slope = '';
-        } else if (slope === '-1') {
-            slope = '-';
+            // 处理斜率为1或-1的情况
+            if (slope === '1') {
+                slope = '';
+            } else if (slope === '-1') {
+                slope = '-';
+            }
+
+            // 处理截距为0的情况
+            if (intercept === '0') {
+                result = `y = ${slope}x`;
+            } else if (intercept.startsWith('-')) {
+                result = `y = ${slope}x - ${intercept.substring(1)}`;
+            } else {
+                result = `y = ${slope}x + ${intercept}`;
+            }
         }
-
-        // 处理截距为0的情况
-        if (intercept === '0') {
-            return `y = ${slope}x`;
-        }
-
-        // 处理截距的正负号
-        const interceptSign = intercept.startsWith('-') ? '' : '+';
-        
-        return `y = ${slope}x ${interceptSign} ${intercept}`;
+        return this.simplifyEquation(result);
     }
 
     private generateWrongAnswers(equation: LineEquation): string[] {
@@ -294,42 +354,59 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
         const correctAnswer = this.formatAnswer(equation);
 
         try {
-            // 错误类型1：斜率正负号错误
-            const wrongSlope = equation.slope.startsWith('-') ? 
-                equation.slope.substring(1) : 
-                '-' + equation.slope;
-            wrongAnswers.add(this.formatAnswer({
-                slope: wrongSlope,
-                intercept: equation.intercept
-            }));
+            if (this.difficulty === 5) {
+                if (equation.slope === '不存在') {
+                    // 垂直线的错误答案
+                    const x = parseInt(equation.intercept);
+                    wrongAnswers.add(this.simplifyEquation(`y = ${x}`));  // 混淆 x = a 和 y = x
+                    const xValue = x >= 0 ? `- ${x}` : `+ ${-x}`;
+                    wrongAnswers.add(this.simplifyEquation(`y = x ${xValue}`));  // 错误理解为斜率为1的直线
+                    wrongAnswers.add(this.simplifyEquation(`x = ${x + 1}`));  // x值错误
+                } else if (equation.slope === '0') {
+                    // 水平线的错误答案
+                    const y = parseInt(equation.intercept);
+                    wrongAnswers.add(this.simplifyEquation(`x = ${y}`));  // 混淆 y = b 和 x = b
+                    wrongAnswers.add(this.simplifyEquation(`y = ${y + 1}`));  // y值错误
+                    wrongAnswers.add(this.simplifyEquation(`y = ${y - 1}`));  // y值错误
+                }
+            } else {
+                // 普通情况的错误答案
+                // 错误类型1：斜率正负号错误
+                const wrongSlope = equation.slope.startsWith('-') ? 
+                    equation.slope.substring(1) : 
+                    '-' + equation.slope;
+                wrongAnswers.add(this.formatAnswer({
+                    slope: wrongSlope,
+                    intercept: equation.intercept
+                }));
 
-            // 错误类型2：截距正负号错误
-            const wrongIntercept = equation.intercept.startsWith('-') ?
-                equation.intercept.substring(1) :
-                '-' + equation.intercept;
-            wrongAnswers.add(this.formatAnswer({
-                slope: equation.slope,
-                intercept: wrongIntercept
-            }));
+                // 错误类型2：截距正负号错误
+                const wrongIntercept = equation.intercept.startsWith('-') ?
+                    equation.intercept.substring(1) :
+                    '-' + equation.intercept;
+                wrongAnswers.add(this.formatAnswer({
+                    slope: equation.slope,
+                    intercept: wrongIntercept
+                }));
 
-            // 错误类型3：斜率和截距互换
-            wrongAnswers.add(this.formatAnswer({
-                slope: equation.intercept,
-                intercept: equation.slope
-            }));
+                // 错误类型3：斜率和截距互换
+                wrongAnswers.add(this.formatAnswer({
+                    slope: equation.intercept,
+                    intercept: equation.slope
+                }));
 
-            // 错误类型4：分数未化简（如果是分数）
-            if (equation.slope.includes('\\frac{')) {
-                const matches = equation.slope.match(/\\frac\{(-?\d+)\}\{(\d+)\}/);
-                if (matches) {
-                    const [_, num, den] = matches;
-                    wrongAnswers.add(this.formatAnswer({
-                        slope: `\\frac{${parseInt(num) * 2}}{${parseInt(den) * 2}}`,
-                        intercept: equation.intercept
-                    }));
+                // 错误类型4：分数未化简（如果是分数）
+                if (equation.slope.includes('\\frac{')) {
+                    const matches = equation.slope.match(/\\frac\{(-?\d+)\}\{(\d+)\}/);
+                    if (matches) {
+                        const [_, num, den] = matches;
+                        wrongAnswers.add(this.formatAnswer({
+                            slope: `\\frac{${parseInt(num) * 2}}{${parseInt(den) * 2}}`,
+                            intercept: equation.intercept
+                        }));
+                    }
                 }
             }
-
         } catch (error) {
             console.error('Error generating wrong answers:', error);
         }
@@ -340,12 +417,22 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
 
         // 如果还没有足够的错误答案，添加一些基本错误
         while (wrongAnswers.size < 3) {
-            const wrongSlope = (this.evaluateFraction(equation.slope) + 
-                              (wrongAnswers.size + 1)).toString();
-            wrongAnswers.add(this.formatAnswer({
-                slope: wrongSlope,
-                intercept: equation.intercept
-            }));
+            if (this.difficulty === 5) {
+                if (equation.slope === '不存在') {
+                    const x = parseInt(equation.intercept);
+                    wrongAnswers.add(this.simplifyEquation(`x = ${x + wrongAnswers.size + 1}`));
+                } else {
+                    const y = parseInt(equation.intercept);
+                    wrongAnswers.add(this.simplifyEquation(`y = ${y + wrongAnswers.size + 1}`));
+                }
+            } else {
+                const wrongSlope = (this.evaluateFraction(equation.slope) + 
+                                  (wrongAnswers.size + 1)).toString();
+                wrongAnswers.add(this.formatAnswer({
+                    slope: wrongSlope,
+                    intercept: equation.intercept
+                }));
+            }
         }
 
         return Array.from(wrongAnswers).slice(0, 3);
@@ -359,23 +446,26 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
 \\[2.\\space 其中：\\]
 \\[m = ${equation.slope}（斜率）\\]
 \\[c = ${equation.intercept}（y軸截距）\\]`;
-        } else if (this.difficulty <= 6 && equation.points?.pointA && equation.points?.pointB) {
+        } else if (this.difficulty === 5 && equation.points?.pointA && equation.points?.pointB) {
             const { pointA, pointB } = equation.points;
             const dx = pointB.x - pointA.x;
             const dy = pointB.y - pointA.y;
 
-            explanation += `\\[1.\\space 利用斜率公式：m = \\frac{y_2-y_1}{x_2-x_1}\\]
-\\[2.\\space 代入兩點坐標：\\]
-\\[m = \\frac{${pointB.y}-${pointA.y}}{${pointB.x}-${pointA.x}} = \\frac{${dy}}{${dx}} = ${equation.slope}\\]
-\\[3.\\space 代入點 A(${pointA.x}, ${pointA.y}) 求截距：\\]
-\\[${pointA.y} = ${equation.slope}(${pointA.x}) + c\\]
-\\[c = ${pointA.y} - ${equation.slope}(${pointA.x}) = ${equation.intercept}\\]`;
-        } else if (equation.points?.pointA) {
-            const point = equation.points.pointA;
-            explanation += `\\[1.\\space 已知斜率 m = ${equation.slope}\\]
-\\[2.\\space 代入點 P(${point.x}, ${point.y}) 求截距：\\]
-\\[${point.y} = ${equation.slope}(${point.x}) + c\\]
-\\[c = ${point.y} - ${equation.slope}(${point.x}) = ${equation.intercept}\\]`;
+            if (dx === 0) {
+                // 垂直线
+                explanation += `\\[1.\\space 觀察兩點坐標：\\]
+\\[A(${pointA.x}, ${pointA.y}), B(${pointB.x}, ${pointB.y})\\]
+\\[2.\\space 發現兩點的x坐標相同：x = ${pointA.x}\\]
+\\[3.\\space 這是一條鉛直線\\]
+\\[4.\\space 鉛直線的方程式形式為：x = a\\]`;
+            } else if (dy === 0) {
+                // 水平线
+                explanation += `\\[1.\\space 觀察兩點坐標：\\]
+\\[A(${pointA.x}, ${pointA.y}), B(${pointB.x}, ${pointB.y})\\]
+\\[2.\\space 發現兩點的y坐標相同：y = ${pointA.y}\\]
+\\[3.\\space 這是一條水平線\\]
+\\[4.\\space 水平線的方程式形式為：y = b\\]`;
+            }
         }
 
         explanation += `\n\\[因此，直線方程為：${this.formatAnswer(equation)}\\]`;
