@@ -104,6 +104,14 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
         return `\\frac{${num}}{${den}}`;
     }
 
+    private decimalToFraction(decimal: number): string {
+        // 将小数转换为分数
+        const precision = 10; // 因为我们只处理一位小数
+        const numerator = decimal * precision;
+        const denominator = precision;
+        return this.formatStandardFraction(numerator, denominator);
+    }
+
     private generatePointSlopeEquation(): LineEquation {
         let point: Point;
         let slope: string;
@@ -129,14 +137,19 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
                 slope = this.formatStandardFraction(num, den);
                 break;
             case 3:
-                // 给定点和斜率（整数或分数）
+                // 给定点和斜率（分数或一位小数）
                 point = {
                     x: getRandomInt(-5, 5),
                     y: getRandomInt(-5, 5)
                 };
                 if (Math.random() < 0.5) {
-                    slope = getNonZeroRandomInt(-5, 5).toString();
+                    // 生成一位小数，但在答案中转换为分数
+                    const wholeNumber = getNonZeroRandomInt(-5, 5);
+                    const decimal = getRandomInt(1, 9);
+                    const decimalSlope = wholeNumber + decimal/10;
+                    slope = decimalSlope.toString(); // 在题目中显示小数
                 } else {
+                    // 生成分数
                     const den = getNonZeroRandomInt(2, 5);
                     const num = getNonZeroRandomInt(-5, 5);
                     slope = this.formatStandardFraction(num, den);
@@ -202,22 +215,27 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
             }
         } else {  // 难度4的情况
             do {
-                // 生成整数坐标点
+                // 生成第一个点
                 pointA = {
                     x: getRandomInt(-5, 5),
                     y: getRandomInt(-5, 5)
                 };
-                pointB = {
-                    x: getRandomInt(-5, 5),
-                    y: getRandomInt(-5, 5)
-                };
+
+                // 生成第二个点，确保x和y坐标都不相同
+                let x2, y2;
+                do {
+                    x2 = getRandomInt(-5, 5);
+                } while (x2 === pointA.x);  // 确保x坐标不同
+
+                do {
+                    y2 = getRandomInt(-5, 5);
+                } while (y2 === pointA.y);  // 确保y坐标不同
+
+                pointB = { x: x2, y: y2 };
 
                 // 计算斜率
                 const dx = pointB.x - pointA.x;
                 const dy = pointB.y - pointA.y;
-
-                // 避免相同x坐标或y坐标
-                if (dx === 0 || dy === 0) continue;
 
                 // 格式化斜率
                 slope = this.formatStandardFraction(dy, dx);
@@ -329,6 +347,11 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
         } else {
             let slope = equation.slope;
             let intercept = equation.intercept;
+
+            // 如果斜率是小数，转换为分数（仅在难度3时需要）
+            if (this.difficulty === 3 && !slope.includes('\\frac{')) {
+                slope = this.decimalToFraction(parseFloat(slope));
+            }
 
             // 处理斜率为1或-1的情况
             if (slope === '1') {
