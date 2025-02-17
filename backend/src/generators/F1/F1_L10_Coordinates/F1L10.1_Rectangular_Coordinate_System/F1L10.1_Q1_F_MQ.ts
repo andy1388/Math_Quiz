@@ -31,19 +31,28 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
         // 生成坐标系图形
         const coordSystem = new CoordinateSystem({
-            showGrid: true,
-            showAxis: true,
-            showLabels: true,
-            width: 400,  // SVG 宽度
-            height: 400, // SVG 高度
+            width: 400,
+            height: 400,
             xRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
             yRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
-            xLabel: 'x',  // 可以使用 LaTeX 语法，如 'x_1' 或 '\\alpha'
-            yLabel: 'y'   // 可以使用 LaTeX 语法，如 'y_1' 或 '\\beta'
+            
+            // 自定义网格线
+            showGrid: true,
+            gridColor: '#f0f0f0',
+            gridOpacity: 0.8,
+            
+            // 自定义坐标轴
+            axisColor: '#333',
+            axisWidth: 1.5,
+            showArrows: true,
+            
+            // 自定义标签
+            labelColor: '#666',
+            labelSize: 14
         });
 
-        // 添加点和标签
-        coordSystem.addPoint(point.x, point.y, "●", `(${point.x}, ${point.y})`);
+        // 添加点和标签，使用自定义偏移量
+        coordSystem.addPoint(point.x, point.y, "●", `(${point.x}, ${point.y})`, 15, -20);
         
         // 添加虚线 x=2
         coordSystem.addVerticalLine(2, "black", "dotted");
@@ -51,8 +60,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 添加线段示例
         coordSystem.addLine([0, 0], [2, 0], "green");
 
-        // 添加斜线 y=x+2 并显示方程
-        coordSystem.addObliqueLine(1, 2, "red", "solid", true);
+        // 添加斜线和方程，使用自定义偏移量
+        coordSystem.addObliqueLine(1, 2, "red", "solid", true, 20, -25);
 
         // 生成题目文本
         return {
