@@ -522,58 +522,55 @@ export class CoordinateSystem {
             };
 
             if (constraint.isGreaterThan) {
-                // 对于 y > f(x)，阴影在曲线的上方
                 const x1 = xRange[0];
                 const x2 = xRange[1];
                 const y1 = getY(x1);
                 const y2 = getY(x2);
                 const topY = 6;  // 使用實際的頂部邊界，而不是可見的 5
+                const steps = 100;  // 定義步數，用於平滑曲線
 
-                const pathPoints = [];
-                const steps = 100;
+                // 1. 先繪製阴影區域
+                const shadePoints = [];
+                shadePoints.push(
+                    `M ${x1 * xScale + xOffset} ${yOffset - topY * yScale}`,     // 左上角
+                    `L ${x1 * xScale + xOffset} ${yOffset - y1 * yScale}`       // 到左邊界與曲線的交點
+                );
 
-                // 路径点的顺序：
-                // 1. 从左上角开始 (x1, topY)
-                // 2. 到左边界与曲线的交点 (x1, f(x1))
-                // 3. 沿着函数曲线到右边 (x2, f(x2))
-                // 4. 到右上角 (x2, topY)
-                // 5. 回到起点
-
-                // 1. 左上角
-                pathPoints.push(`M ${x1 * xScale + xOffset} ${yOffset - topY * yScale}`);
-                
-                // 2. 到左边界与曲线的交点
-                pathPoints.push(`L ${x1 * xScale + xOffset} ${yOffset - y1 * yScale}`);
-
-                // 3. 沿着函数曲线
+                // 沿著函數曲線
                 for (let i = 0; i <= steps; i++) {
                     const x = x1 + (i / steps) * (x2 - x1);
                     const y = getY(x);
-                    pathPoints.push(`L ${x * xScale + xOffset} ${yOffset - y * yScale}`);
+                    shadePoints.push(`L ${x * xScale + xOffset} ${yOffset - y * yScale}`);
                 }
 
-                // 4. 到右上角
-                pathPoints.push(`L ${x2 * xScale + xOffset} ${yOffset - topY * yScale}`);
-                
-                // 5. 闭合路径
-                pathPoints.push('Z');
+                // 完成阴影區域
+                shadePoints.push(
+                    `L ${x2 * xScale + xOffset} ${yOffset - topY * yScale}`,     // 到右上角
+                    'Z'                                                          // 封閉路徑
+                );
 
-                // 绘制阴影区域
+                // 繪製阴影
                 svg += `<path 
-                    d="${pathPoints.join(' ')}" 
+                    d="${shadePoints.join(' ')}" 
                     fill="${constraint.color}" 
                     fill-opacity="0.2"
                     stroke="none"
                 />`;
 
-                // 绘制边界曲线（只绘制函数部分）
-                const curvePath = pathPoints.slice(2, -2).join(' ');  // 排除首尾的移动和闭合
+                // 2. 再單獨繪製邊界曲線
+                const curvePoints = [];
+                for (let i = 0; i <= steps; i++) {
+                    const x = x1 + (i / steps) * (x2 - x1);
+                    const y = getY(x);
+                    curvePoints.push(`${i === 0 ? 'M' : 'L'} ${x * xScale + xOffset} ${yOffset - y * yScale}`);
+                }
+
                 svg += `<path 
-                    d="${curvePath}" 
+                    d="${curvePoints.join(' ')}" 
                     fill="none"
                     stroke="${constraint.color}" 
                     stroke-width="2"
-                    stroke-dasharray="${constraint.style === 'dotted' ? '4,4' : ''}"
+                    stroke-dasharray="4,4"  /* 使用虛線表示不包含等號 */
                 />`;
             }
         }
