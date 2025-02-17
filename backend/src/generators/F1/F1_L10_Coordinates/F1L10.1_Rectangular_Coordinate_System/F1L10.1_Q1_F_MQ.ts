@@ -37,7 +37,9 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             width: 400,  // SVG 宽度
             height: 400, // SVG 高度
             xRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
-            yRange: this.difficulty === 1 ? [0, 5] : [-5, 5]
+            yRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
+            xLabel: 'x',  // 可以自定义标签
+            yLabel: 'y'   // 可以自定义标签
         });
 
         // 添加点
