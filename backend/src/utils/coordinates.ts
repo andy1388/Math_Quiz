@@ -92,6 +92,14 @@ export class CoordinateSystem {
     private functions: FunctionEquation[] = [];  // 新增：函数数组
     private circles: CircleEquation[] = [];  // 新增：圆形数组
     private constraints: LinearConstraint[] = [];  // 新增：线性约束数组
+    private axisLabels: {
+        x: number[];
+        y: number[];
+    } = {
+        x: [],
+        y: []
+    };
+    private texts: { x: number; y: number; text: string; color: string }[] = [];
 
     constructor(options: CoordinateSystemOptions) {
         // 設置默認值
@@ -99,8 +107,8 @@ export class CoordinateSystem {
             ...options,
             // 保持原始範圍，不需要擴展
             showGrid: options.showGrid ?? true,
-            gridColor: options.gridColor ?? '#eee',
-            gridOpacity: options.gridOpacity ?? 1,
+            gridColor: options.gridColor ?? '#e0e0e0',  // 改為更深的灰色
+            gridOpacity: options.gridOpacity ?? 0.8,    // 提高不透明度
             showHorizontalGrid: options.showHorizontalGrid ?? true,
             showVerticalGrid: options.showVerticalGrid ?? true,
             
@@ -242,6 +250,78 @@ export class CoordinateSystem {
         });
     }
 
+    addHorizontalLine(
+        y: number,
+        color: string = "black",
+        style: string = "solid"
+    ) {
+        const { xRange } = this.options;
+        
+        // 添加水平線段
+        this.lines.push({
+            from: [xRange[0], y],  // 從左邊界開始
+            to: [xRange[1], y],    // 到右邊界結束
+            color,
+            style
+        });
+    }
+
+    addLineSegment(
+        x1: number,
+        y1: number,
+        x2: number,
+        y2: number,
+        color: string = "black",
+        style: string = "solid"
+    ) {
+        // 添加線段
+        this.lines.push({
+            from: [x1, y1],
+            to: [x2, y2],
+            color,
+            style
+        });
+    }
+
+    addAxisLabels(
+        xLabels: number[],
+        yLabels: number[]
+    ) {
+        this.axisLabels.x = xLabels;
+        this.axisLabels.y = yLabels;
+    }
+
+    addText(
+        x: number,
+        y: number,
+        text: string,
+        color: string = "black"
+    ) {
+        const { width, height, xRange, yRange } = this.options;
+        
+        // 添加邊距
+        const margin = 30;
+        const innerWidth = width - 2 * margin;
+        const innerHeight = height - 2 * margin;
+        
+        // 計算縮放和偏移
+        const xScale = innerWidth / (xRange[1] - xRange[0]);
+        const yScale = innerHeight / (yRange[1] - yRange[0]);
+        const xOffset = margin - xRange[0] * xScale;
+        const yOffset = height - margin + yRange[0] * yScale;
+
+        // 計算實際位置
+        const xPos = x * xScale + xOffset;
+        const yPos = yOffset - y * yScale;
+
+        this.texts.push({
+            x: xPos,
+            y: yPos,
+            text,
+            color
+        });
+    }
+
     toString(): string {
         const { width, height, xRange, yRange } = this.options;
         
@@ -273,7 +353,7 @@ export class CoordinateSystem {
                     const xPos = x * xScale + xOffset;
                     svg += `<line x1="${xPos}" y1="${margin}" x2="${xPos}" y2="${height-margin}" 
                         stroke="${this.options.gridColor}" 
-                        stroke-width="0.5"
+                        stroke-width="1"  // 增加線寬
                         opacity="${this.options.gridOpacity}"/>`;
                 }
             }
@@ -283,7 +363,7 @@ export class CoordinateSystem {
                     const yPos = yOffset - y * yScale;
                     svg += `<line x1="${margin}" y1="${yPos}" x2="${width-margin}" y2="${yPos}" 
                         stroke="${this.options.gridColor}" 
-                        stroke-width="0.5"
+                        stroke-width="1"  // 增加線寬
                         opacity="${this.options.gridOpacity}"/>`;
                 }
             }
@@ -331,250 +411,77 @@ export class CoordinateSystem {
                 stroke="${line.color}" stroke-width="1" stroke-dasharray="${line.style === 'dotted' ? '4,4' : ''}"/>`;
         }
         
-        // 绘制普通线段和方程
+        // 繪製所有線段
         for (const line of this.lines) {
-            const x1 = line.from[0] * xScale + xOffset;
-            const y1 = yOffset - line.from[1] * yScale;
-            const x2 = line.to[0] * xScale + xOffset;
-            const y2 = yOffset - line.to[1] * yScale;
-            
-            // 绘制线段
-            svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" 
-                stroke="${line.color}" stroke-width="2" stroke-dasharray="${line.style === 'dotted' ? '4,4' : ''}"/>`;
+            const [x1, y1] = line.from;
+            const [x2, y2] = line.to;
+            svg += `<line 
+                x1="${x1 * xScale + xOffset}" 
+                y1="${yOffset - y1 * yScale}" 
+                x2="${x2 * xScale + xOffset}" 
+                y2="${yOffset - y2 * yScale}"
+                stroke="${line.color}"
+                stroke-width="2"
+                stroke-dasharray="${line.style === 'dotted' ? '4,4' : ''}"
+            />`;
         }
 
-        // 绘制方程标签
-        for (const eq of this.equations) {
-            if (eq.showEquation) {
-                // 计算直线中点位置，但稍微向右上方偏移
-                const { xRange } = this.options;
-                const midX = (xRange[0] + xRange[1]) * 0.6;  // 偏向右侧
-                const midY = eq.slope * midX + eq.yIntercept;
-                
-                // 转换为 SVG 坐标
-                const labelX = midX * xScale + xOffset;
-                const labelY = yOffset - midY * yScale;
-
-                // 使用配置的偏移量或默认值
-                const offsetX = eq.labelOffsetX ?? 15;
-                const offsetY = eq.labelOffsetY ?? -15;
-                
-                // 构建方程文本
-                let equationText = 'y = ';
-                if (eq.slope !== 0) {
-                    equationText += eq.slope === 1 ? 'x' : 
-                                  eq.slope === -1 ? '-x' : 
-                                  `${eq.slope}x`;
-                }
-                if (eq.yIntercept !== 0 || eq.slope === 0) {
-                    const sign = eq.yIntercept > 0 ? '+' : '';
-                    equationText += eq.slope !== 0 ? `${sign}${eq.yIntercept}` : eq.yIntercept;
-                }
-
-                // 添加方程标签，使用白色背景确保可读性
-                svg += `
-                    <rect x="${labelX + offsetX - 2}" y="${labelY + offsetY - 12}" 
-                        width="${equationText.length * 8}" height="16" 
-                        fill="white" fill-opacity="0.8"/>
-                    <text x="${labelX + offsetX}" y="${labelY + offsetY}" 
-                        style="font-family: serif; font-style: italic; font-size: 14px; fill: ${eq.color}"
-                        >${equationText}</text>
-                `;
-            }
-        }
-        
-        // 绘制点和标签
+        // 繪製所有點和標籤
         for (const point of this.points) {
-            const xPos = point.x * xScale + xOffset;
-            const yPos = yOffset - point.y * yScale;
+            const x = point.x * xScale + xOffset;
+            const y = yOffset - point.y * yScale;
             
-            // 绘制点
-            svg += `<circle cx="${xPos}" cy="${yPos}" r="3" fill="black"/>`;
+            // 繪製點
+            svg += `<text x="${x}" y="${y}" 
+                text-anchor="middle" 
+                dominant-baseline="middle"
+                style="font-size: 20px;"
+            >${point.symbol}</text>`;
             
-            // 如果有标签，则绘制标签
+            // 繪製標籤
             if (point.label) {
-                // 使用配置的偏移量或默认值
-                const labelX = xPos + (point.labelOffsetX ?? 10);
-                const labelY = yPos + (point.labelOffsetY ?? -10);
-                svg += `<text x="${labelX}" y="${labelY}" 
-                    style="font-family: serif; font-size: 14px">${point.label}</text>`;
+                svg += `<text 
+                    x="${x + (point.labelOffsetX ?? 10)}" 
+                    y="${y + (point.labelOffsetY ?? -10)}"
+                    style="font-size: ${this.options.labelSize}px;"
+                >${point.label}</text>`;
             }
         }
-        
-        // 绘制函数曲线
-        for (const func of this.functions) {
-            const { xRange } = this.options;
-            const dx = (xRange[1] - xRange[0]) / 100;  // 将区间分成100份
-            let pathD = '';
-            let firstPoint = true;
 
-            // 生成路径数据
-            for (let x = xRange[0]; x <= xRange[1]; x += dx) {
-                try {
-                    const y = func.fn(x);
-                    if (isFinite(y) && !isNaN(y)) {  // 检查 y 值是否有效
-                        const xPos = x * xScale + xOffset;
-                        const yPos = yOffset - y * yScale;
-                        pathD += firstPoint ? `M ${xPos},${yPos}` : ` L ${xPos},${yPos}`;
-                        firstPoint = false;
-                    }
-                } catch (e) {
-                    // 忽略计算错误，继续下一个点
-                    continue;
-                }
-            }
-
-            // 绘制曲线
-            if (pathD) {
-                svg += `<path d="${pathD}" fill="none" stroke="${func.color}" 
-                    stroke-width="2" stroke-dasharray="${func.style === 'dotted' ? '4,4' : ''}"/>`;
-            }
-
-            // 如果需要显示方程
-            if (func.showEquation) {
-                // 找一个合适的位置显示方程（在曲线中间位置）
-                const midX = (xRange[0] + xRange[1]) * 0.6;
-                const midY = func.fn(midX);
-                
-                const labelX = midX * xScale + xOffset + (func.labelOffsetX ?? 15);
-                const labelY = yOffset - midY * yScale + (func.labelOffsetY ?? -15);
-                
-                const equationText = func.equation || 'y = f(x)';
-
-                // 添加方程标签，使用白色背景确保可读性
-                svg += `
-                    <rect x="${labelX - 2}" y="${labelY - 12}" 
-                        width="${equationText.length * 8}" height="16" 
-                        fill="white" fill-opacity="0.8"/>
-                    <text x="${labelX}" y="${labelY}" 
-                        style="font-family: serif; font-style: italic; font-size: 14px; fill: ${func.color}"
-                        >${equationText}</text>
-                `;
-            }
+        // 繪製座標軸標籤
+        for (const x of this.axisLabels.x) {
+            const xPos = x * xScale + xOffset;
+            svg += `<text 
+                x="${xPos}" 
+                y="${yOffset + 20}" 
+                text-anchor="middle"
+                style="font-size: ${this.options.labelSize}px;"
+            >${x}</text>`;
         }
-        
-        // 绘制圆
-        for (const circle of this.circles) {
-            // 使用参数方程绘制圆的部分弧
-            let pathD = '';
-            const steps = 100;
-            let firstPoint = true;
 
-            for (let i = 0; i <= steps; i++) {
-                const angle = (i / steps) * 2 * Math.PI;
-                const x = circle.centerX + circle.radius * Math.cos(angle);
-                const y = circle.centerY + circle.radius * Math.sin(angle);
-
-                // 检查点是否在定义域和值域内
-                if (circle.domain && (x < circle.domain[0] || x > circle.domain[1])) continue;
-                if (circle.range && (y < circle.range[0] || y > circle.range[1])) continue;
-
-                const xPos = x * xScale + xOffset;
-                const yPos = yOffset - y * yScale;
-
-                if (firstPoint) {
-                    pathD += `M ${xPos},${yPos}`;
-                    firstPoint = false;
-                } else {
-                    pathD += ` L ${xPos},${yPos}`;
-                }
-            }
-
-            // 绘制圆弧
-            if (pathD) {
-                svg += `<path d="${pathD}" 
-                    fill="none" 
-                    stroke="${circle.color}" 
-                    stroke-width="2"
-                    stroke-dasharray="${circle.style === 'dotted' ? '4,4' : ''}"/>`;
-            }
-
-            // 如果需要显示方程
-            if (circle.showEquation) {
-                const labelX = circle.centerX * xScale + xOffset + (circle.labelOffsetX ?? 15);
-                const labelY = circle.centerY * yScale + yOffset + (circle.labelOffsetY ?? -15);
-                
-                const equationText = circle.equation || 
-                    `(x${circle.centerX >= 0 ? '-' : '+'}${Math.abs(circle.centerX)})² + ` +
-                    `(y${circle.centerY >= 0 ? '-' : '+'}${Math.abs(circle.centerY)})² = ${circle.radius * circle.radius}`;
-
-                // 添加方程标签，使用白色背景确保可读性
-                svg += `
-                    <rect x="${labelX - 2}" y="${labelY - 12}" 
-                        width="${equationText.length * 8}" height="16" 
-                        fill="white" fill-opacity="0.8"/>
-                    <text x="${labelX}" y="${labelY}" 
-                        style="font-family: serif; font-style: italic; font-size: 14px; fill: ${circle.color}"
-                        >${equationText}</text>
-                `;
-            }
+        for (const y of this.axisLabels.y) {
+            const yPos = yOffset - y * yScale;
+            svg += `<text 
+                x="${xOffset - 10}" 
+                y="${yPos}" 
+                text-anchor="end"
+                dominant-baseline="middle"
+                style="font-size: ${this.options.labelSize}px;"
+            >${y}</text>`;
         }
-        
-        // 绘制线性约束和阴影区域
-        for (const constraint of this.constraints) {
-            const { xRange, yRange } = this.options;
-            
-            // 计算 y 值的函数
-            const getY = (x: number) => {
-                return typeof constraint.slope === 'function' 
-                    ? constraint.slope(x) 
-                    : constraint.slope * x + constraint.yIntercept;
-            };
 
-            if (constraint.isGreaterThan) {
-                const x1 = xRange[0];
-                const x2 = xRange[1];
-                const y1 = getY(x1);
-                const y2 = getY(x2);
-                const topY = 6;  // 使用實際的頂部邊界，而不是可見的 5
-                const steps = 100;  // 定義步數，用於平滑曲線
-
-                // 1. 先繪製阴影區域
-                const shadePoints = [];
-                shadePoints.push(
-                    `M ${x1 * xScale + xOffset} ${yOffset - topY * yScale}`,     // 左上角
-                    `L ${x1 * xScale + xOffset} ${yOffset - y1 * yScale}`       // 到左邊界與曲線的交點
-                );
-
-                // 沿著函數曲線
-                for (let i = 0; i <= steps; i++) {
-                    const x = x1 + (i / steps) * (x2 - x1);
-                    const y = getY(x);
-                    shadePoints.push(`L ${x * xScale + xOffset} ${yOffset - y * yScale}`);
-                }
-
-                // 完成阴影區域
-                shadePoints.push(
-                    `L ${x2 * xScale + xOffset} ${yOffset - topY * yScale}`,     // 到右上角
-                    'Z'                                                          // 封閉路徑
-                );
-
-                // 繪製阴影
-                svg += `<path 
-                    d="${shadePoints.join(' ')}" 
-                    fill="${constraint.color}" 
-                    fill-opacity="0.2"
-                    stroke="none"
-                />`;
-
-                // 2. 再單獨繪製邊界曲線
-                const curvePoints = [];
-                for (let i = 0; i <= steps; i++) {
-                    const x = x1 + (i / steps) * (x2 - x1);
-                    const y = getY(x);
-                    curvePoints.push(`${i === 0 ? 'M' : 'L'} ${x * xScale + xOffset} ${yOffset - y * yScale}`);
-                }
-
-                svg += `<path 
-                    d="${curvePoints.join(' ')}" 
-                    fill="none"
-                    stroke="${constraint.color}" 
-                    stroke-width="2"
-                    stroke-dasharray="4,4"  /* 使用虛線表示不包含等號 */
-                />`;
-            }
+        // 繪製額外的文字標籤
+        for (const text of this.texts) {
+            svg += `<text 
+                x="${text.x}" 
+                y="${text.y}" 
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="${text.color}"
+                style="font-size: ${this.options.labelSize}px; font-weight: bold;"
+            >${text.text}</text>`;
         }
-        
+
         svg += '</svg>';
         return svg;
     }

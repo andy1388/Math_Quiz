@@ -2,10 +2,6 @@ import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenera
 import {
     getRandomInt,
     getRandomDecimal,
-    formatNumber,
-    LaTeX,
-    DifficultyUtils,
-    DEFAULT_CONFIG,
     getNonZeroRandomInt
 } from '@/utils/mathUtils';
 import { CoordinateSystem } from '@/utils/coordinates';
@@ -33,111 +29,111 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         const coordSystem = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
-            yRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
-            
-            // 自定义网格线
+            xRange: [0, 5],  // level 1 固定範圍 0-5
+            yRange: [0, 5],
             showGrid: true,
             gridColor: '#f0f0f0',
             gridOpacity: 0.8,
-            
-            // 自定义坐标轴
             axisColor: '#333',
             axisWidth: 1.5,
             showArrows: true,
-            
-            // 自定义标签
             labelColor: '#666',
             labelSize: 14
         });
 
-        // 添加点和标签，使用自定义偏移量
-        coordSystem.addPoint(point.x, point.y, "●", `(${point.x}, ${point.y})`, 15, -20);
+        // 添加坐標軸上的數字標籤
+        coordSystem.addAxisLabels([0, 5], [0, 5]);  // 只在 0 和 5 處添加標籤
+
+        // 添加点和标签，使用字母 A 作為標籤
+        coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20);
+
+        // 生成第一步的坐标系（顯示找 x 坐標的輔助線）
+        const step1System = new CoordinateSystem({
+            width: 400,
+            height: 400,
+            xRange: [0, 5],
+            yRange: [0, 5],
+            showGrid: true,
+            gridColor: '#e0e0e0',
+            gridOpacity: 0.8,
+            axisColor: '#333',
+            axisWidth: 1.5,
+            showArrows: true,
+            labelColor: '#666',
+            labelSize: 14
+        });
+
+        // 只添加 0 和 5 的標籤
+        step1System.addAxisLabels([0, 5], [0, 5]);
         
-        // 添加虚线 x=2
-        coordSystem.addVerticalLine(2, "black", "dotted");
+        // 添加點 A
+        step1System.addPoint(point.x, point.y, "●", "A", 15, -20);
+        
+        // 添加垂直輔助線（綠色虛線，只到 x 軸）
+        step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
+        
+        // 在 x 軸上添加紅色線段，從原點到 x 坐標
+        step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+        
+        // 第一步：添加 x 坐標的標籤（使用紅色）
+        step1System.addText(point.x, -0.3, `${point.x}`, "red");
 
-        // 添加不等式约束 y > 3^x
-        coordSystem.addLinearConstraint(
-            (x: number) => Math.pow(3, x),    // 函數 3^x
-            0,                                // y軸截距為0（這裡不需要）
-            true,                            // true表示大於
-            "red",                           // 顏色
-            "dotted",                       // 虛線表示不包含邊界
-            true,                           // 顯示方程
-            "y > 3^x",                      // 方程文本
-            20,                             // x偏移
-            -20                             // y偏移
-        );
+        // 生成第二步的坐标系（顯示找 y 坐標的輔助線）
+        const step2System = new CoordinateSystem({
+            width: 400,
+            height: 400,
+            xRange: [0, 5],
+            yRange: [0, 5],
+            showGrid: true,
+            gridColor: '#e0e0e0',
+            gridOpacity: 0.8,
+            axisColor: '#333',
+            axisWidth: 1.5,
+            showArrows: true,
+            labelColor: '#666',
+            labelSize: 14
+        });
 
-        // 添加指数函数 y = 2^x
-        coordSystem.addFunction(
-            x => Math.pow(2, x),  // 函数表达式
-            "yellow",             // 颜色
-            "solid",             // 线型
-            true,                // 显示方程
-            "y = 2^x",           // 方程文本
-            20,                  // x偏移
-            -20                  // y偏移
-        );
+        // 只添加 0 和 5 的標籤
+        step2System.addAxisLabels([0, 5], [0, 5]);
 
-        // 添加圆 x²+y²-2x-2y-2=0，只显示 x>=1 且 y>=1 的部分
-        coordSystem.addCircle(
-            1,                    // 圆心 x 坐标
-            1,                    // 圆心 y 坐标
-            Math.sqrt(5),         // 半径
-            "purple",            // 颜色
-            "solid",             // 线型
-            true,                // 显示方程
-            "x²+y²-2x-2y-2=0",   // 方程文本
-            20,                  // x偏移
-            -20,                 // y偏移
-            [1, Infinity],       // 定义域限制：x ≥ 1
-            [1, Infinity]        // 值域限制：y ≥ 1
-        );
+        // 添加點 A
+        step2System.addPoint(point.x, point.y, "●", "A", 15, -20);
+        
+        // 保留第一步的紅色線段和標籤
+        step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+        step2System.addText(point.x, -0.3, `${point.x}`, "red");
+        
+        // 添加水平輔助線（綠色虛線，只到點 A）
+        step2System.addLineSegment(0, point.y, point.x, point.y, "green", "dotted");
+        
+        // 添加藍色垂直線段，從 x 軸到點 A
+        step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
+        
+        // 添加 y 坐標的標籤（使用藍色）
+        step2System.addText(-0.3, point.y, `${point.y}`, "blue");
 
-        // 添加对数函数 y = log₄(x)
-        coordSystem.addFunction(
-            x => Math.log(x) / Math.log(4),  // 使用换底公式
-            "pink",              // 颜色
-            "solid",            // 线型
-            true,               // 显示方程
-            "y = log₄(x)",      // 方程文本（使用下标表示）
-            20,                 // x偏移
-            -20                 // y偏移
-        );
-
-        // 添加点 A(1,6)
-        coordSystem.addPoint(
-            1,                    // x 坐标
-            5,                    // y 坐标
-            "●",                 // 点的符号
-            "A",                 // 标签文本
-            10,                  // x偏移
-            -10                  // y偏移
-        );
-
-        // 添加点 B(1,3)
-        coordSystem.addPoint(
-            1,                    // x 坐标
-            3,                    // y 坐标
-            "●",                 // 点的符号
-            "B",                 // 标签文本
-            10,                  // x偏移
-            -10                  // y偏移
-        );
-
-        // 生成题目文本
         return {
-            content: `在下面的坐標系中，請寫出標示點的坐標。\n${coordSystem.toString()}`,
+            content: `在下面的坐標系中，請寫出點 A 的坐標。\n${coordSystem.toString()}`,
             correctAnswer: `(${point.x}, ${point.y})`,
             wrongAnswers: this.generateWrongAnswers(point),
             explanation: `
 解答：
-1. 從圖中可以看到標示點的位置
-2. 沿垂直線找到 x 軸上的刻度，得到 x 坐標為 ${point.x}
-3. 沿水平線找到 y 軸上的刻度，得到 y 坐標為 ${point.y}
-4. 因此，該點的坐標為 (${point.x}, ${point.y})
+【第一步：找 x 坐標】
+1. 從點 A 向下引一條垂直虛線（綠色）
+2. 這條線與 x 軸的交點，就是 x 坐標
+3. 從刻度可以看出 x = ${point.x}
+
+${step1System.toString()}
+
+【第二步：找 y 坐標】
+1. 從點 A 向左引一條水平虛線（綠色）
+2. 這條線與 y 軸的交點，就是 y 坐標
+3. 從刻度可以看出 y = ${point.y}
+
+${step2System.toString()}
+
+因此，點 A 的坐標為 (${point.x}, ${point.y})
             `.trim(),
             type: 'text',
             displayOptions: {
@@ -150,8 +146,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         switch (level) {
             case 1: // 基礎坐标（第一象限整数）
                 return {
-                    x: getRandomInt(0, 5),
-                    y: getRandomInt(0, 5)
+                    x: getRandomInt(1, 4),  // 避免 0 和 5
+                    y: getRandomInt(1, 4)   // 避免 0 和 5
                 };
             case 2: // 擴展坐标（四象限整数）
                 return {
