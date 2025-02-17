@@ -38,8 +38,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             height: 400, // SVG 高度
             xRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
             yRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
-            xLabel: 'x',  // 可以自定义标签
-            yLabel: 'y'   // 可以自定义标签
+            xLabel: 'x',  // 可以使用 LaTeX 语法，如 'x_1' 或 '\\alpha'
+            yLabel: 'y'   // 可以使用 LaTeX 语法，如 'y_1' 或 '\\beta'
         });
 
         // 添加点

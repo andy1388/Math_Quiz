@@ -6,8 +6,8 @@ interface CoordinateSystemOptions {
     height: number;
     xRange: [number, number];
     yRange: [number, number];
-    xLabel?: string;  // 添加 x 轴标签选项
-    yLabel?: string;  // 添加 y 轴标签选项
+    xLabel?: string;
+    yLabel?: string;
 }
 
 export class CoordinateSystem {
@@ -17,8 +17,8 @@ export class CoordinateSystem {
     constructor(options: CoordinateSystemOptions) {
         this.options = {
             ...options,
-            xLabel: options.xLabel || 'x',  // 默认标签
-            yLabel: options.yLabel || 'y'   // 默认标签
+            xLabel: options.xLabel || 'x',
+            yLabel: options.yLabel || 'y'
         };
     }
 
@@ -30,7 +30,7 @@ export class CoordinateSystem {
         const { width, height, xRange, yRange, xLabel, yLabel } = this.options;
         
         // 添加边距
-        const margin = 30;  // 边距大小
+        const margin = 30;
         const innerWidth = width - 2 * margin;
         const innerHeight = height - 2 * margin;
         
@@ -40,7 +40,7 @@ export class CoordinateSystem {
         const xOffset = margin - xRange[0] * xScale;
         const yOffset = height - margin + yRange[0] * yScale;
         
-        // 创建 SVG，设置坐标系统
+        // 创建 SVG
         let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <marker id="arrowhead" markerWidth="10" markerHeight="7" 
@@ -70,14 +70,16 @@ export class CoordinateSystem {
             svg += `<line x1="${margin}" y1="${yAxisPos}" x2="${width-margin}" y2="${yAxisPos}" 
                 stroke="black" stroke-width="1" marker-end="url(#arrowhead)"/>`;
             // x轴标签
-            svg += `<text x="${width-margin+10}" y="${yAxisPos+20}" font-family="sans-serif">${xLabel}</text>`;
+            svg += `<text x="${width-margin+10}" y="${yAxisPos+20}" 
+                style="font-family: serif; font-style: italic; font-size: 16px">${xLabel}</text>`;
             
             // y轴
             const xAxisPos = xOffset;
             svg += `<line x1="${xAxisPos}" y1="${height-margin}" x2="${xAxisPos}" y2="${margin}" 
                 stroke="black" stroke-width="1" marker-end="url(#arrowhead)"/>`;
             // y轴标签
-            svg += `<text x="${xAxisPos-20}" y="${margin-10}" font-family="sans-serif">${yLabel}</text>`;
+            svg += `<text x="${xAxisPos-20}" y="${margin-10}" 
+                style="font-family: serif; font-style: italic; font-size: 16px">${yLabel}</text>`;
         }
         
         // 绘制点
