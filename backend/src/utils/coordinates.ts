@@ -100,7 +100,7 @@ export class CoordinateSystem {
         x: [],
         y: []
     };
-    private texts: { x: number; y: number; text: string; color: string }[] = [];
+    private texts: { x: number; y: number; text: string; color: string; fontSize?: number; hasBackground?: boolean }[] = [];
 
     constructor(options: CoordinateSystemOptions) {
         // 設置默認值
@@ -323,6 +323,42 @@ export class CoordinateSystem {
         });
     }
 
+    // 新增方法：添加帶背景的文字標籤
+    addTextWithBackground(
+        x: number,
+        y: number,
+        text: string,
+        color: string = "black",
+        fontSize: number = 16  // 默認大小
+    ) {
+        const { width, height, xRange, yRange } = this.options;
+        
+        // 添加邊距
+        const margin = 30;
+        const innerWidth = width - 2 * margin;
+        const innerHeight = height - 2 * margin;
+        
+        // 計算縮放和偏移
+        const xScale = innerWidth / (xRange[1] - xRange[0]);
+        const yScale = innerHeight / (yRange[1] - yRange[0]);
+        const xOffset = margin - xRange[0] * xScale;
+        const yOffset = height - margin + yRange[0] * yScale;
+
+        // 計算實際位置
+        const xPos = x * xScale + xOffset;
+        const yPos = yOffset - y * yScale;
+
+        // 添加背景矩形和文字
+        this.texts.push({
+            x: xPos,
+            y: yPos,
+            text,
+            color,
+            fontSize,
+            hasBackground: true  // 新增屬性
+        });
+    }
+
     toString(): string {
         const { width, height, xRange, yRange } = this.options;
         
@@ -482,13 +518,26 @@ export class CoordinateSystem {
 
         // 繪製額外的文字標籤
         for (const text of this.texts) {
+            if (text.hasBackground) {
+                // 先繪製白色背景
+                svg += `<rect 
+                    x="${text.x - 12}" 
+                    y="${text.y - 12}" 
+                    width="24" 
+                    height="24" 
+                    fill="white"
+                    rx="4"
+                />`;
+            }
+            
+            // 繪製文字
             svg += `<text 
                 x="${text.x}" 
                 y="${text.y}" 
                 text-anchor="middle"
                 dominant-baseline="middle"
                 fill="${text.color}"
-                style="font-size: ${this.options.labelSize}px; font-weight: bold;"
+                style="font-size: ${text.fontSize ?? this.options.labelSize}px; font-weight: bold;"
             >${text.text}</text>`;
         }
 
