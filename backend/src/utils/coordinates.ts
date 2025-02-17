@@ -26,6 +26,7 @@ interface CoordinateSystemOptions {
     yLabel?: string;
     labelColor?: string;
     labelSize?: number;
+    showAllGrids?: boolean;  // 新增選項
 }
 
 interface LineEquation {
@@ -345,25 +346,32 @@ export class CoordinateSystem {
             </marker>
         </defs>`;
         
-        // 繪製網格（只在 0 到 5 的範圍內）
+        // 繪製網格
         if (this.options.showGrid) {
             // 垂直網格線
             if (this.options.showVerticalGrid) {
-                for (let x = Math.max(0, xRange[0]); x <= Math.min(5, xRange[1]); x++) {
+                const gridStart = this.options.showAllGrids ? xRange[0] : Math.max(0, xRange[0]);
+                const gridEnd = this.options.showAllGrids ? xRange[1] : Math.min(5, xRange[1]);
+                
+                for (let x = gridStart; x <= gridEnd; x++) {
                     const xPos = x * xScale + xOffset;
                     svg += `<line x1="${xPos}" y1="${margin}" x2="${xPos}" y2="${height-margin}" 
                         stroke="${this.options.gridColor}" 
-                        stroke-width="1"  // 增加線寬
+                        stroke-width="1"
                         opacity="${this.options.gridOpacity}"/>`;
                 }
             }
+
             // 水平網格線
             if (this.options.showHorizontalGrid) {
-                for (let y = Math.max(0, yRange[0]); y <= Math.min(5, yRange[1]); y++) {
+                const gridStart = this.options.showAllGrids ? yRange[0] : Math.max(0, yRange[0]);
+                const gridEnd = this.options.showAllGrids ? yRange[1] : Math.min(5, yRange[1]);
+                
+                for (let y = gridStart; y <= gridEnd; y++) {
                     const yPos = yOffset - y * yScale;
                     svg += `<line x1="${margin}" y1="${yPos}" x2="${width-margin}" y2="${yPos}" 
                         stroke="${this.options.gridColor}" 
-                        stroke-width="1"  // 增加線寬
+                        stroke-width="1"
                         opacity="${this.options.gridOpacity}"/>`;
                 }
             }

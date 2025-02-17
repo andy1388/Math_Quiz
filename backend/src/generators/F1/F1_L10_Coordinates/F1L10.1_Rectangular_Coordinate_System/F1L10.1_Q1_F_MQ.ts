@@ -27,7 +27,11 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
         // 根據難度設置坐標範圍
         const range: [number, number] = this.difficulty === 1 ? [0, 5] : [-5, 5];
-        const axisLabels = this.difficulty === 1 ? [0, 5] : [-5, 0, 5];
+        
+        // 根據難度設置標籤
+        const axisLabels = this.difficulty === 1 
+            ? [0, 1, 2, 3, 4, 5]  // level 1 顯示所有整數刻度
+            : [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];  // level 2/3 不顯示 0
 
         // 生成坐标系图形
         const coordSystem = new CoordinateSystem({
@@ -42,7 +46,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             axisWidth: 1.5,
             showArrows: true,
             labelColor: '#666',
-            labelSize: 14
+            labelSize: 14,
+            showAllGrids: true  // 添加這個選項來顯示完整網格
         });
 
         // 添加坐標軸上的數字標籤
@@ -64,7 +69,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             axisWidth: 1.5,
             showArrows: true,
             labelColor: '#666',
-            labelSize: 14
+            labelSize: 14,
+            showAllGrids: true
         });
 
         // 添加坐標軸標籤
@@ -95,7 +101,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             axisWidth: 1.5,
             showArrows: true,
             labelColor: '#666',
-            labelSize: 14
+            labelSize: 14,
+            showAllGrids: true
         });
 
         // 添加坐標軸標籤
