@@ -34,8 +34,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             showGrid: true,
             showAxis: true,
             showLabels: true,
-            width: 8,  // TikZ 单位
-            height: 8,
+            width: 400,  // SVG 宽度
+            height: 400, // SVG 高度
             xRange: this.difficulty === 1 ? [0, 5] : [-5, 5],
             yRange: this.difficulty === 1 ? [0, 5] : [-5, 5]
         });
@@ -45,7 +45,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
         // 生成题目文本
         return {
-            content: "在下面的坐標系中，請寫出標示點的坐標。\n" + coordSystem.toString(),
+            content: `在下面的坐標系中，請寫出標示點的坐標。\n${coordSystem.toString()}`,
             correctAnswer: `(${point.x}, ${point.y})`,
             wrongAnswers: this.generateWrongAnswers(point),
             explanation: `
@@ -57,7 +57,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             `.trim(),
             type: 'text',
             displayOptions: {
-                latex: true  // 使用 latex 渲染
+                graph: true  // 使用图形显示
             }
         };
     }
