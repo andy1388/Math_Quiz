@@ -71,6 +71,18 @@ interface CircleEquation {
     range?: [number, number];     // 值域限制 [min, max]
 }
 
+interface LinearConstraint {
+    slope: number | ((x: number) => number);  // 可以是斜率或函數
+    yIntercept: number;
+    isGreaterThan: boolean;
+    color: string;
+    style?: string;
+    showEquation?: boolean;
+    equation?: string;
+    labelOffsetX?: number;
+    labelOffsetY?: number;
+}
+
 export class CoordinateSystem {
     private options: CoordinateSystemOptions;
     private points: PointLabel[] = [];
@@ -79,19 +91,20 @@ export class CoordinateSystem {
     private equations: LineEquation[] = [];
     private functions: FunctionEquation[] = [];  // 新增：函数数组
     private circles: CircleEquation[] = [];  // 新增：圆形数组
+    private constraints: LinearConstraint[] = [];  // 新增：线性约束数组
 
     constructor(options: CoordinateSystemOptions) {
-        // 设置默认值
+        // 設置默認值
         this.options = {
             ...options,
-            // 网格线默认值
+            // 保持原始範圍，不需要擴展
             showGrid: options.showGrid ?? true,
             gridColor: options.gridColor ?? '#eee',
             gridOpacity: options.gridOpacity ?? 1,
             showHorizontalGrid: options.showHorizontalGrid ?? true,
             showVerticalGrid: options.showVerticalGrid ?? true,
             
-            // 坐标轴默认值
+            // 其他設置保持不變
             showAxis: options.showAxis ?? true,
             axisColor: options.axisColor ?? 'black',
             axisWidth: options.axisWidth ?? 1,
@@ -99,7 +112,6 @@ export class CoordinateSystem {
             showYAxis: options.showYAxis ?? true,
             showArrows: options.showArrows ?? true,
             
-            // 标签默认值
             showLabels: options.showLabels ?? true,
             xLabel: options.xLabel ?? 'x',
             yLabel: options.yLabel ?? 'y',
@@ -206,15 +218,39 @@ export class CoordinateSystem {
         });
     }
 
+    addLinearConstraint(
+        slope: number | ((x: number) => number),  // 可以是斜率或函數
+        yIntercept: number,
+        isGreaterThan: boolean = true,
+        color: string = "red",
+        style: string = "solid",
+        showEquation: boolean = false,
+        equation?: string,
+        labelOffsetX: number = 15,
+        labelOffsetY: number = -15
+    ) {
+        this.constraints.push({
+            slope,
+            yIntercept,
+            isGreaterThan,
+            color,
+            style,
+            showEquation,
+            equation,
+            labelOffsetX,
+            labelOffsetY
+        });
+    }
+
     toString(): string {
         const { width, height, xRange, yRange } = this.options;
         
-        // 添加边距
+        // 添加邊距
         const margin = 30;
         const innerWidth = width - 2 * margin;
         const innerHeight = height - 2 * margin;
         
-        // 计算缩放和偏移
+        // 計算縮放和偏移
         const xScale = innerWidth / (xRange[1] - xRange[0]);
         const yScale = innerHeight / (yRange[1] - yRange[0]);
         const xOffset = margin - xRange[0] * xScale;
@@ -229,11 +265,11 @@ export class CoordinateSystem {
             </marker>
         </defs>`;
         
-        // 绘制网格
+        // 繪製網格（只在 0 到 5 的範圍內）
         if (this.options.showGrid) {
-            // 垂直网格线
+            // 垂直網格線
             if (this.options.showVerticalGrid) {
-                for (let x = xRange[0]; x <= xRange[1]; x++) {
+                for (let x = Math.max(0, xRange[0]); x <= Math.min(5, xRange[1]); x++) {
                     const xPos = x * xScale + xOffset;
                     svg += `<line x1="${xPos}" y1="${margin}" x2="${xPos}" y2="${height-margin}" 
                         stroke="${this.options.gridColor}" 
@@ -241,9 +277,9 @@ export class CoordinateSystem {
                         opacity="${this.options.gridOpacity}"/>`;
                 }
             }
-            // 水平网格线
+            // 水平網格線
             if (this.options.showHorizontalGrid) {
-                for (let y = yRange[0]; y <= yRange[1]; y++) {
+                for (let y = Math.max(0, yRange[0]); y <= Math.min(5, yRange[1]); y++) {
                     const yPos = yOffset - y * yScale;
                     svg += `<line x1="${margin}" y1="${yPos}" x2="${width-margin}" y2="${yPos}" 
                         stroke="${this.options.gridColor}" 
@@ -474,8 +510,75 @@ export class CoordinateSystem {
             }
         }
         
-        svg += '</svg>';
+        // 绘制线性约束和阴影区域
+        for (const constraint of this.constraints) {
+            const { xRange, yRange } = this.options;
+            
+            // 计算 y 值的函数
+            const getY = (x: number) => {
+                return typeof constraint.slope === 'function' 
+                    ? constraint.slope(x) 
+                    : constraint.slope * x + constraint.yIntercept;
+            };
+
+            if (constraint.isGreaterThan) {
+                // 对于 y > f(x)，阴影在曲线的上方
+                const x1 = xRange[0];
+                const x2 = xRange[1];
+                const y1 = getY(x1);
+                const y2 = getY(x2);
+                const topY = 6;  // 使用實際的頂部邊界，而不是可見的 5
+
+                const pathPoints = [];
+                const steps = 100;
+
+                // 路径点的顺序：
+                // 1. 从左上角开始 (x1, topY)
+                // 2. 到左边界与曲线的交点 (x1, f(x1))
+                // 3. 沿着函数曲线到右边 (x2, f(x2))
+                // 4. 到右上角 (x2, topY)
+                // 5. 回到起点
+
+                // 1. 左上角
+                pathPoints.push(`M ${x1 * xScale + xOffset} ${yOffset - topY * yScale}`);
+                
+                // 2. 到左边界与曲线的交点
+                pathPoints.push(`L ${x1 * xScale + xOffset} ${yOffset - y1 * yScale}`);
+
+                // 3. 沿着函数曲线
+                for (let i = 0; i <= steps; i++) {
+                    const x = x1 + (i / steps) * (x2 - x1);
+                    const y = getY(x);
+                    pathPoints.push(`L ${x * xScale + xOffset} ${yOffset - y * yScale}`);
+                }
+
+                // 4. 到右上角
+                pathPoints.push(`L ${x2 * xScale + xOffset} ${yOffset - topY * yScale}`);
+                
+                // 5. 闭合路径
+                pathPoints.push('Z');
+
+                // 绘制阴影区域
+                svg += `<path 
+                    d="${pathPoints.join(' ')}" 
+                    fill="${constraint.color}" 
+                    fill-opacity="0.2"
+                    stroke="none"
+                />`;
+
+                // 绘制边界曲线（只绘制函数部分）
+                const curvePath = pathPoints.slice(2, -2).join(' ');  // 排除首尾的移动和闭合
+                svg += `<path 
+                    d="${curvePath}" 
+                    fill="none"
+                    stroke="${constraint.color}" 
+                    stroke-width="2"
+                    stroke-dasharray="${constraint.style === 'dotted' ? '4,4' : ''}"
+                />`;
+            }
+        }
         
+        svg += '</svg>';
         return svg;
     }
-} 
+}

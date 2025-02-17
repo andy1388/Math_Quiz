@@ -57,11 +57,18 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 添加虚线 x=2
         coordSystem.addVerticalLine(2, "black", "dotted");
 
-        // 添加线段示例
-        coordSystem.addLine([0, 0], [2, 0], "green");
-
-        // 添加斜线和方程，使用自定义偏移量
-        coordSystem.addObliqueLine(1, 2, "red", "solid", true, 20, -25);
+        // 添加不等式约束 y > 3^x
+        coordSystem.addLinearConstraint(
+            (x: number) => Math.pow(3, x),    // 函數 3^x
+            0,                                // y軸截距為0（這裡不需要）
+            true,                            // true表示大於
+            "red",                           // 顏色
+            "dotted",                       // 虛線表示不包含邊界
+            true,                           // 顯示方程
+            "y > 3^x",                      // 方程文本
+            20,                             // x偏移
+            -20                             // y偏移
+        );
 
         // 添加指数函数 y = 2^x
         coordSystem.addFunction(
@@ -98,6 +105,26 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             "y = log₄(x)",      // 方程文本（使用下标表示）
             20,                 // x偏移
             -20                 // y偏移
+        );
+
+        // 添加点 A(1,6)
+        coordSystem.addPoint(
+            1,                    // x 坐标
+            5,                    // y 坐标
+            "●",                 // 点的符号
+            "A",                 // 标签文本
+            10,                  // x偏移
+            -10                  // y偏移
+        );
+
+        // 添加点 B(1,3)
+        coordSystem.addPoint(
+            1,                    // x 坐标
+            3,                    // y 坐标
+            "●",                 // 点的符号
+            "B",                 // 标签文本
+            10,                  // x偏移
+            -10                  // y偏移
         );
 
         // 生成题目文本
