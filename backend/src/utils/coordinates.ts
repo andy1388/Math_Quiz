@@ -382,8 +382,9 @@ export class CoordinateSystem {
                 
                 // x轴标签
                 if (this.options.showLabels) {
-                    svg += `<text x="${width-margin+10}" y="${yAxisPos+20}" 
-                        style="font-family: serif; font-style: italic; font-size: ${this.options.labelSize}px; fill: ${this.options.labelColor}"
+                    const fontSize = (this.options.labelSize ?? 16) * 1.5;  // 添加默認值
+                    svg += `<text x="${width-margin+5}" y="${yOffset+5}" 
+                        style="font-family: serif; font-style: italic; font-size: ${fontSize}px; fill: ${this.options.labelColor}"
                         >${this.options.xLabel}</text>`;
                 }
             }
@@ -397,8 +398,9 @@ export class CoordinateSystem {
                 
                 // y轴标签
                 if (this.options.showLabels) {
-                    svg += `<text x="${xAxisPos-20}" y="${margin-10}" 
-                        style="font-family: serif; font-style: italic; font-size: ${this.options.labelSize}px; fill: ${this.options.labelColor}"
+                    const fontSize = (this.options.labelSize ?? 16) * 1.5;  // 添加默認值
+                    svg += `<text x="${xOffset-5}" y="${margin-5}" 
+                        style="font-family: serif; font-style: italic; font-size: ${fontSize}px; fill: ${this.options.labelColor}"
                         >${this.options.yLabel}</text>`;
                 }
             }

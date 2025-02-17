@@ -118,26 +118,29 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             correctAnswer: `(${point.x}, ${point.y})`,
             wrongAnswers: this.generateWrongAnswers(point),
             explanation: `
-解答：
-【第一步：找 x 坐標】
-1. 從點 A 向下引一條垂直虛線（綠色）
-2. 這條線與 x 軸的交點，就是 x 坐標
-3. 從刻度可以看出 x = ${point.x}
+【第一步：找 x 坐標】<br>
+1. 從點 A 向下引一條垂直虛線（綠色）<br>
+2. 這條線與 x 軸的交點，就是 x 坐標<br>
+3. 從刻度可以看出 x = ${point.x}<br>
 
+<div style="text-align: center;">
 ${step1System.toString()}
+</div>
 
-【第二步：找 y 坐標】
-1. 從點 A 向左引一條水平虛線（綠色）
-2. 這條線與 y 軸的交點，就是 y 坐標
-3. 從刻度可以看出 y = ${point.y}
+【第二步：找 y 坐標】<br>
+1. 從點 A 向左引一條水平虛線（綠色）<br>
+2. 這條線與 y 軸的交點，就是 y 坐標<br>
+3. 從刻度可以看出 y = ${point.y}<br>
 
+<div style="text-align: center;">
 ${step2System.toString()}
+</div>
 
 因此，點 A 的坐標為 (${point.x}, ${point.y})
             `.trim(),
             type: 'text',
             displayOptions: {
-                graph: true  // 使用图形显示
+                graph: true
             }
         };
     }
