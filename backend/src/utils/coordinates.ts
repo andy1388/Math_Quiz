@@ -67,6 +67,8 @@ interface CircleEquation {
     equation?: string;
     labelOffsetX?: number;
     labelOffsetY?: number;
+    domain?: [number, number];    // 定义域限制 [min, max]
+    range?: [number, number];     // 值域限制 [min, max]
 }
 
 export class CoordinateSystem {
@@ -185,7 +187,9 @@ export class CoordinateSystem {
         showEquation: boolean = false,
         equation?: string,
         labelOffsetX: number = 15,
-        labelOffsetY: number = -15
+        labelOffsetY: number = -15,
+        domain?: [number, number],
+        range?: [number, number]
     ) {
         this.circles.push({
             centerX,
@@ -196,7 +200,9 @@ export class CoordinateSystem {
             showEquation,
             equation,
             labelOffsetX,
-            labelOffsetY
+            labelOffsetY,
+            domain,
+            range
         });
     }
 
@@ -413,23 +419,44 @@ export class CoordinateSystem {
         
         // 绘制圆
         for (const circle of this.circles) {
-            const centerXPos = circle.centerX * xScale + xOffset;
-            const centerYPos = yOffset - circle.centerY * yScale;
-            const radiusX = circle.radius * xScale;
-            const radiusY = circle.radius * yScale;
+            // 使用参数方程绘制圆的部分弧
+            let pathD = '';
+            const steps = 100;
+            let firstPoint = true;
 
-            // 绘制圆
-            svg += `<ellipse cx="${centerXPos}" cy="${centerYPos}" 
-                rx="${radiusX}" ry="${radiusY}"
-                fill="none"
-                stroke="${circle.color}" 
-                stroke-width="2"
-                stroke-dasharray="${circle.style === 'dotted' ? '4,4' : ''}"/>`;
+            for (let i = 0; i <= steps; i++) {
+                const angle = (i / steps) * 2 * Math.PI;
+                const x = circle.centerX + circle.radius * Math.cos(angle);
+                const y = circle.centerY + circle.radius * Math.sin(angle);
+
+                // 检查点是否在定义域和值域内
+                if (circle.domain && (x < circle.domain[0] || x > circle.domain[1])) continue;
+                if (circle.range && (y < circle.range[0] || y > circle.range[1])) continue;
+
+                const xPos = x * xScale + xOffset;
+                const yPos = yOffset - y * yScale;
+
+                if (firstPoint) {
+                    pathD += `M ${xPos},${yPos}`;
+                    firstPoint = false;
+                } else {
+                    pathD += ` L ${xPos},${yPos}`;
+                }
+            }
+
+            // 绘制圆弧
+            if (pathD) {
+                svg += `<path d="${pathD}" 
+                    fill="none" 
+                    stroke="${circle.color}" 
+                    stroke-width="2"
+                    stroke-dasharray="${circle.style === 'dotted' ? '4,4' : ''}"/>`;
+            }
 
             // 如果需要显示方程
             if (circle.showEquation) {
-                const labelX = centerXPos + (circle.labelOffsetX ?? 15);
-                const labelY = centerYPos + (circle.labelOffsetY ?? -15);
+                const labelX = circle.centerX * xScale + xOffset + (circle.labelOffsetX ?? 15);
+                const labelY = circle.centerY * yScale + yOffset + (circle.labelOffsetY ?? -15);
                 
                 const equationText = circle.equation || 
                     `(x${circle.centerX >= 0 ? '-' : '+'}${Math.abs(circle.centerX)})² + ` +

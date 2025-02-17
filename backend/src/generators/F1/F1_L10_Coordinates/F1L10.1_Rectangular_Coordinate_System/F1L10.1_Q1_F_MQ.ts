@@ -74,7 +74,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             -20                  // y偏移
         );
 
-        // 添加圆 x²+y²-2x-2y-2=0
+        // 添加圆 x²+y²-2x-2y-2=0，只显示 x>=1 且 y>=1 的部分
         coordSystem.addCircle(
             1,                    // 圆心 x 坐标
             1,                    // 圆心 y 坐标
@@ -84,7 +84,20 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             true,                // 显示方程
             "x²+y²-2x-2y-2=0",   // 方程文本
             20,                  // x偏移
-            -20                  // y偏移
+            -20,                 // y偏移
+            [1, Infinity],       // 定义域限制：x ≥ 1
+            [1, Infinity]        // 值域限制：y ≥ 1
+        );
+
+        // 添加对数函数 y = log₄(x)
+        coordSystem.addFunction(
+            x => Math.log(x) / Math.log(4),  // 使用换底公式
+            "pink",              // 颜色
+            "solid",            // 线型
+            true,               // 显示方程
+            "y = log₄(x)",      // 方程文本（使用下标表示）
+            20,                 // x偏移
+            -20                 // y偏移
         );
 
         // 生成题目文本
