@@ -20,10 +20,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 生成坐标点
         const point = this.generatePoint(this.difficulty);
 
-        // 避免生成太接近坐标轴的点
-        if (Math.abs(point.x) < 0.5 || Math.abs(point.y) < 0.5) {
-            return this.generate();
-        }
+        // 根據點的位置決定標籤的偏移量
+        const labelOffset = this.getLabelOffset(point);
 
         // 根據難度設置坐標範圍
         const range: [number, number] = this.difficulty === 1 ? [0, 5] : [-5, 5];
@@ -53,8 +51,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 添加坐標軸上的數字標籤
         coordSystem.addAxisLabels(axisLabels, axisLabels);
 
-        // 添加点和标签，使用字母 A 作為標籤
-        coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20);
+        // 添加点和标签，使用動態的偏移量
+        coordSystem.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y);
 
         // 生成第一步的坐标系（顯示找 x 坐標的輔助線）
         const step1System = new CoordinateSystem({
@@ -77,7 +75,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         step1System.addAxisLabels(axisLabels, axisLabels);
         
         // 添加點 A
-        step1System.addPoint(point.x, point.y, "●", "A", 15, -20);
+        step1System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y);
         
         // 添加垂直輔助線（綠色虛線，只到 x 軸）
         step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
@@ -109,7 +107,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         step2System.addAxisLabels(axisLabels, axisLabels);
 
         // 添加點 A
-        step2System.addPoint(point.x, point.y, "●", "A", 15, -20);
+        step2System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y);
         
         // 保留第一步的紅色線段和標籤
         step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
@@ -160,13 +158,13 @@ ${step2System.toString()}
         switch (level) {
             case 1: // 基礎坐标（第一象限整数）
                 return {
-                    x: getRandomInt(1, 4),  // 避免 0 和 5
-                    y: getRandomInt(1, 4)   // 避免 0 和 5
+                    x: getRandomInt(0, 5),  // 包含 0 和 5
+                    y: getRandomInt(0, 5)   // 包含 0 和 5
                 };
             case 2: // 擴展坐标（四象限整数）
                 return {
-                    x: getNonZeroRandomInt(-5, 5),
-                    y: getNonZeroRandomInt(-5, 5)
+                    x: getRandomInt(-5, 5),  // 使用 getRandomInt 而不是 getNonZeroRandomInt
+                    y: getRandomInt(-5, 5)   // 使用 getRandomInt 而不是 getNonZeroRandomInt
                 };
             case 3: // 進階坐标（四象限小数）
                 return {
@@ -198,5 +196,24 @@ ${step2System.toString()}
         }
         
         return wrongAnswers;
+    }
+
+    // 新增方法：根據點的位置決定標籤的偏移量
+    private getLabelOffset(point: Point): { x: number; y: number } {
+        // 默認值
+        let offsetX = 15;
+        let offsetY = -20;
+
+        // 如果 x 座標為負，將標籤向左偏移
+        if (point.x <= 0) {
+            offsetX = -25;
+        }
+
+        // 如果 y 座標為負，將標籤向下偏移
+        if (point.y <= 0) {
+            offsetY = 25;
+        }
+
+        return { x: offsetX, y: offsetY };
     }
 } 
