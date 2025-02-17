@@ -47,12 +47,36 @@ interface PointLabel {
     labelOffsetY?: number;
 }
 
+interface FunctionEquation {
+    fn: (x: number) => number;  // 函数表达式
+    color: string;
+    style?: string;
+    showEquation?: boolean;
+    equation?: string;          // 方程的显示文本
+    labelOffsetX?: number;
+    labelOffsetY?: number;
+}
+
+interface CircleEquation {
+    centerX: number;
+    centerY: number;
+    radius: number;
+    color: string;
+    style?: string;
+    showEquation?: boolean;
+    equation?: string;
+    labelOffsetX?: number;
+    labelOffsetY?: number;
+}
+
 export class CoordinateSystem {
     private options: CoordinateSystemOptions;
     private points: PointLabel[] = [];
     private lines: { from: [number, number]; to: [number, number]; color: string; style?: string }[] = [];
     private verticalLines: { x: number; color: string; style?: string }[] = [];
     private equations: LineEquation[] = [];
+    private functions: FunctionEquation[] = [];  // 新增：函数数组
+    private circles: CircleEquation[] = [];  // 新增：圆形数组
 
     constructor(options: CoordinateSystemOptions) {
         // 设置默认值
@@ -126,6 +150,51 @@ export class CoordinateSystem {
             showEquation,
             color,
             style,
+            labelOffsetX,
+            labelOffsetY
+        });
+    }
+
+    addFunction(
+        fn: (x: number) => number,
+        color: string = "yellow",
+        style: string = "solid",
+        showEquation: boolean = false,
+        equation?: string,
+        labelOffsetX: number = 15,
+        labelOffsetY: number = -15,
+        segments: number = 100  // 用于控制曲线的平滑度
+    ) {
+        this.functions.push({
+            fn,
+            color,
+            style,
+            showEquation,
+            equation,
+            labelOffsetX,
+            labelOffsetY
+        });
+    }
+
+    addCircle(
+        centerX: number,
+        centerY: number,
+        radius: number,
+        color: string = "purple",
+        style: string = "solid",
+        showEquation: boolean = false,
+        equation?: string,
+        labelOffsetX: number = 15,
+        labelOffsetY: number = -15
+    ) {
+        this.circles.push({
+            centerX,
+            centerY,
+            radius,
+            color,
+            style,
+            showEquation,
+            equation,
             labelOffsetX,
             labelOffsetY
         });
@@ -287,6 +356,94 @@ export class CoordinateSystem {
                 const labelY = yPos + (point.labelOffsetY ?? -10);
                 svg += `<text x="${labelX}" y="${labelY}" 
                     style="font-family: serif; font-size: 14px">${point.label}</text>`;
+            }
+        }
+        
+        // 绘制函数曲线
+        for (const func of this.functions) {
+            const { xRange } = this.options;
+            const dx = (xRange[1] - xRange[0]) / 100;  // 将区间分成100份
+            let pathD = '';
+            let firstPoint = true;
+
+            // 生成路径数据
+            for (let x = xRange[0]; x <= xRange[1]; x += dx) {
+                try {
+                    const y = func.fn(x);
+                    if (isFinite(y) && !isNaN(y)) {  // 检查 y 值是否有效
+                        const xPos = x * xScale + xOffset;
+                        const yPos = yOffset - y * yScale;
+                        pathD += firstPoint ? `M ${xPos},${yPos}` : ` L ${xPos},${yPos}`;
+                        firstPoint = false;
+                    }
+                } catch (e) {
+                    // 忽略计算错误，继续下一个点
+                    continue;
+                }
+            }
+
+            // 绘制曲线
+            if (pathD) {
+                svg += `<path d="${pathD}" fill="none" stroke="${func.color}" 
+                    stroke-width="2" stroke-dasharray="${func.style === 'dotted' ? '4,4' : ''}"/>`;
+            }
+
+            // 如果需要显示方程
+            if (func.showEquation) {
+                // 找一个合适的位置显示方程（在曲线中间位置）
+                const midX = (xRange[0] + xRange[1]) * 0.6;
+                const midY = func.fn(midX);
+                
+                const labelX = midX * xScale + xOffset + (func.labelOffsetX ?? 15);
+                const labelY = yOffset - midY * yScale + (func.labelOffsetY ?? -15);
+                
+                const equationText = func.equation || 'y = f(x)';
+
+                // 添加方程标签，使用白色背景确保可读性
+                svg += `
+                    <rect x="${labelX - 2}" y="${labelY - 12}" 
+                        width="${equationText.length * 8}" height="16" 
+                        fill="white" fill-opacity="0.8"/>
+                    <text x="${labelX}" y="${labelY}" 
+                        style="font-family: serif; font-style: italic; font-size: 14px; fill: ${func.color}"
+                        >${equationText}</text>
+                `;
+            }
+        }
+        
+        // 绘制圆
+        for (const circle of this.circles) {
+            const centerXPos = circle.centerX * xScale + xOffset;
+            const centerYPos = yOffset - circle.centerY * yScale;
+            const radiusX = circle.radius * xScale;
+            const radiusY = circle.radius * yScale;
+
+            // 绘制圆
+            svg += `<ellipse cx="${centerXPos}" cy="${centerYPos}" 
+                rx="${radiusX}" ry="${radiusY}"
+                fill="none"
+                stroke="${circle.color}" 
+                stroke-width="2"
+                stroke-dasharray="${circle.style === 'dotted' ? '4,4' : ''}"/>`;
+
+            // 如果需要显示方程
+            if (circle.showEquation) {
+                const labelX = centerXPos + (circle.labelOffsetX ?? 15);
+                const labelY = centerYPos + (circle.labelOffsetY ?? -15);
+                
+                const equationText = circle.equation || 
+                    `(x${circle.centerX >= 0 ? '-' : '+'}${Math.abs(circle.centerX)})² + ` +
+                    `(y${circle.centerY >= 0 ? '-' : '+'}${Math.abs(circle.centerY)})² = ${circle.radius * circle.radius}`;
+
+                // 添加方程标签，使用白色背景确保可读性
+                svg += `
+                    <rect x="${labelX - 2}" y="${labelY - 12}" 
+                        width="${equationText.length * 8}" height="16" 
+                        fill="white" fill-opacity="0.8"/>
+                    <text x="${labelX}" y="${labelY}" 
+                        style="font-family: serif; font-style: italic; font-size: 14px; fill: ${circle.color}"
+                        >${equationText}</text>
+                `;
             }
         }
         

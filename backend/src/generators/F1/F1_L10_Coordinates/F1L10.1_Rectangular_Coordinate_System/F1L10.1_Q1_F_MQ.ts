@@ -63,6 +63,30 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 添加斜线和方程，使用自定义偏移量
         coordSystem.addObliqueLine(1, 2, "red", "solid", true, 20, -25);
 
+        // 添加指数函数 y = 2^x
+        coordSystem.addFunction(
+            x => Math.pow(2, x),  // 函数表达式
+            "yellow",             // 颜色
+            "solid",             // 线型
+            true,                // 显示方程
+            "y = 2^x",           // 方程文本
+            20,                  // x偏移
+            -20                  // y偏移
+        );
+
+        // 添加圆 x²+y²-2x-2y-2=0
+        coordSystem.addCircle(
+            1,                    // 圆心 x 坐标
+            1,                    // 圆心 y 坐标
+            Math.sqrt(5),         // 半径
+            "purple",            // 颜色
+            "solid",             // 线型
+            true,                // 显示方程
+            "x²+y²-2x-2y-2=0",   // 方程文本
+            20,                  // x偏移
+            -20                  // y偏移
+        );
+
         // 生成题目文本
         return {
             content: `在下面的坐標系中，請寫出標示點的坐標。\n${coordSystem.toString()}`,
