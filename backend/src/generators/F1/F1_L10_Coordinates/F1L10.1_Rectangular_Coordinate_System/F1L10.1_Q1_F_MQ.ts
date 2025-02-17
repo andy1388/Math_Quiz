@@ -42,8 +42,17 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             yLabel: 'y'   // 可以使用 LaTeX 语法，如 'y_1' 或 '\\beta'
         });
 
-        // 添加点
-        coordSystem.addPoint(point.x, point.y);
+        // 添加点和标签
+        coordSystem.addPoint(point.x, point.y, "●", `(${point.x}, ${point.y})`);
+        
+        // 添加虚线 x=2
+        coordSystem.addVerticalLine(2, "black", "dotted");
+
+        // 添加线段示例
+        coordSystem.addLine([0, 0], [2, 0], "green");
+
+        // 添加斜线 y=x+2 并显示方程
+        coordSystem.addObliqueLine(1, 2, "red", "solid", true);
 
         // 生成题目文本
         return {
