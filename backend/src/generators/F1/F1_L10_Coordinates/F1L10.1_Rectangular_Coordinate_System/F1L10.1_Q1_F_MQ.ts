@@ -25,34 +25,16 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             return this.generate();
         }
 
+        // 根據難度設置坐標範圍
+        const range: [number, number] = this.difficulty === 1 ? [0, 5] : [-5, 5];
+        const axisLabels = this.difficulty === 1 ? [0, 5] : [-5, 0, 5];
+
         // 生成坐标系图形
         const coordSystem = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: [0, 5],  // level 1 固定範圍 0-5
-            yRange: [0, 5],
-            showGrid: true,
-            gridColor: '#f0f0f0',
-            gridOpacity: 0.8,
-            axisColor: '#333',
-            axisWidth: 1.5,
-            showArrows: true,
-            labelColor: '#666',
-            labelSize: 14
-        });
-
-        // 添加坐標軸上的數字標籤
-        coordSystem.addAxisLabels([0, 5], [0, 5]);  // 只在 0 和 5 處添加標籤
-
-        // 添加点和标签，使用字母 A 作為標籤
-        coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20);
-
-        // 生成第一步的坐标系（顯示找 x 坐標的輔助線）
-        const step1System = new CoordinateSystem({
-            width: 400,
-            height: 400,
-            xRange: [0, 5],
-            yRange: [0, 5],
+            xRange: range as [number, number],
+            yRange: range as [number, number],
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -63,8 +45,30 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             labelSize: 14
         });
 
-        // 只添加 0 和 5 的標籤
-        step1System.addAxisLabels([0, 5], [0, 5]);
+        // 添加坐標軸上的數字標籤
+        coordSystem.addAxisLabels(axisLabels, axisLabels);
+
+        // 添加点和标签，使用字母 A 作為標籤
+        coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20);
+
+        // 生成第一步的坐标系（顯示找 x 坐標的輔助線）
+        const step1System = new CoordinateSystem({
+            width: 400,
+            height: 400,
+            xRange: range as [number, number],
+            yRange: range as [number, number],
+            showGrid: true,
+            gridColor: '#e0e0e0',
+            gridOpacity: 0.8,
+            axisColor: '#333',
+            axisWidth: 1.5,
+            showArrows: true,
+            labelColor: '#666',
+            labelSize: 14
+        });
+
+        // 添加坐標軸標籤
+        step1System.addAxisLabels(axisLabels, axisLabels);
         
         // 添加點 A
         step1System.addPoint(point.x, point.y, "●", "A", 15, -20);
@@ -82,8 +86,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         const step2System = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: [0, 5],
-            yRange: [0, 5],
+            xRange: range as [number, number],
+            yRange: range as [number, number],
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -94,8 +98,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             labelSize: 14
         });
 
-        // 只添加 0 和 5 的標籤
-        step2System.addAxisLabels([0, 5], [0, 5]);
+        // 添加坐標軸標籤
+        step2System.addAxisLabels(axisLabels, axisLabels);
 
         // 添加點 A
         step2System.addPoint(point.x, point.y, "●", "A", 15, -20);
