@@ -20,16 +20,150 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 生成坐标点
         const point = this.generatePoint(this.difficulty);
 
+        // 所有難度都使用相同的範圍
+        const range: [number, number] = this.difficulty === 3 ? [0, 5] : [-5, 5];
+        const axisLabels = this.difficulty === 3 
+            ? [0, 1, 2, 3, 4, 5]  // level 3 只顯示 0-5
+            : [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+
+        // 如果是 level 1，只顯示 x 軸的坐標系
+        if (this.difficulty === 1) {
+            // 問題的坐標系
+            const coordSystem = new CoordinateSystem({
+                width: 400,
+                height: 200,
+                xRange: range,
+                yRange: [-1, 1],
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showYAxis: false
+            });
+
+            // 添加 x 軸標籤
+            coordSystem.addAxisLabels(axisLabels, []);
+
+            // 只添加點，不添加紅色線段和標籤
+            coordSystem.addPoint(point.x, 0, "●", "A", 15, -20);
+
+            // 解釋用的坐標系
+            const explainSystem = new CoordinateSystem({
+                width: 400,
+                height: 200,
+                xRange: range,
+                yRange: [-1, 1],
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showYAxis: false
+            });
+
+            // 添加 x 軸標籤
+            explainSystem.addAxisLabels(axisLabels, []);
+
+            // 在解釋中添加點、紅色線段和標籤
+            explainSystem.addPoint(point.x, 0, "●", "A", 15, -20);
+            explainSystem.addLineSegment(0, 0, point.x, 0, "red", "solid");
+            explainSystem.addTextWithBackground(point.x, -0.3, `${point.x}`, "red", 18);
+
+            return {
+                content: `在下面的數線上，請寫出點 A 的 x 坐標。\n${coordSystem.toString()}`,
+                correctAnswer: `${point.x}`,
+                wrongAnswers: this.generateWrongAnswersForLevelOne(point.x),
+                explanation: `
+解答：<br>
+1. 從點 A 看到紅色線段的長度<br>
+2. 從刻度可以看出 x = <span style="color: red">${point.x}</span><br>
+
+<div style="text-align: center;">
+${explainSystem.toString()}
+</div>
+
+因此，點 A 的 x 坐標為 <span style="color: red">${point.x}</span>
+                `.trim(),
+                type: 'text',
+                displayOptions: {
+                    graph: true
+                }
+            };
+        }
+
+        // 如果是 level 2，只顯示 y 軸的坐標系
+        if (this.difficulty === 2) {
+            // 問題的坐標系
+            const coordSystem = new CoordinateSystem({
+                width: 200,  // y 軸系統用較窄的寬度
+                height: 400,
+                xRange: [-1, 1],
+                yRange: range,
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showXAxis: false
+            });
+
+            // 添加 y 軸標籤
+            coordSystem.addAxisLabels([], axisLabels);
+
+            // 只添加點，不添加藍色線段和標籤
+            coordSystem.addPoint(0, point.y, "●", "A", 15, -20);
+
+            // 解釋用的坐標系
+            const explainSystem = new CoordinateSystem({
+                width: 200,
+                height: 400,
+                xRange: [-1, 1],
+                yRange: range,
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showXAxis: false
+            });
+
+            // 添加 y 軸標籤
+            explainSystem.addAxisLabels([], axisLabels);
+
+            // 在解釋中添加點、藍色線段和標籤
+            explainSystem.addPoint(0, point.y, "●", "A", 15, -20);
+            explainSystem.addLineSegment(0, 0, 0, point.y, "blue", "solid");
+            explainSystem.addTextWithBackground(-0.3, point.y, `${point.y}`, "blue", 18);
+
+            return {
+                content: `在下面的數線上，<br>請寫出點 A 的 y 坐標。\n${coordSystem.toString()}`,
+                correctAnswer: `${point.y}`,
+                wrongAnswers: this.generateWrongAnswersForLevelTwo(point.y),
+                explanation: `
+解答：<br>
+1. 從點 A 看到藍色線段的長度<br>
+2. 從刻度可以看出 y = <span style="color: blue">${point.y}</span><br>
+
+<div style="text-align: center;">
+${explainSystem.toString()}
+</div>
+
+因此，點 A 的 y 坐標為 <span style="color: blue">${point.y}</span>
+                `.trim(),
+                type: 'text',
+                displayOptions: {
+                    graph: true
+                }
+            };
+        }
+
         // 根據點的位置決定標籤的偏移量
         const labelOffset = this.getLabelOffset(point);
-
-        // 根據難度設置坐標範圍
-        const range: [number, number] = this.difficulty === 1 ? [0, 5] : [-5, 5];
-        
-        // 根據難度設置標籤
-        const axisLabels = this.difficulty === 1 
-            ? [0, 1, 2, 3, 4, 5]  // level 1 顯示所有整數刻度
-            : [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];  // level 2/3 不顯示 0
 
         // 生成坐标系图形
         const coordSystem = new CoordinateSystem({
@@ -45,7 +179,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             showArrows: true,
             labelColor: '#666',
             labelSize: 14,
-            showAllGrids: true  // 添加這個選項來顯示完整網格
+            showAllGrids: this.difficulty !== 3  // level 3 不顯示負象限的網格
         });
 
         // 添加坐標軸上的數字標籤
@@ -162,17 +296,27 @@ ${step2System.toString()}
 
     private generatePoint(level: number): Point {
         switch (level) {
-            case 1: // 基礎坐标（第一象限整数）
+            case 1: // 最基礎：只有 x 軸
                 return {
-                    x: getRandomInt(0, 5),  // 包含 0 和 5
-                    y: getRandomInt(0, 5)   // 包含 0 和 5
+                    x: getRandomInt(-5, 5),
+                    y: 0
                 };
-            case 2: // 擴展坐标（四象限整数）
+            case 2: // 基礎：只有 y 軸
                 return {
-                    x: getRandomInt(-5, 5),  // 使用 getRandomInt 而不是 getNonZeroRandomInt
-                    y: getRandomInt(-5, 5)   // 使用 getRandomInt 而不是 getNonZeroRandomInt
+                    x: 0,
+                    y: getRandomInt(-5, 5)
                 };
-            case 3: // 進階坐标（四象限小数）
+            case 3: // 基礎坐标（第一象限整数）
+                return {
+                    x: getRandomInt(0, 5),  // 只在第一象限
+                    y: getRandomInt(0, 5)   // 只在第一象限
+                };
+            case 4: // 擴展坐标（四象限整数）
+                return {
+                    x: getRandomInt(-5, 5),
+                    y: getRandomInt(-5, 5)
+                };
+            case 5: // 進階坐标（四象限小数）
                 return {
                     x: Number(getRandomDecimal(-5, 5, 1)),
                     y: Number(getRandomDecimal(-5, 5, 1))
@@ -184,7 +328,7 @@ ${step2System.toString()}
 
     private generateWrongAnswers(point: Point): string[] {
         const wrongAnswers: string[] = [];
-        const isDecimal = this.difficulty === 3;
+        const isDecimal = this.difficulty === 5;
         
         while (wrongAnswers.length < 3) {
             let wrongX = isDecimal ? 
@@ -221,5 +365,29 @@ ${step2System.toString()}
         }
 
         return { x: offsetX, y: offsetY };
+    }
+
+    // 為 level 1 生成錯誤答案
+    private generateWrongAnswersForLevelOne(x: number): string[] {
+        const wrongAnswers: string[] = [];
+        while (wrongAnswers.length < 3) {
+            const wrongX = getRandomInt(-5, 5);  // 修改範圍為 -5 到 5
+            if (wrongX !== x && !wrongAnswers.includes(`${wrongX}`)) {
+                wrongAnswers.push(`${wrongX}`);
+            }
+        }
+        return wrongAnswers;
+    }
+
+    // 為 level 2 生成錯誤答案
+    private generateWrongAnswersForLevelTwo(y: number): string[] {
+        const wrongAnswers: string[] = [];
+        while (wrongAnswers.length < 3) {
+            const wrongY = getRandomInt(-5, 5);
+            if (wrongY !== y && !wrongAnswers.includes(`${wrongY}`)) {
+                wrongAnswers.push(`${wrongY}`);
+            }
+        }
+        return wrongAnswers;
     }
 } 

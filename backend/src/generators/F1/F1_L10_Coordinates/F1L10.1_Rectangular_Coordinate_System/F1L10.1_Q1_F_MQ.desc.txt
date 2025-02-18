@@ -2,7 +2,7 @@
 Rectangular Coordinate System: Point Coordinates
 ===================================
 
-Level number：3
+Level number：5
 
 難度等級：
 1. 基礎坐标：
