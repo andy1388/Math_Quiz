@@ -220,8 +220,8 @@ ${explainSystem.toString()}
         const step1System = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: [-1, 6],  // 扩大右侧范围，给标签留更多空间
-            yRange: [-1, 6],  // 扩大上方范围，给标签留更多空间
+            xRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
+            yRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -230,7 +230,7 @@ ${explainSystem.toString()}
             showArrows: true,
             labelColor: '#666',
             labelSize: 14,
-            showAllGrids: true
+            showAllGrids: this.difficulty !== 3  // level 3 不顯示負象限的網格
         });
 
         // 添加坐標軸標籤
@@ -246,15 +246,15 @@ ${explainSystem.toString()}
         step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
         
         // 第一步：添加 x 坐標的標籤（使用紅色）
-        const xLabelOffsetY = -1;  // 将 x 坐标标签放在更下方
+        const xLabelOffsetY = this.difficulty === 3 ? -1 : (point.y <= 0 ? 0.5 : -0.5);
         step1System.addTextWithBackground(point.x, xLabelOffsetY, `${point.x}`, "red", 24);  // 增大字体
 
         // 生成第二步的坐标系（顯示找 y 坐標的輔助線）
         const step2System = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: [-1, 6],  // 扩大右侧范围，给标签留更多空间
-            yRange: [-1, 6],  // 扩大上方范围，给标签留更多空间
+            xRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
+            yRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -263,7 +263,7 @@ ${explainSystem.toString()}
             showArrows: true,
             labelColor: '#666',
             labelSize: 14,
-            showAllGrids: true
+            showAllGrids: this.difficulty !== 3  // level 3 不顯示負象限的網格
         });
 
         // 添加坐標軸標籤
@@ -283,7 +283,7 @@ ${explainSystem.toString()}
         step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
         
         // 添加 y 坐標的標籤（使用藍色）
-        const yLabelOffsetX = -1;  // 将 y 坐标标签放在更左侧
+        const yLabelOffsetX = this.difficulty === 3 ? -1 : (point.x <= 0 ? 0.5 : -0.5);
         step2System.addTextWithBackground(yLabelOffsetX, point.y, `${point.y}`, "blue", 24);
 
         return {
