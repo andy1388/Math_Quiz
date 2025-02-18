@@ -505,18 +505,20 @@ export class CoordinateSystem {
             const x = point.x * xScale + xOffset;
             const y = yOffset - point.y * yScale;
             
+            // 繪製點
             svg += `<text x="${x}" y="${y}" 
                 text-anchor="middle" 
                 dominant-baseline="middle"
-                fill="${point.color || 'black'}"  // 使用點的顏色，如果沒有則使用黑色
+                fill="${point.color || 'black'}"
                 style="font-size: 20px;"
             >${point.symbol}</text>`;
             
-            // 繪製標籤
+            // 繪製標籤，使用與點相同的顏色
             if (point.label) {
                 svg += `<text 
                     x="${x + (point.labelOffsetX ?? 10)}" 
                     y="${y + (point.labelOffsetY ?? -10)}"
+                    fill="${point.color || 'black'}"
                     style="font-size: ${this.options.labelSize}px;"
                 >${point.label}</text>`;
             }
