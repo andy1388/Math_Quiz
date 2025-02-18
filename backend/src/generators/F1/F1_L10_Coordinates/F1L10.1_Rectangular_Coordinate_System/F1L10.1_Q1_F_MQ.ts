@@ -46,6 +46,13 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             // 添加 x 軸標籤
             coordSystem.addAxisLabels(axisLabels, []);
 
+            // 添加刻度短線（除了 5 位置）
+            for (const x of axisLabels) {
+                if (x !== 5) {  // 跳過 5 位置（箭頭處）
+                    coordSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
+                }
+            }
+
             // 只添加點，不添加紅色線段和標籤
             coordSystem.addPoint(point.x, 0, "●", "A", 15, -20);
 
@@ -66,6 +73,13 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
             // 添加 x 軸標籤
             explainSystem.addAxisLabels(axisLabels, []);
+
+            // 添加刻度短線（除了 5 位置）
+            for (const x of axisLabels) {
+                if (x !== 5) {  // 跳過 5 位置（箭頭處）
+                    explainSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
+                }
+            }
 
             // 在解釋中添加點、紅色線段和標籤
             explainSystem.addPoint(point.x, 0, "●", "A", 15, -20);
@@ -114,6 +128,13 @@ ${explainSystem.toString()}
             // 添加 y 軸標籤
             coordSystem.addAxisLabels([], axisLabels);
 
+            // 添加刻度短線（除了 5 位置）
+            for (const y of axisLabels) {
+                if (y !== 5) {  // 跳過 5 位置（箭頭處）
+                    coordSystem.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
+                }
+            }
+
             // 只添加點，不添加藍色線段和標籤
             coordSystem.addPoint(0, point.y, "●", "A", 15, -20);
 
@@ -134,6 +155,13 @@ ${explainSystem.toString()}
 
             // 添加 y 軸標籤
             explainSystem.addAxisLabels([], axisLabels);
+
+            // 添加刻度短線（除了 5 位置）
+            for (const y of axisLabels) {
+                if (y !== 5) {  // 跳過 5 位置（箭頭處）
+                    explainSystem.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
+                }
+            }
 
             // 在解釋中添加點、藍色線段和標籤
             explainSystem.addPoint(0, point.y, "●", "A", 15, -20);
