@@ -22,9 +22,19 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
         // 所有難度都使用相同的範圍
         const range: [number, number] = this.difficulty === 3 ? [0, 5] : [-5, 5];
-        const axisLabels = this.difficulty === 3 
-            ? [1, 2, 3, 4, 5]  // level 3 只顯示 1-5，不顯示0
-            : [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];  // level 4-5 不顯示0
+        
+        // 根据难度级别设置不同的标签
+        let axisLabels;
+        if (this.difficulty === 1 || this.difficulty === 2) {
+            // level 1-2 显示所有标签，包括 0
+            axisLabels = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+        } else if (this.difficulty === 3) {
+            // level 3 只显示 1-5
+            axisLabels = [1, 2, 3, 4, 5];
+        } else {
+            // level 4-5 显示除了 0 以外的所有标签
+            axisLabels = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];
+        }
 
         // 如果是 level 1，只顯示 x 軸的坐標系
         if (this.difficulty === 1) {
