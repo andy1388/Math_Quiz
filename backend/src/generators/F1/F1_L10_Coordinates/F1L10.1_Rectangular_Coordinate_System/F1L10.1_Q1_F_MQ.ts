@@ -220,8 +220,8 @@ ${explainSystem.toString()}
         const step1System = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: range as [number, number],
-            yRange: range as [number, number],
+            xRange: [-1, 6],  // 扩大右侧范围，给标签留更多空间
+            yRange: [-1, 6],  // 扩大上方范围，给标签留更多空间
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -246,17 +246,15 @@ ${explainSystem.toString()}
         step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
         
         // 第一步：添加 x 坐標的標籤（使用紅色）
-        const xLabelOffsetY = this.difficulty === 1 
-            ? (point.y <= 0 ? 0.3 : -0.3)  // level 1 使用較小的偏移
-            : (point.y <= 0 ? 0.5 : -0.5);  // level 2/3 使用較大的偏移
-        step1System.addTextWithBackground(point.x, xLabelOffsetY, `${point.x}`, "red", 18);
+        const xLabelOffsetY = -1;  // 将 x 坐标标签放在更下方
+        step1System.addTextWithBackground(point.x, xLabelOffsetY, `${point.x}`, "red", 24);  // 增大字体
 
         // 生成第二步的坐标系（顯示找 y 坐標的輔助線）
         const step2System = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: range as [number, number],
-            yRange: range as [number, number],
+            xRange: [-1, 6],  // 扩大右侧范围，给标签留更多空间
+            yRange: [-1, 6],  // 扩大上方范围，给标签留更多空间
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -276,7 +274,7 @@ ${explainSystem.toString()}
         
         // 保留第一步的紅色線段和標籤
         step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-        step2System.addTextWithBackground(point.x, xLabelOffsetY, `${point.x}`, "red", 18);
+        step2System.addTextWithBackground(point.x, xLabelOffsetY, `${point.x}`, "red", 24);
         
         // 添加水平輔助線（綠色虛線，只到點 A）
         step2System.addLineSegment(0, point.y, point.x, point.y, "green", "dotted");
@@ -285,10 +283,8 @@ ${explainSystem.toString()}
         step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
         
         // 添加 y 坐標的標籤（使用藍色）
-        const yLabelOffsetX = this.difficulty === 1
-            ? (point.x <= 0 ? 0.3 : -0.3)  // level 1 使用較小的偏移
-            : (point.x <= 0 ? 0.5 : -0.5);  // level 2/3 使用較大的偏移
-        step2System.addTextWithBackground(yLabelOffsetX, point.y, `${point.y}`, "blue", 18);
+        const yLabelOffsetX = -1;  // 将 y 坐标标签放在更左侧
+        step2System.addTextWithBackground(yLabelOffsetX, point.y, `${point.y}`, "blue", 24);
 
         return {
             content: `在下面的坐標系中，請寫出點 A 的坐標。\n${coordSystem.toString()}`,
