@@ -96,12 +96,8 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
             return num.toString();
         }
 
-        // 如果是负数，将负号放在分数前面
-        if (num < 0) {
-            return `-\\frac{${Math.abs(num)}}{${den}}`;
-        }
-
-        return `\\frac{${num}}{${den}}`;
+        // 不需要在分数前加负号，让调用者处理负号
+        return `\\frac{${Math.abs(num)}}{${den}}`;
     }
 
     private decimalToFraction(decimal: number): string {
@@ -366,19 +362,23 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     private formatAnswer(equation: LineEquation): string {
         if (this.difficulty === 3) {
             // 将斜率转换为分数形式
-            const slopeNum = Math.round(parseFloat(equation.slope) * 100);  // 乘以100转换为整数
+            const slopeValue = parseFloat(equation.slope);
+            const slopeNum = Math.round(Math.abs(slopeValue) * 100);  // 取绝对值并转换为整数
             const slopeDen = 100;
             const slopeFraction = this.formatStandardFraction(slopeNum, slopeDen);
+            
+            // 构建答案，根据原始斜率的符号决定是否添加负号
+            const slopeSign = slopeValue < 0 ? '-' : '';
             
             // 截距已经是分数形式
             const intercept = equation.intercept;
             
             if (intercept === '0') {
-                return `y = ${slopeFraction}x`;
+                return `y = ${slopeSign}${slopeFraction}x`;
             } else if (intercept.startsWith('-')) {
-                return `y = ${slopeFraction}x - ${intercept.substring(1)}`;
+                return `y = ${slopeSign}${slopeFraction}x - ${intercept.substring(1)}`;
             } else {
-                return `y = ${slopeFraction}x + ${intercept}`;
+                return `y = ${slopeSign}${slopeFraction}x + ${intercept}`;
             }
         }
         let result: string;
@@ -411,14 +411,19 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     private generateWrongAnswers(equation: LineEquation): string[] {
         if (this.difficulty === 3) {
             // 将斜率转换为分数形式
-            const slopeNum = Math.round(parseFloat(equation.slope) * 100);
+            const slopeValue = parseFloat(equation.slope);
+            const slopeNum = Math.round(Math.abs(slopeValue) * 100);  // 取绝对值
             const slopeDen = 100;
             const slopeFraction = this.formatStandardFraction(slopeNum, slopeDen);
             
+            // 获取原始斜率的符号
+            const slopeSign = slopeValue < 0 ? '-' : '';
+            const oppositeSign = slopeValue < 0 ? '' : '-';  // 用于生成相反符号的错误答案
+            
             return [
-                `y = -${slopeFraction}x - ${equation.intercept}`,     // 斜率符号错误
-                `y = ${slopeFraction}x - ${equation.intercept}`,      // 斜率符号错误
-                `y = ${slopeFraction}x + ${equation.intercept}`       // 截距符号错误
+                `y = ${oppositeSign}${slopeFraction}x - ${equation.intercept.substring(1)}`,  // 斜率符号错误
+                `y = ${slopeSign}${slopeFraction}x + ${equation.intercept.substring(1)}`,     // 截距符号错误
+                `y = ${oppositeSign}${slopeFraction}x + ${equation.intercept.substring(1)}`   // 斜率和截距符号都错误
             ];
         }
         const wrongAnswers: Set<string> = new Set();

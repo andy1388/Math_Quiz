@@ -332,8 +332,8 @@ ${step2System.toString()}
                 };
             case 3: // 基礎坐标（第一象限整数）
                 return {
-                    x: 3,  // 固定 x 为 3
-                    y: 0   // 固定 y 为 0
+                    x: getRandomInt(1, 5),  // 生成1到5之间的随机整数
+                    y: getRandomInt(1, 5)   // 生成1到5之间的随机整数
                 };
             case 4: // 擴展坐标（四象限整数）
                 return {
