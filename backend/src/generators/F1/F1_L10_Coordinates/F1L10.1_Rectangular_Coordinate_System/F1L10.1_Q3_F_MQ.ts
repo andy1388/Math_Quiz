@@ -38,8 +38,9 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             return this.generateCoordinateSystem(p, label);
         });
 
-        // 使用表格布局来展示四个选项
+        // 使用表格布局来展示四个选项，并在问题中提供坐标
         const content = `在下列哪一個坐標平面中，點 A 的位置是正確的？
+點 A 的坐標為 (${point.x}, ${point.y})
 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
     <div>${coordSystems[0]}</div>
     <div>${coordSystems[1]}</div>
@@ -129,7 +130,7 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             height: 250,
             xRange: range,
             yRange: range,
-            showGrid: true,
+            showGrid: false,  // 关闭自动网格，我们将手动添加网格线
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
             axisColor: '#333',
@@ -139,9 +140,33 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             labelSize: 14
         });
 
-        // 添加坐标轴标签
-        const axisLabels = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+        // 只添加 -5 和 5 的标签
+        const axisLabels = [-5, 5];
         coordSystem.addAxisLabels(axisLabels, axisLabels);
+
+        // 添加刻度线（每个整数位置）
+        for (let i = -5; i <= 5; i++) {
+            if (i !== 0) {  // 跳过原点
+                // 添加 x 轴刻度线
+                coordSystem.addLineSegment(i, -0.1, i, 0.1, "black", "solid");
+                // 添加 y 轴刻度线
+                coordSystem.addLineSegment(-0.1, i, 0.1, i, "black", "solid");
+            }
+        }
+
+        // 手动添加网格线
+        // 垂直网格线（所有整数位置）
+        for (let x = -5; x <= 5; x++) {
+            if (x !== 0) {  // 跳过 y 轴
+                coordSystem.addLineSegment(x, -5, x, 5, "#e0e0e0", "solid");
+            }
+        }
+        // 水平网格线（所有整数位置）
+        for (let y = -5; y <= 5; y++) {
+            if (y !== 0) {  // 跳过 x 轴
+                coordSystem.addLineSegment(-5, y, 5, y, "#e0e0e0", "solid");
+            }
+        }
 
         // 添加点
         coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
