@@ -141,7 +141,7 @@ ${explainSystem.toString()}
             explainSystem.addTextWithBackground(-0.3, point.y, `${point.y}`, "blue", 18);
 
             return {
-                content: `在下面的數線上，<br>請寫出點 A 的 y 坐標。\n${coordSystem.toString()}`,
+                content: `在下面的數線上，請寫出點 A 的 y 坐標。<br>\n${coordSystem.toString()}`,
                 correctAnswer: `${point.y}`,
                 wrongAnswers: this.generateWrongAnswersForLevelTwo(point.y),
                 explanation: `
