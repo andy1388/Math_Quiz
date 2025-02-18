@@ -38,15 +38,9 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             return this.generateCoordinateSystem(p, label);
         });
 
-        // 使用表格布局来展示四个选项，并在问题中提供坐标
+        // 直接将每个坐标系统作为选项
         const content = `在下列哪一個坐標平面中，點 A 的位置是正確的？
-點 A 的坐標為 (${point.x}, ${point.y})
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;">
-    <div>${coordSystems[0]}</div>
-    <div>${coordSystems[1]}</div>
-    <div>${coordSystems[2]}</div>
-    <div>${coordSystems[3]}</div>
-</div>`;
+點 A 的坐標為 (${point.x}, ${point.y})`;
 
         return {
             content,
@@ -56,7 +50,12 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             type: 'text',
             displayOptions: {
                 graph: true
-            }
+            },
+            // 使用 optionContents 而不是 options
+            optionContents: coordSystems.map((svg, index) => {
+                const label = String.fromCharCode(65 + index);
+                return svg;
+            })
         };
     }
 
@@ -126,11 +125,11 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         const range: [number, number] = [-5, 5];
         
         const coordSystem = new CoordinateSystem({
-            width: 250,  // 调整大小以适合2x2布局
-            height: 250,
+            width: 200,  // 减小尺寸以适应选项框
+            height: 200,
             xRange: range,
             yRange: range,
-            showGrid: false,  // 关闭自动网格，我们将手动添加网格线
+            showGrid: false,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
             axisColor: '#333',
@@ -171,7 +170,8 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         // 添加点
         coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
 
-        return `${label}.\n${coordSystem.toString()}`;
+        // 返回不包含标签的坐标系统
+        return coordSystem.toString();
     }
 
     private generateExplanation(point: Point, correctAnswer: string): string {

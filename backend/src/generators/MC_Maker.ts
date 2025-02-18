@@ -14,19 +14,26 @@ export class MC_Maker {
             throw new Error('Generator output missing wrongAnswers array');
         }
 
-        // 合并正确答案和错误答案
-        const allOptions = [output.correctAnswer, ...output.wrongAnswers];
+        // 如果有 optionContents，使用它们作为选项内容
+        let options: string[];
+        if (output.optionContents) {
+            options = output.optionContents;
+        } else {
+            // 否则使用默认的合并正确答案和错误答案
+            options = [output.correctAnswer, ...output.wrongAnswers];
+            // 随机打乱所有选项
+            options = this.shuffleArray(options);
+        }
         
-        // 随机打乱所有选项
-        const shuffledOptions = this.shuffleArray(allOptions);
-        
-        // 找出正确答案在打乱后的新位置
-        const newCorrectIndex = shuffledOptions.indexOf(output.correctAnswer);
+        // 找出正确答案在选项中的位置
+        const correctIndex = output.optionContents 
+            ? output.wrongAnswers.findIndex(ans => ans === output.correctAnswer)
+            : options.indexOf(output.correctAnswer);
 
         return {
             content: output.content,
-            options: shuffledOptions,
-            correctIndex: newCorrectIndex,
+            options,
+            correctIndex,
             correctAnswer: output.correctAnswer,
             explanation: output.explanation
         };

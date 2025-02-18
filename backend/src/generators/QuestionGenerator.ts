@@ -26,6 +26,8 @@ export interface IGeneratorOutput {
         graph?: boolean;
         table?: boolean;
     };
+
+    optionContents?: string[];
 }
 
 export abstract class QuestionGenerator {
