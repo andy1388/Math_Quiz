@@ -113,6 +113,29 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     }
 
     private generatePointSlopeEquation(): LineEquation {
+        if (this.difficulty === 3) {
+            const point = {
+                x: getRandomInt(-5, 5),
+                y: getRandomInt(-5, 5)
+            };
+            
+            // 生成两位小数的斜率
+            const wholeNumber = getNonZeroRandomInt(-5, 5);  // 整数部分
+            const decimal1 = getRandomInt(0, 9);  // 第一位小数
+            const decimal2 = getRandomInt(0, 9);  // 第二位小数
+            const decimalSlope = wholeNumber + decimal1/10 + decimal2/100;
+            const slope = decimalSlope.toFixed(2);  // 确保显示两位小数
+            
+            // 计算截距
+            const c = point.y - decimalSlope * point.x;
+            const intercept = this.formatStandardFraction(Math.round(c * 100), 100);  // 转换为分数形式
+
+            return {
+                points: { pointA: point },
+                slope,
+                intercept
+            };
+        }
         let point: Point;
         let slope: string;
 
@@ -325,7 +348,9 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     }
 
     private formatQuestion(equation: LineEquation): string {
-        if (this.difficulty <= 3) {
+        if (this.difficulty === 3) {
+            return `\\[\\text{求通過點 }P(${equation.points?.pointA?.x}, ${equation.points?.pointA?.y})\\text{ 且斜率為 }${equation.slope}\\text{ 的直線方程（斜率截距式）}\\]`;
+        } else if (this.difficulty <= 3) {
             return `\\[\\text{求通過點 }P(${equation.points?.pointA?.x}, ${equation.points?.pointA?.y})\\text{ 且斜率為 }${equation.slope}\\text{ 的直線方程（斜率截距式）}\\]`;
         } else if ((this.difficulty === 4 || this.difficulty === 5) && equation.points?.pointA && equation.points?.pointB) {
             return `\\[\\text{求通過以下兩點的直線方程：}A(${equation.points.pointA.x}, ${equation.points.pointA.y}), B(${equation.points.pointB.x}, ${equation.points.pointB.y})\\]`;
@@ -339,6 +364,23 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     }
 
     private formatAnswer(equation: LineEquation): string {
+        if (this.difficulty === 3) {
+            // 将斜率转换为分数形式
+            const slopeNum = Math.round(parseFloat(equation.slope) * 100);  // 乘以100转换为整数
+            const slopeDen = 100;
+            const slopeFraction = this.formatStandardFraction(slopeNum, slopeDen);
+            
+            // 截距已经是分数形式
+            const intercept = equation.intercept;
+            
+            if (intercept === '0') {
+                return `y = ${slopeFraction}x`;
+            } else if (intercept.startsWith('-')) {
+                return `y = ${slopeFraction}x - ${intercept.substring(1)}`;
+            } else {
+                return `y = ${slopeFraction}x + ${intercept}`;
+            }
+        }
         let result: string;
         if (equation.slope === '不存在') {
             result = `x = ${equation.intercept}`;
@@ -348,16 +390,10 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
             let slope = equation.slope;
             let intercept = equation.intercept;
 
-            // 如果斜率是小数，转换为分数（仅在难度3时需要）
-            if (this.difficulty === 3 && !slope.includes('\\frac{')) {
+            // 如果斜率是小数，转换为分数（在难度3时）
+            if (this.difficulty === 3) {
+                // 将小数斜率转换为分数形式
                 slope = this.decimalToFraction(parseFloat(slope));
-            }
-
-            // 处理斜率为1或-1的情况
-            if (slope === '1') {
-                slope = '';
-            } else if (slope === '-1') {
-                slope = '-';
             }
 
             // 处理截距为0的情况
@@ -373,6 +409,18 @@ export default class F4L4_1_Q1_N_MQ extends QuestionGenerator {
     }
 
     private generateWrongAnswers(equation: LineEquation): string[] {
+        if (this.difficulty === 3) {
+            // 将斜率转换为分数形式
+            const slopeNum = Math.round(parseFloat(equation.slope) * 100);
+            const slopeDen = 100;
+            const slopeFraction = this.formatStandardFraction(slopeNum, slopeDen);
+            
+            return [
+                `y = -${slopeFraction}x - ${equation.intercept}`,     // 斜率符号错误
+                `y = ${slopeFraction}x - ${equation.intercept}`,      // 斜率符号错误
+                `y = ${slopeFraction}x + ${equation.intercept}`       // 截距符号错误
+            ];
+        }
         const wrongAnswers: Set<string> = new Set();
         const correctAnswer = this.formatAnswer(equation);
 
