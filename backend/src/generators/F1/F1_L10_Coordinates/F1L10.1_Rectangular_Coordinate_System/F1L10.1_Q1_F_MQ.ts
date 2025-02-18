@@ -54,7 +54,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             }
 
             // 只添加點，不添加紅色線段和標籤
-            coordSystem.addPoint(point.x, 0, "●", "A", 15, -20);
+            coordSystem.addPoint(point.x, 0, "●", "A", 15, -20, "#00cc00");
 
             // 解釋用的坐標系
             const explainSystem = new CoordinateSystem({
@@ -82,7 +82,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             }
 
             // 在解釋中添加點、紅色線段和標籤
-            explainSystem.addPoint(point.x, 0, "●", "A", 15, -20);
+            explainSystem.addPoint(point.x, 0, "●", "A", 15, -20, "#00cc00");
             explainSystem.addLineSegment(0, 0, point.x, 0, "red", "solid");
             explainSystem.addTextWithBackground(point.x, -0.3, `${point.x}`, "red", 18);
 
@@ -136,7 +136,7 @@ ${explainSystem.toString()}
             }
 
             // 只添加點，不添加藍色線段和標籤
-            coordSystem.addPoint(0, point.y, "●", "A", 15, -20);
+            coordSystem.addPoint(0, point.y, "●", "A", 15, -20, "#00cc00");
 
             // 解釋用的坐標系
             const explainSystem = new CoordinateSystem({
@@ -164,7 +164,7 @@ ${explainSystem.toString()}
             }
 
             // 在解釋中添加點、藍色線段和標籤
-            explainSystem.addPoint(0, point.y, "●", "A", 15, -20);
+            explainSystem.addPoint(0, point.y, "●", "A", 15, -20, "#00cc00");
             explainSystem.addLineSegment(0, 0, 0, point.y, "blue", "solid");
             explainSystem.addTextWithBackground(-0.3, point.y, `${point.y}`, "blue", 18);
 
@@ -214,7 +214,7 @@ ${explainSystem.toString()}
         coordSystem.addAxisLabels(axisLabels, axisLabels);
 
         // 添加点和标签，使用動態的偏移量
-        coordSystem.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y);
+        coordSystem.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
 
         // 生成第一步的坐标系（顯示找 x 坐標的輔助線）
         const step1System = new CoordinateSystem({
@@ -237,7 +237,7 @@ ${explainSystem.toString()}
         step1System.addAxisLabels(axisLabels, axisLabels);
         
         // 添加點 A
-        step1System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y);
+        step1System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
         
         // 添加垂直輔助線（綠色虛線，只到 x 軸）
         step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
@@ -272,7 +272,7 @@ ${explainSystem.toString()}
         step2System.addAxisLabels(axisLabels, axisLabels);
 
         // 添加點 A
-        step2System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y);
+        step2System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
         
         // 保留第一步的紅色線段和標籤
         step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");

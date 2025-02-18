@@ -84,9 +84,19 @@ interface LinearConstraint {
     labelOffsetY?: number;
 }
 
+interface Point {
+    x: number;
+    y: number;
+    symbol: string;
+    label?: string;
+    labelOffsetX?: number;
+    labelOffsetY?: number;
+    color?: string;  // 添加可選的顏色屬性
+}
+
 export class CoordinateSystem {
     private options: CoordinateSystemOptions;
-    private points: PointLabel[] = [];
+    private points: Point[] = [];
     private lines: { from: [number, number]; to: [number, number]; color: string; style?: string }[] = [];
     private verticalLines: { x: number; color: string; style?: string }[] = [];
     private equations: LineEquation[] = [];
@@ -129,8 +139,26 @@ export class CoordinateSystem {
         };
     }
 
-    addPoint(x: number, y: number, symbol: string = "●", label?: string, labelOffsetX: number = 10, labelOffsetY: number = -10) {
-        this.points.push({ x, y, symbol, label, labelOffsetX, labelOffsetY });
+    addPoint(x: number, y: number, symbol: string = "●", label?: string, labelOffsetX: number = 10, labelOffsetY: number = -10, color: string = "black") {
+        this.points.push({ 
+            x, 
+            y, 
+            symbol, 
+            label, 
+            labelOffsetX, 
+            labelOffsetY, 
+            color  // 點的顏色
+        });
+
+        // 如果有標籤，添加標籤，使用與點相同的顏色
+        if (label) {
+            this.texts.push({
+                x: x + labelOffsetX,
+                y: y + labelOffsetY,
+                text: label,
+                color: color  // 標籤使用與點相同的顏色
+            });
+        }
     }
 
     addLine(from: [number, number], to: [number, number], color: string = "green", style: string = "solid") {
@@ -477,10 +505,10 @@ export class CoordinateSystem {
             const x = point.x * xScale + xOffset;
             const y = yOffset - point.y * yScale;
             
-            // 繪製點
             svg += `<text x="${x}" y="${y}" 
                 text-anchor="middle" 
                 dominant-baseline="middle"
+                fill="${point.color || 'black'}"  // 使用點的顏色，如果沒有則使用黑色
                 style="font-size: 20px;"
             >${point.symbol}</text>`;
             
