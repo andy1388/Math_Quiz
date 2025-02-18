@@ -151,7 +151,7 @@ ${step1System.toString()}
 ${step2System.toString()}
 </div>
 
-因此，點 A 的坐標為 (${point.x}, ${point.y})
+因此，點 A 的坐標為 (<span style="color: red">${point.x}</span>, <span style="color: blue">${point.y}</span>)
             `.trim(),
             type: 'text',
             displayOptions: {
