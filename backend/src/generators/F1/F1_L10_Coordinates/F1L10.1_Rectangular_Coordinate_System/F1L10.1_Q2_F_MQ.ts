@@ -11,9 +11,9 @@ interface Point {
     y: number;
 }
 
-export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
+export default class F1L10_1_Q2_F_MQ extends QuestionGenerator {
     constructor(difficulty: number) {
-        super(difficulty, 'F1L10.1_Q1_F_MQ');
+        super(difficulty, 'F1L10.1_Q2_F_MQ');
     }
 
     generate(): IGeneratorOutput {
@@ -22,9 +22,11 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
         // 所有難度都使用相同的範圍
         const range: [number, number] = this.difficulty === 3 ? [0, 5] : [-5, 5];
+        
+        // 只顯示最小和最大值
         const axisLabels = this.difficulty === 3 
-            ? [1, 2, 3, 4, 5]  // level 3 只顯示 1-5，不顯示0
-            : [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];  // level 4-5 不顯示0
+            ? [5]  // level 3 只顯示 5，不顯示0
+            : [-5, 5];  // level 4-5 只顯示 -5 和 5，不顯示0
 
         // 如果是 level 1，只顯示 x 軸的坐標系
         if (this.difficulty === 1) {
@@ -43,11 +45,11 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 showYAxis: false
             });
 
-            // 添加 x 軸標籤
+            // 添加 x 軸標籤（只有最小和最大值）
             coordSystem.addAxisLabels(axisLabels, []);
 
-            // 添加刻度短線（除了 5 位置）
-            for (const x of axisLabels) {
+            // 添加刻度短線（所有整數位置）
+            for (let x = range[0]; x <= range[1]; x++) {
                 if (x !== 5) {  // 跳過 5 位置（箭頭處）
                     coordSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
                 }
@@ -71,11 +73,11 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 showYAxis: false
             });
 
-            // 添加 x 軸標籤
+            // 添加 x 軸標籤（只有最小和最大值）
             explainSystem.addAxisLabels(axisLabels, []);
 
-            // 添加刻度短線（除了 5 位置）
-            for (const x of axisLabels) {
+            // 添加刻度短線（所有整數位置）
+            for (let x = range[0]; x <= range[1]; x++) {
                 if (x !== 5) {  // 跳過 5 位置（箭頭處）
                     explainSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
                 }
@@ -125,11 +127,11 @@ ${explainSystem.toString()}
                 showXAxis: false
             });
 
-            // 添加 y 軸標籤
+            // 添加 y 軸標籤（只有最小和最大值）
             coordSystem.addAxisLabels([], axisLabels);
 
-            // 添加刻度短線（除了 5 位置）
-            for (const y of axisLabels) {
+            // 添加刻度短線（所有整數位置）
+            for (let y = range[0]; y <= range[1]; y++) {
                 if (y !== 5) {  // 跳過 5 位置（箭頭處）
                     coordSystem.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
                 }
@@ -153,11 +155,11 @@ ${explainSystem.toString()}
                 showXAxis: false
             });
 
-            // 添加 y 軸標籤
+            // 添加 y 軸標籤（只有最小和最大值）
             explainSystem.addAxisLabels([], axisLabels);
 
-            // 添加刻度短線（除了 5 位置）
-            for (const y of axisLabels) {
+            // 添加刻度短線（所有整數位置）
+            for (let y = range[0]; y <= range[1]; y++) {
                 if (y !== 5) {  // 跳過 5 位置（箭頭處）
                     explainSystem.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
                 }
@@ -210,7 +212,7 @@ ${explainSystem.toString()}
             showAllGrids: this.difficulty !== 3  // level 3 不顯示負象限的網格
         });
 
-        // 添加坐標軸上的數字標籤
+        // 添加坐標軸標籤（只有最小和最大值）
         coordSystem.addAxisLabels(axisLabels, axisLabels);
 
         // 添加点和标签，使用動態的偏移量
@@ -233,7 +235,7 @@ ${explainSystem.toString()}
             showAllGrids: true
         });
 
-        // 添加坐標軸標籤
+        // 添加坐標軸標籤（只有最小和最大值）
         step1System.addAxisLabels(axisLabels, axisLabels);
         
         // 添加點 A
@@ -268,7 +270,7 @@ ${explainSystem.toString()}
             showAllGrids: true
         });
 
-        // 添加坐標軸標籤
+        // 添加坐標軸標籤（只有最小和最大值）
         step2System.addAxisLabels(axisLabels, axisLabels);
 
         // 添加點 A
@@ -376,18 +378,14 @@ ${step2System.toString()}
         return wrongAnswers;
     }
 
-    // 新增方法：根據點的位置決定標籤的偏移量
     private getLabelOffset(point: Point): { x: number; y: number } {
-        // 默認值
         let offsetX = 15;
         let offsetY = -20;
 
-        // 如果 x 座標為負，將標籤向左偏移
         if (point.x <= 0) {
             offsetX = -25;
         }
 
-        // 如果 y 座標為負，將標籤向下偏移
         if (point.y <= 0) {
             offsetY = 25;
         }
@@ -395,11 +393,10 @@ ${step2System.toString()}
         return { x: offsetX, y: offsetY };
     }
 
-    // 為 level 1 生成錯誤答案
     private generateWrongAnswersForLevelOne(x: number): string[] {
         const wrongAnswers: string[] = [];
         while (wrongAnswers.length < 3) {
-            const wrongX = getRandomInt(-5, 5);  // 修改範圍為 -5 到 5
+            const wrongX = getRandomInt(-5, 5);
             if (wrongX !== x && !wrongAnswers.includes(`${wrongX}`)) {
                 wrongAnswers.push(`${wrongX}`);
             }
@@ -407,7 +404,6 @@ ${step2System.toString()}
         return wrongAnswers;
     }
 
-    // 為 level 2 生成錯誤答案
     private generateWrongAnswersForLevelTwo(y: number): string[] {
         const wrongAnswers: string[] = [];
         while (wrongAnswers.length < 3) {
