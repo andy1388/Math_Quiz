@@ -147,18 +147,8 @@ export class CoordinateSystem {
             label, 
             labelOffsetX, 
             labelOffsetY, 
-            color  // 點的顏色
+            color
         });
-
-        // 如果有標籤，添加標籤，使用與點相同的顏色
-        if (label) {
-            this.texts.push({
-                x: x + labelOffsetX,
-                y: y + labelOffsetY,
-                text: label,
-                color: color  // 標籤使用與點相同的顏色
-            });
-        }
     }
 
     addLine(from: [number, number], to: [number, number], color: string = "green", style: string = "solid") {
@@ -513,7 +503,7 @@ export class CoordinateSystem {
                 style="font-size: 20px;"
             >${point.symbol}</text>`;
             
-            // 繪製標籤，使用與點相同的顏色
+            // 繪製標籤
             if (point.label) {
                 svg += `<text 
                     x="${x + (point.labelOffsetX ?? 10)}" 
