@@ -49,30 +49,28 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
 
     private generatePoint(level: number): Point {
         switch (level) {
-            case 1: // 第一象限
+            case 1: // x 轴上的点
                 return {
-                    x: getRandomInt(0, 5),
-                    y: getRandomInt(0, 5)
+                    x: getRandomInt(-5, 5),  // 包含 0
+                    y: 0  // 固定在 x 轴上
                 };
-            case 2: // 第二象限
+            
+            case 2: // y 轴上的点
                 return {
-                    x: getRandomInt(-5, 0),
-                    y: getRandomInt(0, 5)
+                    x: 0,  // 固定在 y 轴上
+                    y: getRandomInt(-5, 5)  // 包含 0
                 };
-            case 3: // 第三象限
+            
+            case 3: // 第一象限
                 return {
-                    x: getRandomInt(-5, 0),
-                    y: getRandomInt(-5, 0)
+                    x: getRandomInt(0, 5),  // 包含 0
+                    y: getRandomInt(0, 5)   // 包含 0
                 };
-            case 4: // 第四象限
-                return {
-                    x: getRandomInt(0, 5),
-                    y: getRandomInt(-5, 0)
-                };
-            case 5: // 任意象限（小数）
+            
+            case 4: // 任意象限（整数）
                 const quadrant = getRandomInt(1, 4);
-                const x = Number(getRandomDecimal(0, 5, 1));
-                const y = Number(getRandomDecimal(0, 5, 1));
+                const x = getRandomInt(1, 5);  // 避免 0
+                const y = getRandomInt(1, 5);  // 避免 0
                 
                 switch (quadrant) {
                     case 1: return { x, y };
@@ -81,6 +79,20 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                     case 4: return { x, y: -y };
                     default: return { x, y };
                 }
+            
+            case 5: // 任意象限（小数）
+                const decQuadrant = getRandomInt(1, 4);
+                const decX = Number(getRandomDecimal(0.1, 5, 1));  // 避免 0
+                const decY = Number(getRandomDecimal(0.1, 5, 1));  // 避免 0
+                
+                switch (decQuadrant) {
+                    case 1: return { x: decX, y: decY };
+                    case 2: return { x: -decX, y: decY };
+                    case 3: return { x: -decX, y: -decY };
+                    case 4: return { x: decX, y: -decY };
+                    default: return { x: decX, y: decY };
+                }
+            
             default:
                 throw new Error("Invalid level");
         }
@@ -89,27 +101,109 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
     private generateWrongPoints(correctPoint: Point): Point[] {
         const wrongPoints: Point[] = [];
         
-        // 生成3个错误点，分别在不同的象限
-        if (this.difficulty === 5) {
-            // 对于小数点，我们反转x和y的正负号
-            wrongPoints.push(
-                { x: -correctPoint.x, y: correctPoint.y },
-                { x: correctPoint.x, y: -correctPoint.y },
-                { x: -correctPoint.x, y: -correctPoint.y }
-            );
-        } else {
-            // 对于整数，我们反转x和y的正负号
-            wrongPoints.push(
-                { x: -correctPoint.x, y: correctPoint.y },
-                { x: correctPoint.x, y: -correctPoint.y },
-                { x: -correctPoint.x, y: -correctPoint.y }
-            );
+        switch (this.difficulty) {
+            case 1: // x 轴上的点
+                wrongPoints.push(
+                    { x: -correctPoint.x, y: 0 },        // 对称点
+                    { x: 0, y: correctPoint.x },         // 转到 y 轴
+                    { x: 0, y: -correctPoint.x }         // 转到 y 轴负方向
+                );
+                break;
+            
+            case 2: // y 轴上的点
+                wrongPoints.push(
+                    { x: 0, y: -correctPoint.y },        // 对称点
+                    { x: correctPoint.y, y: 0 },         // 转到 x 轴
+                    { x: -correctPoint.y, y: 0 }         // 转到 x 轴负方向
+                );
+                break;
+            
+            case 3: // 第一象限
+                wrongPoints.push(
+                    { x: -correctPoint.x, y: correctPoint.y },    // 第二象限
+                    { x: -correctPoint.x, y: -correctPoint.y },   // 第三象限
+                    { x: correctPoint.x, y: -correctPoint.y }     // 第四象限
+                );
+                break;
+            
+            case 4: // 任意象限（整数）
+            case 5: // 任意象限（小数）
+                // 生成其他三个象限的点
+                wrongPoints.push(
+                    { x: -correctPoint.x, y: correctPoint.y },
+                    { x: correctPoint.x, y: -correctPoint.y },
+                    { x: -correctPoint.x, y: -correctPoint.y }
+                );
+                break;
         }
         
         return wrongPoints;
     }
 
     private generateCoordinateSystem(point: Point, label: string): string {
+        if (this.difficulty === 1) {
+            // 只显示 x 轴的坐标系统
+            const coordSystem = new CoordinateSystem({
+                width: 200,
+                height: 50,  // 减小高度
+                xRange: [-5, 5],
+                yRange: [-1, 1],  // 缩小 y 范围
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showYAxis: false  // 不显示 y 轴
+            });
+
+            // 添加刻度线
+            for (let x = -5; x <= 5; x++) {
+                coordSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
+            }
+
+            // 添加标签
+            for (let x = -5; x <= 5; x++) {
+                coordSystem.addText(x, -0.3, `${x}`);
+            }
+
+            // 添加点
+            coordSystem.addPoint(point.x, 0, "●", "A", 15, -20, "#00cc00");
+
+            return coordSystem.toString();
+        } else if (this.difficulty === 2) {
+            // 只显示 y 轴的坐标系统
+            const coordSystem = new CoordinateSystem({
+                width: 50,  // 减小宽度
+                height: 200,
+                xRange: [-1, 1],  // 缩小 x 范围
+                yRange: [-5, 5],
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showXAxis: false  // 不显示 x 轴
+            });
+
+            // 添加刻度线
+            for (let y = -5; y <= 5; y++) {
+                coordSystem.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
+            }
+
+            // 添加标签
+            for (let y = -5; y <= 5; y++) {
+                coordSystem.addText(-0.3, y, `${y}`);
+            }
+
+            // 添加点
+            coordSystem.addPoint(0, point.y, "●", "A", 15, -20, "#00cc00");
+
+            return coordSystem.toString();
+        }
+
+        // 其他难度保持原有的完整坐标系统显示
         const range: [number, number] = [-5, 5];
         
         const coordSystem = new CoordinateSystem({
@@ -164,127 +258,30 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
 
     private generateExplanation(point: Point): string {
         if (this.difficulty === 1) {
-            // 第一步：找 x 坐标
-            const step1System = new CoordinateSystem({
-                width: 400,
-                height: 400,
-                xRange: [-5, 5],
-                yRange: [-5, 5],
-                showGrid: true,
-                gridColor: '#e0e0e0',
-                gridOpacity: 0.8,
-                axisColor: '#333',
-                axisWidth: 1.5,
-                showArrows: true,
-                labelColor: '#666',
-                labelSize: 14,
-                showAllGrids: true
-            });
-
-            // 第一步的图形元素
-            step1System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
-            step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
-            if (point.x !== 0) {
-                // 添加从原点到 x 坐标的红色线段（带箭头）
-                const arrowSize = 0.2;
-                if (point.x > 0) {
-                    // 主线段
-                    step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-                    // 箭头
-                    step1System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
-                    step1System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
-                } else {
-                    // 主线段
-                    step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-                    // 箭头
-                    step1System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
-                    step1System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
-                }
-            }
-            
-            // 在 x 轴上标记坐标值
-            step1System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
-
-            // 第二步：找 y 坐标
-            const step2System = new CoordinateSystem({
-                width: 400,
-                height: 400,
-                xRange: [-5, 5],
-                yRange: [-5, 5],
-                showGrid: true,
-                gridColor: '#e0e0e0',
-                gridOpacity: 0.8,
-                axisColor: '#333',
-                axisWidth: 1.5,
-                showArrows: true,
-                labelColor: '#666',
-                labelSize: 14,
-                showAllGrids: true
-            });
-
-            // 添加第二步的图形元素
-            const axisLabels2 = [-5, 5];
-            step2System.addAxisLabels(axisLabels2, axisLabels2);
-
-            // 添加点
-            step2System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
-
-            // 保留第一步的红色部分
-            if (point.x !== 0) {
-                // 主线段
-                step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-                // 箭头
-                const arrowSize = 0.2;
-                if (point.x > 0) {
-                    step2System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
-                    step2System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
-                } else {
-                    step2System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
-                    step2System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
-                }
-                // x 坐标值
-                step2System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
-            }
-
-            // 添加从点到 y 轴的水平虚线
-            step2System.addLineSegment(point.x, point.y, 0, point.y, "green", "dotted");
-
-            // 添加蓝色箭头（从 x 轴到点的垂直线段）
-            if (point.y !== 0) {
-                // 主线段
-                step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
-                // 箭头
-                const arrowSize = 0.2;
-                if (point.y > 0) {
-                    step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y - arrowSize, "blue", "solid");
-                    step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y - arrowSize, "blue", "solid");
-                } else {
-                    step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y + arrowSize, "blue", "solid");
-                    step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y + arrowSize, "blue", "solid");
-                }
-            }
-
-            // 在 y 轴上标记坐标值
-            step2System.addTextWithBackground(-0.5, point.y, `${point.y}`, "blue", 18);
-
+            const coordSystem = this.generateCoordinateSystem(point, 'A');
             return `
-解答：正確答案顯示的坐標平面中，點 A 的坐標為 (${point.x}, ${point.y})
+解答：正確答案顯示的數線中，點 A 的 x 坐標為 ${point.x}
 
-【第一步】找出 x 坐標：從點 A 向下引一條垂直虛線（綠色），交 x 軸於 ${point.x}
 <div style="text-align: center;">
-${step1System.toString()}
+${coordSystem}
 </div>
 
-【第二步】找出 y 坐標：從點 A 向左引一條水平虛線（綠色），交 y 軸於 ${point.y}
+因此，點 A 的 x 坐標為 ${point.x}
+            `.trim();
+        } else if (this.difficulty === 2) {
+            const coordSystem = this.generateCoordinateSystem(point, 'A');
+            return `
+解答：正確答案顯示的數線中，點 A 的 y 坐標為 ${point.y}
+
 <div style="text-align: center;">
-${step2System.toString()}
+${coordSystem}
 </div>
 
-因此，點 A 的坐標為 (${point.x}, ${point.y})
+因此，點 A 的 y 坐標為 ${point.y}
             `.trim();
         }
 
-        // 其他难度的解释保持不变...
+        // 其他难度保持原有的解释方式
         const coordSystem = this.generateCoordinateSystem(point, 'A');
         
         return `
