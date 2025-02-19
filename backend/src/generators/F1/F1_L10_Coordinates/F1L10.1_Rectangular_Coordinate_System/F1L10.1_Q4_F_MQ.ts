@@ -257,43 +257,35 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         }
 
         if (this.difficulty === 2) {
-            const system = new CoordinateSystem({
+            const system = CoordinateSystem.createExplanationSystem({
                 width: 200,
                 height: 400,
-                xRange: [-1, 1],
-                yRange: [-5, 5],
-                showGrid: false,
-                axisColor: '#333',
-                axisWidth: 1.5,
-                showArrows: true,
-                labelColor: '#666',
-                labelSize: 14,
-                showXAxis: false
+                xRange: [-1, 1] as [number, number],
+                yRange: [-5, 5] as [number, number],
+                point: targetPoint,
+                isYAxisOnly: true,
+                axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+                showGridLines: false,  // 不显示网格
+                showAxisNumbers: true  // 显示数字
             });
 
-            // 添加所有刻度线
-            for (let y = -5; y <= 5; y++) {
-                if (y !== 5) {
-                    system.addLineSegment(-0.2, y, 0.2, y, "black", "solid");
-                }
-            }
-
-            // 添加标签
-            const mainLabels = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
-            mainLabels.forEach(y => {
-                system.addText(-0.8, y, `${y}`);
-            });
-
-            // 添加所有点
+            // Add all points first (without labels)
             points.forEach(point => {
-                const color = point === targetPoint ? "#ff0000" : "#00cc00";
-                system.addPoint(0, point.y, "●", point.label, -40, 0, color);
+                system.addPoint(0, point.y, "●", "", -40, 0, "#00cc00");  // Empty string for label
             });
+
+            // Add labels separately
+            points.forEach(point => {
+                system.addText(-0.8, point.y, point.label, "#00cc00");
+            });
+
+            // Add coordinate guides
+            system.addCoordinateLocatingGuides(targetPoint, 1, false, true);
 
             return `
-點 ${targetPoint.label} 的 $y$ 坐標是 <span style="color: blue">$${targetPoint.y}$</span>\n
+點 $${targetPoint.label}$ 的 $y$ 坐標是 <span style="color: blue">$${targetPoint.y}$</span>\n
 <div style="text-align: center;">\n${system.toString()}\n</div>\n
-因此，$y$ 坐標為 ${targetPoint.y} 的點是 ${targetPoint.label}
+因此，$y$ 坐標為 ${targetPoint.y} 的點是 $${targetPoint.label}$
             `.trim();
         }
 
