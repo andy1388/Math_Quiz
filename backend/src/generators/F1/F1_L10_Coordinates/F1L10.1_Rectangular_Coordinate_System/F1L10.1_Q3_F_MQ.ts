@@ -20,25 +20,31 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         // 生成正确的点
         const point = this.generatePoint(this.difficulty);
         
-        // 生成错误的点（在其他象限）
+        // 生成错误的点
         const wrongPoints = this.generateWrongPoints(point);
         
         // 生成所有坐标平面的图形
         const allSystems = [
             this.generateCoordinateSystem(point, 'A'),
             ...wrongPoints.map((p, index) => 
-                this.generateCoordinateSystem(p, 'A')  // 所有点都使用 'A' 标签
+                this.generateCoordinateSystem(p, 'A')
             )
         ];
 
-        const content = `在下列哪一個坐標平面中，點 A 的位置是正確的？
-點 A 的坐標為 (${point.x}, ${point.y})`;
+        // 根据难度级别生成不同的问题内容
+        let content;
+        if (this.difficulty === 1) {
+            content = `在下列哪一個數線中，點 A 的 x 座標是 ${point.x}？`;
+        } else if (this.difficulty === 2) {
+            content = `在下列哪一個數線中，點 A 的 y 座標是 ${point.y}？`;
+        } else {
+            content = `在下列哪一個坐標平面中，點 A 的位置是正確的？點 A 的坐標為 (${point.x}, ${point.y})`;
+        }
 
-        // 让 MC_Maker 处理选项的打乱
         return {
             content,
-            correctAnswer: allSystems[0],  // 第一个是正确答案
-            wrongAnswers: allSystems.slice(1),  // 其余是错误答案
+            correctAnswer: allSystems[0],
+            wrongAnswers: allSystems.slice(1),
             explanation: this.generateExplanation(point),
             type: 'text',
             displayOptions: {
@@ -171,7 +177,6 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
 
     private generateCoordinateSystem(point: Point, label: string): string {
         if (this.difficulty === 1) {
-            // 只显示 x 轴的坐标系统
             const coordSystem = new CoordinateSystem({
                 width: 400,
                 height: 150,
@@ -186,20 +191,24 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showYAxis: false
             });
 
-            // 添加刻度线和标签
+            // 1. 添加所有刻度线
             for (let x = -5; x <= 5; x++) {
                 if (x !== 5) {
                     coordSystem.addLineSegment(x, -0.2, x, 0.2, "black", "solid");
                 }
-                coordSystem.addText(x, -0.6, `${x}`);
             }
+
+            // 2. 只添加 -5、0、5 的标签
+            const mainLabels = [-5, 0, 5];
+            mainLabels.forEach(x => {
+                coordSystem.addText(x, -0.6, `${x}`);
+            });
 
             // 只添加点，不添加箭头和标签
             coordSystem.addPoint(point.x, 0, "●", "A", 15, 40, "#00cc00");
 
             return coordSystem.toString();
         } else if (this.difficulty === 2) {
-            // 只显示 y 轴的坐标系统
             const coordSystem = new CoordinateSystem({
                 width: 150,
                 height: 400,
@@ -214,13 +223,18 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showXAxis: false
             });
 
-            // 添加刻度线和标签
+            // 1. 添加所有刻度线
             for (let y = -5; y <= 5; y++) {
                 if (y !== 5) {
                     coordSystem.addLineSegment(-0.2, y, 0.2, y, "black", "solid");
                 }
-                coordSystem.addText(-0.8, y, `${y}`);
             }
+
+            // 2. 只添加 -5、0、5 的标签
+            const mainLabels = [-5, 0, 5];
+            mainLabels.forEach(y => {
+                coordSystem.addText(-0.8, y, `${y}`);
+            });
 
             // 只添加点，不添加箭头和标签
             coordSystem.addPoint(0, point.y, "●", "A", -40, 0, "#00cc00");
@@ -356,7 +370,7 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             }
 
             return `
-解答：正確答案顯示的數線中，點 A 的 x 坐標為 ${point.x}
+正確答案顯示的數線中，點 A 的 x 坐標為 ${point.x}
 
 <div style="text-align: center;">
 ${coordSystem.toString()}
@@ -413,7 +427,7 @@ ${coordSystem.toString()}
             }
 
             return `
-解答：正確答案顯示的數線中，點 A 的 y 坐標為 ${point.y}
+正確答案顯示的數線中，點 A 的 y 坐標為 ${point.y}
 
 <div style="text-align: center;">
 ${coordSystem.toString()}
