@@ -114,17 +114,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 content: `在下面的數線上，請寫出點 $A$ 的 $x$ 坐標。\n${coordSystem.toString()}`,
                 correctAnswer: `$${point.x}$`,
                 wrongAnswers: this.generateWrongAnswersForLevelOne(point.x).map(ans => `$${ans}$`),
-                explanation: `
-解答：<br>
-1. 從點 $A$ 看到紅色線段的長度<br>
-2. 從刻度可以看出 $x = $ <span style="color: red">${point.x}</span><br>
-
-<div style="text-align: center;">
-${explainSystem.toString()}
-</div>
-
-因此，點 $A$ 的 $x$ 坐標為 <span style="color: red">${point.x}</span>
-                `.trim(),
+                explanation: this.generateExplanation(point),
                 type: 'text',
                 displayOptions: {
                     graph: true
@@ -210,17 +200,7 @@ ${explainSystem.toString()}
                 content: `在下面的數線上，請寫出點 $A$ 的 $y$ 坐標。<br>\n${coordSystem.toString()}`,
                 correctAnswer: `$${point.y}$`,
                 wrongAnswers: this.generateWrongAnswersForLevelTwo(point.y).map(ans => `$${ans}$`),
-                explanation: `
-解答：<br>
-1. 從點 $A$ 看到藍色線段的長度<br>
-2. 從刻度可以看出 $y = $ <span style="color: blue">${point.y}</span><br>
-
-<div style="text-align: center;">
-${explainSystem.toString()}
-</div>
-
-因此，點 $A$ 的 $y$ 坐標為 <span style="color: blue">${point.y}</span>
-                `.trim(),
+                explanation: this.generateExplanation(point),
                 type: 'text',
                 displayOptions: {
                     graph: true
@@ -360,27 +340,7 @@ ${explainSystem.toString()}
             content: `在下面的坐標系中，請寫出點 $A$ 的坐標。\n${coordSystem.toString()}`,
             correctAnswer: `$(${point.x}, ${point.y})$`,
             wrongAnswers: this.generateWrongAnswers(point).map(ans => `$${ans}$`),
-            explanation: `
-【第一步：找 $x$ 坐標】<br>
-1. 從點 $A$ 向下引一條垂直虛線（綠色）<br>
-2. 這條線與 $x$ 軸的交點，就是 $x$ 坐標<br>
-3. 從刻度可以看出 $x = $ <span style="color: red">${point.x}</span><br>
-
-<div style="text-align: center;">
-${step1System.toString()}
-</div>
-
-【第二步：找 $y$ 坐標】<br>
-1. 從點 $A$ 向左引一條水平虛線（綠色）<br>
-2. 這條線與 $y$ 軸的交點，就是 $y$ 坐標<br>
-3. 從刻度可以看出 $y = $ <span style="color: blue">${point.y}</span><br>
-
-<div style="text-align: center;">
-${step2System.toString()}
-</div>
-
-因此，點 $A$ 的坐標為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
-            `.trim(),
+            explanation: this.generateExplanation(point),
             type: 'text',
             displayOptions: {
                 graph: true
@@ -483,5 +443,106 @@ ${step2System.toString()}
             }
         }
         return wrongAnswers;
+    }
+
+    private generateExplanation(point: Point): string {
+        if (this.difficulty === 1) {
+            // x轴系统
+            const system = CoordinateSystem.createExplanationSystem({
+                width: 400,
+                height: 200,  // 减小高度
+                xRange: [-5, 5] as [number, number],
+                yRange: [-1, 1] as [number, number],
+                point: point,
+                isXAxisOnly: true,  // 只显示x轴
+                axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+                showGridLines: false,
+                showAxisNumbers: true
+            });
+
+            system.addCoordinateLocatingGuides(point, 1, true, false);
+
+            return `
+找出 $x$ 坐標：從點 $A$ 向下引一條垂直虛線，交 $x$ 軸於 <span style="color: red">$${point.x}$</span>
+<div style="text-align: center;">
+${system.toString()}
+</div>
+
+因此，點 $A$ 的 $x$ 坐標為 <span style="color: red">$${point.x}$</span>
+            `.trim();
+        }
+
+        if (this.difficulty === 2) {
+            // y轴系统
+            const system = CoordinateSystem.createExplanationSystem({
+                width: 200,  // 减小宽度
+                height: 400,
+                xRange: [-1, 1] as [number, number],
+                yRange: [-5, 5] as [number, number],
+                point: point,
+                isYAxisOnly: true,  // 只显示y轴
+                axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+                showGridLines: false,
+                showAxisNumbers: true
+            });
+
+            system.addCoordinateLocatingGuides(point, 1, false, true);
+
+            return `
+找出 $y$ 坐標：從點 $A$ 向左引一條水平虛線，交 $y$ 軸於 <span style="color: blue">$${point.y}$</span>
+<div style="text-align: center;">
+${system.toString()}
+</div>
+
+因此，點 $A$ 的 $y$ 坐標為 <span style="color: blue">$${point.y}$</span>
+            `.trim();
+        }
+
+        // 完整坐标系的处理（难度3-5）
+        const step1System = CoordinateSystem.createExplanationSystem({
+            width: 400,
+            height: 400,
+            xRange: [-5, 5] as [number, number],
+            yRange: [-5, 5] as [number, number],
+            point: point,
+            showGrid: true,
+            showAllGrids: true,
+            axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+            showGridLines: true,
+            showAxisNumbers: true
+        });
+
+        step1System.addCoordinateLocatingGuides(point, 1);
+
+        const step2System = CoordinateSystem.createExplanationSystem({
+            width: 400,
+            height: 400,
+            xRange: [-5, 5] as [number, number],
+            yRange: [-5, 5] as [number, number],
+            point: point,
+            showGrid: true,
+            showAllGrids: true,
+            axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+            showGridLines: true,
+            showAxisNumbers: true
+        });
+
+        step2System.addCoordinateLocatingGuides(point, 2);
+
+        return `
+正確答案顯示的坐標平面中，點 $A$ 的位置為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
+<br>
+【第一步】找出 $x$ 坐標：從點 $A$ 向下引一條垂直虛線（綠色），交 $x$ 軸於 <span style="color: red">$${point.x}$</span>
+<div style="text-align: center;">
+${step1System.toString()}
+</div>
+
+【第二步】找出 $y$ 坐標：從點 $A$ 向左引一條水平虛線（綠色），交 $y$ 軸於 <span style="color: blue">$${point.y}$</span>
+<div style="text-align: center;">
+${step2System.toString()}
+</div>
+
+因此，點 $A$ 的坐標為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
+        `.trim();
     }
 } 
