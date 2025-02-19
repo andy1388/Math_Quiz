@@ -39,6 +39,8 @@ API Reference:
    addFunction(fn, color, style, showEquation)
    addLinearConstraint(slope, yIntercept, isGreaterThan, color, style)
    addCircle(centerX, centerY, radius, color, style, domain?, range?)
+   createExplanationSystem(config: ExplanationSystemConfig): CoordinateSystem
+   addCoordinateLocatingGuides(point, step, isXAxisOnly?, isYAxisOnly?)
    toString(): string         // Returns SVG string
 
 3. Styles:
@@ -102,3 +104,29 @@ Limitations:
 2. Browser Support:
    - Requires SVG support
    - Modern browsers only 
+
+4. Coordinate Location Helpers:
+   createExplanationSystem:
+     Creates a coordinate system for explaining coordinate location
+     - Supports full system or single-axis display
+     - Configurable grid and number display
+     - Parameters:
+       * width, height: system dimensions
+       * xRange, yRange: axis ranges
+       * point: target point {x, y}
+       * showGridLines: toggle grid visibility
+       * showAxisNumbers: toggle axis numbers
+       * isXAxisOnly: show only x-axis
+       * isYAxisOnly: show only y-axis
+
+   addCoordinateLocatingGuides:
+     Adds visual guides for locating coordinates
+     - Green dotted lines: auxiliary lines from point to axes
+     - Red arrows: indicate x-coordinate distance
+     - Blue arrows: indicate y-coordinate distance
+     - Coordinate labels: show actual values
+     - Parameters:
+       * point: target point {x, y}
+       * step: 1 for x-coord, 2 for y-coord
+       * isXAxisOnly: locate on x-axis only
+       * isYAxisOnly: locate on y-axis only 
