@@ -51,28 +51,28 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         switch (level) {
             case 1: // 第一象限
                 return {
-                    x: getRandomInt(1, 5),
-                    y: getRandomInt(1, 5)
+                    x: getRandomInt(0, 5),
+                    y: getRandomInt(0, 5)
                 };
             case 2: // 第二象限
                 return {
-                    x: getRandomInt(-5, -1),
-                    y: getRandomInt(1, 5)
+                    x: getRandomInt(-5, 0),
+                    y: getRandomInt(0, 5)
                 };
             case 3: // 第三象限
                 return {
-                    x: getRandomInt(-5, -1),
-                    y: getRandomInt(-5, -1)
+                    x: getRandomInt(-5, 0),
+                    y: getRandomInt(-5, 0)
                 };
             case 4: // 第四象限
                 return {
-                    x: getRandomInt(1, 5),
-                    y: getRandomInt(-5, -1)
+                    x: getRandomInt(0, 5),
+                    y: getRandomInt(-5, 0)
                 };
             case 5: // 任意象限（小数）
                 const quadrant = getRandomInt(1, 4);
-                const x = Number(getRandomDecimal(0.1, 5, 1));
-                const y = Number(getRandomDecimal(0.1, 5, 1));
+                const x = Number(getRandomDecimal(0, 5, 1));
+                const y = Number(getRandomDecimal(0, 5, 1));
                 
                 switch (quadrant) {
                     case 1: return { x, y };
@@ -188,22 +188,25 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             step1System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
             
             // 添加从点到 x 轴的垂直虚线
-            step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
+            step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "solid");
             
-            // 添加从原点到 x 坐标的红色线段（带箭头）
-            const arrowSize = 0.2;
-            if (point.x > 0) {
-                // 主线段
-                step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-                // 箭头
-                step1System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
-                step1System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
-            } else {
-                // 主线段
-                step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-                // 箭头
-                step1System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
-                step1System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+            // 只在 x 不为 0 时添加红色线段和箭头
+            if (point.x !== 0) {
+                // 添加从原点到 x 坐标的红色线段（带箭头）
+                const arrowSize = 0.2;
+                if (point.x > 0) {
+                    // 主线段
+                    step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                    // 箭头
+                    step1System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                    step1System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+                } else {
+                    // 主线段
+                    step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                    // 箭头
+                    step1System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                    step1System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+                }
             }
             
             // 在 x 轴上标记坐标值
@@ -212,7 +215,7 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             return `
 解答：正確答案顯示的坐標平面中，點 A 的 x 坐標為 ${point.x}
 
-【解題步驟】從點 A 向下引一條垂直虛線（綠色），交 x 軸於 ${point.x}：
+【解題步驟】從點 A 向下引一條垂直線（綠色），交 x 軸於 ${point.x}：
 <div style="text-align: center;">
 ${step1System.toString()}
 </div>
