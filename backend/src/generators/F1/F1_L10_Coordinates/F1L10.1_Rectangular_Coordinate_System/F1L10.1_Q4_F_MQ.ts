@@ -34,7 +34,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         const options = ['A', 'B', 'C', 'D'];
 
         return {
-            content: `${content}\n${coordSystem.toString()}`,
+            content: `${content}<br>\n${coordSystem.toString()}`,
             correctAnswer: `$${targetPoint.label}$`,
             wrongAnswers: options.filter(opt => opt !== targetPoint.label).map(opt => `$${opt}$`),
             explanation: this.generateExplanation(points, targetPoint),
@@ -347,13 +347,13 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         step2System.addCoordinateLocatingGuides(targetPoint, 2);
 
         return `
-【第一步】找出 $x$ 坐標：從點 ${targetPoint.label} 向下引一條垂直虛線（綠色），交 $x$ 軸於 <span style="color: red">$${targetPoint.x}$</span>\n
+【第一步】找出 $x$ 坐標：從點 $${targetPoint.label}$ 向下引一條垂直虛線（綠色），交 $x$ 軸於 <span style="color: red">$${targetPoint.x}$</span>\n
 <div style="text-align: center;">\n${step1System.toString()}\n</div>\n
 
-【第二步】找出 $y$ 坐標：從點 ${targetPoint.label} 向左引一條水平虛線（綠色），交 $y$ 軸於 <span style="color: blue">$${targetPoint.y}$</span>\n
+【第二步】找出 $y$ 坐標：從點 $${targetPoint.label}$ 向左引一條水平虛線（綠色），交 $y$ 軸於 <span style="color: blue">$${targetPoint.y}$</span>\n
 <div style="text-align: center;">\n${step2System.toString()}\n</div>\n
 
-因此，點 ${targetPoint.label} 的坐標為 $($<span style="color: red">${targetPoint.x}</span>$,$ <span style="color: blue">${targetPoint.y}</span>$)$
+因此，點 $${targetPoint.label}$ 的坐標為 $($<span style="color: red">$${targetPoint.x}$</span>$,$ <span style="color: blue">$${targetPoint.y}$</span>$)$
         `.trim();
     }
 
