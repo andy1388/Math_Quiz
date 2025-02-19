@@ -51,26 +51,26 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         switch (level) {
             case 1: // x 轴上的点
                 return {
-                    x: getRandomInt(-5, 5),  // 包含 0
+                    x: getRandomInt(-5, 5),
                     y: 0  // 固定在 x 轴上
                 };
             
             case 2: // y 轴上的点
                 return {
                     x: 0,  // 固定在 y 轴上
-                    y: getRandomInt(-5, 5)  // 包含 0
+                    y: getRandomInt(-5, 5)
                 };
             
             case 3: // 第一象限
                 return {
-                    x: getRandomInt(1, 5),  // 避免 0
-                    y: getRandomInt(1, 5)   // 避免 0
+                    x: getRandomInt(0, 5),  // 包含 0
+                    y: getRandomInt(0, 5)   // 包含 0
                 };
             
             case 4: // 任意象限（整数）
                 const quadrant = getRandomInt(1, 4);
-                const x = getRandomInt(1, 5);  // 避免 0
-                const y = getRandomInt(1, 5);  // 避免 0
+                const x = getRandomInt(0, 5);  // 包含 0
+                const y = getRandomInt(0, 5);  // 包含 0
                 
                 switch (quadrant) {
                     case 1: return { x, y };
@@ -82,8 +82,8 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             
             case 5: // 任意象限（小数）
                 const decQuadrant = getRandomInt(1, 4);
-                const decX = Number(getRandomDecimal(0.1, 5, 1));  // 避免 0
-                const decY = Number(getRandomDecimal(0.1, 5, 1));  // 避免 0
+                const decX = Number(getRandomDecimal(0, 5, 1));  // 包含 0
+                const decY = Number(getRandomDecimal(0, 5, 1));  // 包含 0
                 
                 switch (decQuadrant) {
                     case 1: return { x: decX, y: decY };
@@ -138,8 +138,8 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 
                 // 添加其他随机点直到有3个错误点
                 while (wrongPoints.length < 3) {
-                    const newX = getRandomInt(1, 5);
-                    const newY = getRandomInt(1, 5);
+                    const newX = getRandomInt(0, 5);
+                    const newY = getRandomInt(0, 5);
                     addUniquePoint({ x: newX, y: newY });
                 }
                 break;
@@ -148,8 +148,8 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             case 5: // 任意象限（小数）
                 const isLevel5 = this.difficulty === 5;
                 const getCoord = isLevel5 ? 
-                    () => Number(getRandomDecimal(0.1, 5, 1)) : 
-                    () => getRandomInt(1, 5);
+                    () => Number(getRandomDecimal(0, 5, 1)) : 
+                    () => getRandomInt(0, 5);
 
                 while (wrongPoints.length < 3) {
                     const x = getCoord();
