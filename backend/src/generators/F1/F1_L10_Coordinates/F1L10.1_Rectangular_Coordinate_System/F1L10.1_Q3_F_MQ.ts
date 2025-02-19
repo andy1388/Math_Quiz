@@ -164,6 +164,7 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
 
     private generateExplanation(point: Point): string {
         if (this.difficulty === 1) {
+            // 第一步：找 x 坐标
             const step1System = new CoordinateSystem({
                 width: 400,
                 height: 400,
@@ -180,17 +181,9 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showAllGrids: true
             });
 
-            // 只添加 -5 和 5 的标签，移除 0
-            const axisLabels = [-5, 5];
-            step1System.addAxisLabels(axisLabels, axisLabels);
-
-            // 添加点
+            // 第一步的图形元素
             step1System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
-            
-            // 添加从点到 x 轴的垂直虚线
-            step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "solid");
-            
-            // 只在 x 不为 0 时添加红色线段和箭头
+            step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
             if (point.x !== 0) {
                 // 添加从原点到 x 坐标的红色线段（带箭头）
                 const arrowSize = 0.2;
@@ -212,15 +205,82 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             // 在 x 轴上标记坐标值
             step1System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
 
-            return `
-解答：正確答案顯示的坐標平面中，點 A 的 x 坐標為 ${point.x}
+            // 第二步：找 y 坐标
+            const step2System = new CoordinateSystem({
+                width: 400,
+                height: 400,
+                xRange: [-5, 5],
+                yRange: [-5, 5],
+                showGrid: true,
+                gridColor: '#e0e0e0',
+                gridOpacity: 0.8,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showAllGrids: true
+            });
 
-【解題步驟】從點 A 向下引一條垂直線（綠色），交 x 軸於 ${point.x}：
+            // 添加第二步的图形元素
+            const axisLabels2 = [-5, 5];
+            step2System.addAxisLabels(axisLabels2, axisLabels2);
+
+            // 添加点
+            step2System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
+
+            // 保留第一步的红色部分
+            if (point.x !== 0) {
+                // 主线段
+                step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                // 箭头
+                const arrowSize = 0.2;
+                if (point.x > 0) {
+                    step2System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                    step2System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+                } else {
+                    step2System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                    step2System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+                }
+                // x 坐标值
+                step2System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
+            }
+
+            // 添加从点到 y 轴的水平虚线
+            step2System.addLineSegment(point.x, point.y, 0, point.y, "green", "dotted");
+
+            // 添加蓝色箭头（从 x 轴到点的垂直线段）
+            if (point.y !== 0) {
+                // 主线段
+                step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
+                // 箭头
+                const arrowSize = 0.2;
+                if (point.y > 0) {
+                    step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y - arrowSize, "blue", "solid");
+                    step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y - arrowSize, "blue", "solid");
+                } else {
+                    step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y + arrowSize, "blue", "solid");
+                    step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y + arrowSize, "blue", "solid");
+                }
+            }
+
+            // 在 y 轴上标记坐标值
+            step2System.addTextWithBackground(-0.5, point.y, `${point.y}`, "blue", 18);
+
+            return `
+解答：正確答案顯示的坐標平面中，點 A 的坐標為 (${point.x}, ${point.y})
+
+【第一步】找出 x 坐標：從點 A 向下引一條垂直虛線（綠色），交 x 軸於 ${point.x}
 <div style="text-align: center;">
 ${step1System.toString()}
 </div>
 
-因此，點 A 的 x 坐標為 ${point.x}
+【第二步】找出 y 坐標：從點 A 向左引一條水平虛線（綠色），交 y 軸於 ${point.y}
+<div style="text-align: center;">
+${step2System.toString()}
+</div>
+
+因此，點 A 的坐標為 (${point.x}, ${point.y})
             `.trim();
         }
 
