@@ -45,8 +45,11 @@ export default class F1L10_1_Q2_F_MQ extends QuestionGenerator {
                 showYAxis: false
             });
 
-            // 添加 x 軸標籤（只有最小和最大值）
-            coordSystem.addAxisLabels(axisLabels, []);
+            // 修改：添加 0 到标签中
+            const xAxisLabels = [-5, 0, 5];  // 添加 0
+            
+            // 添加 x 軸標籤（包含 0）
+            coordSystem.addAxisLabels(xAxisLabels, []);
 
             // 添加刻度短線（所有整數位置）
             for (let x = range[0]; x <= range[1]; x++) {
@@ -73,8 +76,8 @@ export default class F1L10_1_Q2_F_MQ extends QuestionGenerator {
                 showYAxis: false
             });
 
-            // 添加 x 軸標籤（只有最小和最大值）
-            explainSystem.addAxisLabels(axisLabels, []);
+            // 修改：添加 0 到标签中
+            explainSystem.addAxisLabels(xAxisLabels, []);
 
             // 添加刻度短線（所有整數位置）
             for (let x = range[0]; x <= range[1]; x++) {
@@ -127,8 +130,11 @@ ${explainSystem.toString()}
                 showXAxis: false
             });
 
-            // 添加 y 軸標籤（只有最小和最大值）
-            coordSystem.addAxisLabels([], axisLabels);
+            // 修改：添加 0 到标签中
+            const yAxisLabels = [-5, 0, 5];  // 添加 0
+            
+            // 添加 y 軸標籤（包含 0）
+            coordSystem.addAxisLabels([], yAxisLabels);
 
             // 添加刻度短線（所有整數位置）
             for (let y = range[0]; y <= range[1]; y++) {
@@ -155,8 +161,8 @@ ${explainSystem.toString()}
                 showXAxis: false
             });
 
-            // 添加 y 軸標籤（只有最小和最大值）
-            explainSystem.addAxisLabels([], axisLabels);
+            // 修改：添加 0 到标签中
+            explainSystem.addAxisLabels([], yAxisLabels);
 
             // 添加刻度短線（所有整數位置）
             for (let y = range[0]; y <= range[1]; y++) {
