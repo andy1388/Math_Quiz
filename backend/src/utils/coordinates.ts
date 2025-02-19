@@ -662,8 +662,8 @@ export class CoordinateSystem {
         return system;
     }
 
-    // 修改 addExplanationLines 方法
-    addExplanationLines(point: { x: number; y: number }, step: 1 | 2, isXAxisOnly = false, isYAxisOnly = false): void {
+    // 修改函数名为更贴切的描述
+    addCoordinateLocatingGuides(point: { x: number; y: number }, step: 1 | 2, isXAxisOnly = false, isYAxisOnly = false): void {
         if (isXAxisOnly) {
             // 只显示x轴的情况
             if (point.x !== 0) {

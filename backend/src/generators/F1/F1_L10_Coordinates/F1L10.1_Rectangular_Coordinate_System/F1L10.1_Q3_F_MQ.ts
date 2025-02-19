@@ -336,7 +336,7 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showAxisNumbers: true  // 显示数字
             });
 
-            system.addExplanationLines(point, 1, true, false);
+            system.addCoordinateLocatingGuides(point, 1, true, false);
 
             return `
 正確答案顯示的數線中，點 $A$ 的 $x$ 坐標為 <span style="color: red">$${point.x}$</span>
@@ -362,7 +362,7 @@ ${system.toString()}
                 showAxisNumbers: true  // 显示数字
             });
 
-            system.addExplanationLines(point, 1, false, true);
+            system.addCoordinateLocatingGuides(point, 1, false, true);
 
             return `
 正確答案顯示的數線中，點 $A$ 的 $y$ 坐標為 <span style="color: blue">$${point.y}$</span>
@@ -389,7 +389,7 @@ ${system.toString()}
             showAxisNumbers: true   // 显示数字
         });
 
-        step1System.addExplanationLines(point, 1);
+        step1System.addCoordinateLocatingGuides(point, 1);
 
         const step2System = CoordinateSystem.createExplanationSystem({
             width: 400,
@@ -404,7 +404,7 @@ ${system.toString()}
             showAxisNumbers: true   // 显示数字
         });
 
-        step2System.addExplanationLines(point, 2);
+        step2System.addCoordinateLocatingGuides(point, 2);
 
         return `
 正確答案顯示的坐標平面中，點 $A$ 的位置為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
