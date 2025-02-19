@@ -86,10 +86,24 @@ export default class F1L10_1_Q2_F_MQ extends QuestionGenerator {
                 }
             }
 
-            // 在解釋中添加點、紅色線段和標籤
+            // 在解釋中添加點、紅色線段和箭头
             explainSystem.addPoint(point.x, 0, "●", "A", 15, -20, "#00cc00");
             explainSystem.addLineSegment(0, 0, point.x, 0, "red", "solid");
-            explainSystem.addTextWithBackground(point.x, -0.3, `${point.x}`, "red", 18);
+
+            // 添加红色箭头
+            if (point.x !== 0) {
+                const arrowSize = 0.2;
+                if (point.x > 0) {
+                    explainSystem.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                    explainSystem.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+                } else {
+                    explainSystem.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                    explainSystem.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+                }
+            }
+
+            // 添加坐标值标签（调整位置避免与箭头重叠）
+            explainSystem.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 18);
 
             return {
                 content: `在下面的數線上，請寫出點 A 的 x 坐標。\n${coordSystem.toString()}`,
