@@ -321,13 +321,24 @@ ${explainSystem.toString()}
         // 添加點 A
         step2System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
         
-        // 保留第一步的紅色線段和標籤
+        // 第二步：保留第一步的红色线段和箭头
         step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-        step2System.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 24);
-        
+
+        // 保留红色箭头
+        if (point.x !== 0) {
+            const arrowSize = 0.2;
+            if (point.x > 0) {
+                step2System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                step2System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+            } else {
+                step2System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                step2System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+            }
+        }
+
         // 添加水平輔助線（綠色虛線）
         step2System.addLineSegment(0, point.y, point.x, point.y, "green", "dotted");
-        
+
         // 添加从 x 坐标点到目标点的蓝色线段和箭头
         if (point.y !== 0) {
             step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
