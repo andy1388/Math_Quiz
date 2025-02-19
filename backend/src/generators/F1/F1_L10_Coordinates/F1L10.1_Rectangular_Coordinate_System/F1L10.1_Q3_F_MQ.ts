@@ -190,8 +190,21 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             // 添加从点到 x 轴的垂直虚线
             step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
             
-            // 添加从原点到 x 坐标的红色线段（直接到点的 x 坐标）
-            step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+            // 添加从原点到 x 坐标的红色线段（带箭头）
+            const arrowSize = 0.2;
+            if (point.x > 0) {
+                // 主线段
+                step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                // 箭头
+                step1System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                step1System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+            } else {
+                // 主线段
+                step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                // 箭头
+                step1System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                step1System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+            }
             
             // 在 x 轴上标记坐标值
             step1System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
