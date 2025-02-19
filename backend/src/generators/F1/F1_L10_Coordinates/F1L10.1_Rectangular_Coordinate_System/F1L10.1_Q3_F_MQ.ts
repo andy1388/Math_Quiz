@@ -34,11 +34,11 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         // 根据难度级别生成不同的问题内容
         let content;
         if (this.difficulty === 1) {
-            content = `在下列哪一個數線中，點 A 的 x 座標是 ${point.x}？`;
+            content = `在下列哪一個數線中，點 $A$ 的 $x$ 座標是 $${point.x}$？`;
         } else if (this.difficulty === 2) {
-            content = `在下列哪一個數線中，點 A 的 y 座標是 ${point.y}？`;
+            content = `在下列哪一個數線中，點 $A$ 的 $y$ 座標是 $${point.y}$？`;
         } else {
-            content = `在下列哪一個坐標平面中，點 A 的位置是正確的？點 A 的坐標為 (${point.x}, ${point.y})`;
+            content = `在下列哪一個坐標平面中，點 $A$ 的位置是正確的？點 $A$ 的坐標為 $(${point.x}, ${point.y})$`;
         }
 
         return {
@@ -552,19 +552,19 @@ ${coordSystem.toString()}
         step2System.addTextWithBackground(-0.5, point.y, `${point.y}`, "blue", 18);
 
         return `
-正確答案顯示的坐標平面中，點 A 的位置為 (<span style="color: red">${point.x}</span>, <span style="color: blue">${point.y}</span>)
+正確答案顯示的坐標平面中，點 $A$ 的位置為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
 <br>
-【第一步】找出 x 坐標：從點 A 向下引一條垂直虛線（綠色），交 x 軸於 <span style="color: red">${point.x}</span>
+【第一步】找出 $x$ 坐標：從點 $A$ 向下引一條垂直虛線（綠色），交 $x$ 軸於 <span style="color: red">$${point.x}$</span>
 <div style="text-align: center;">
 ${step1System.toString()}
 </div>
 
-【第二步】找出 y 坐標：從點 A 向左引一條水平虛線（綠色），交 y 軸於 <span style="color: blue">${point.y}</span>
+【第二步】找出 $y$ 坐標：從點 $A$ 向左引一條水平虛線（綠色），交 $y$ 軸於 <span style="color: blue">$${point.y}$</span>
 <div style="text-align: center;">
 ${step2System.toString()}
 </div>
 
-因此，點 A 的坐標為 (<span style="color: red">${point.x}</span>, <span style="color: blue">${point.y}</span>)
+因此，點 $A$ 的坐標為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
 `.trim();
     }
 
