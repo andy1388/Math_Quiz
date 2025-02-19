@@ -107,8 +107,8 @@ export default class F1L10_1_Q2_F_MQ extends QuestionGenerator {
 
             return {
                 content: `在下面的數線上，請寫出點 $A$ 的 $x$ 坐標。\n${coordSystem.toString()}`,
-                correctAnswer: `${point.x}`,
-                wrongAnswers: this.generateWrongAnswersForLevelOne(point.x),
+                correctAnswer: `$${point.x}$`,
+                wrongAnswers: this.generateWrongAnswersForLevelOne(point.x).map(ans => `$${ans}$`),
                 explanation: `
 解答：<br>
 1. 從點 $A$ 看到紅色線段的長度<br>
@@ -206,8 +206,8 @@ ${explainSystem.toString()}
 
             return {
                 content: `在下面的數線上，請寫出點 $A$ 的 $y$ 坐標。<br>\n${coordSystem.toString()}`,
-                correctAnswer: `${point.y}`,
-                wrongAnswers: this.generateWrongAnswersForLevelTwo(point.y),
+                correctAnswer: `$${point.y}$`,
+                wrongAnswers: this.generateWrongAnswersForLevelTwo(point.y).map(ans => `$${ans}$`),
                 explanation: `
 解答：<br>
 1. 從點 $A$ 看到藍色線段的長度<br>
