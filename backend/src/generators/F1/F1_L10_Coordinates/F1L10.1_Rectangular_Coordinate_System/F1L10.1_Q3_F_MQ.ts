@@ -144,10 +144,10 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         if (this.difficulty === 1) {
             // 只显示 x 轴的坐标系统
             const coordSystem = new CoordinateSystem({
-                width: 200,
-                height: 50,  // 减小高度
+                width: 400,  // 增加宽度
+                height: 100,  // 适当的高度
                 xRange: [-5, 5],
-                yRange: [-1, 1],  // 缩小 y 范围
+                yRange: [-1, 1],
                 showGrid: false,
                 axisColor: '#333',
                 axisWidth: 1.5,
@@ -157,18 +157,16 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showYAxis: false  // 不显示 y 轴
             });
 
-            // 添加刻度线
+            // 添加刻度线和标签
             for (let x = -5; x <= 5; x++) {
+                // 添加刻度线
                 coordSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
-            }
-
-            // 添加标签
-            for (let x = -5; x <= 5; x++) {
+                // 添加标签
                 coordSystem.addText(x, -0.3, `${x}`);
             }
 
             // 添加点
-            coordSystem.addPoint(point.x, 0, "●", "A", 15, -20, "#00cc00");
+            coordSystem.addPoint(point.x, 0, "●", "A", 15, 20, "#00cc00");
 
             return coordSystem.toString();
         } else if (this.difficulty === 2) {
