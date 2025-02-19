@@ -106,19 +106,19 @@ export default class F1L10_1_Q2_F_MQ extends QuestionGenerator {
             explainSystem.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 18);
 
             return {
-                content: `在下面的數線上，請寫出點 A 的 x 坐標。\n${coordSystem.toString()}`,
+                content: `在下面的數線上，請寫出點 $A$ 的 $x$ 坐標。\n${coordSystem.toString()}`,
                 correctAnswer: `${point.x}`,
                 wrongAnswers: this.generateWrongAnswersForLevelOne(point.x),
                 explanation: `
 解答：<br>
-1. 從點 A 看到紅色線段的長度<br>
-2. 從刻度可以看出 x = <span style="color: red">${point.x}</span><br>
+1. 從點 $A$ 看到紅色線段的長度<br>
+2. 從刻度可以看出 $x = $ <span style="color: red">${point.x}</span><br>
 
 <div style="text-align: center;">
 ${explainSystem.toString()}
 </div>
 
-因此，點 A 的 x 坐標為 <span style="color: red">${point.x}</span>
+因此，點 $A$ 的 $x$ 坐標為 <span style="color: red">${point.x}</span>
                 `.trim(),
                 type: 'text',
                 displayOptions: {
@@ -205,19 +205,19 @@ ${explainSystem.toString()}
             explainSystem.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 18);
 
             return {
-                content: `在下面的數線上，請寫出點 A 的 y 坐標。<br>\n${coordSystem.toString()}`,
+                content: `在下面的數線上，請寫出點 $A$ 的 $y$ 坐標。<br>\n${coordSystem.toString()}`,
                 correctAnswer: `${point.y}`,
                 wrongAnswers: this.generateWrongAnswersForLevelTwo(point.y),
                 explanation: `
 解答：<br>
-1. 從點 A 看到藍色線段的長度<br>
-2. 從刻度可以看出 y = <span style="color: blue">${point.y}</span><br>
+1. 從點 $A$ 看到藍色線段的長度<br>
+2. 從刻度可以看出 $y = $ <span style="color: blue">${point.y}</span><br>
 
 <div style="text-align: center;">
 ${explainSystem.toString()}
 </div>
 
-因此，點 A 的 y 坐標為 <span style="color: blue">${point.y}</span>
+因此，點 $A$ 的 $y$ 坐標為 <span style="color: blue">${point.y}</span>
                 `.trim(),
                 type: 'text',
                 displayOptions: {
@@ -353,29 +353,29 @@ ${explainSystem.toString()}
         step2System.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 24);
 
         return {
-            content: `在下面的坐標系中，請寫出點 A 的坐標。\n${coordSystem.toString()}`,
-            correctAnswer: `(${point.x}, ${point.y})`,
-            wrongAnswers: this.generateWrongAnswers(point),
+            content: `在下面的坐標系中，請寫出點 $A$ 的坐標。\n${coordSystem.toString()}`,
+            correctAnswer: `$(${point.x}, ${point.y})$`,
+            wrongAnswers: this.generateWrongAnswers(point).map(ans => `$${ans}$`),
             explanation: `
-【第一步：找 x 坐標】<br>
-1. 從點 A 向下引一條垂直虛線（綠色）<br>
-2. 這條線與 x 軸的交點，就是 x 坐標<br>
-3. 從刻度可以看出 x = ${point.x}<br>
+【第一步：找 $x$ 坐標】<br>
+1. 從點 $A$ 向下引一條垂直虛線（綠色）<br>
+2. 這條線與 $x$ 軸的交點，就是 $x$ 坐標<br>
+3. 從刻度可以看出 $x = $ <span style="color: red">${point.x}</span><br>
 
 <div style="text-align: center;">
 ${step1System.toString()}
 </div>
 
-【第二步：找 y 坐標】<br>
-1. 從點 A 向左引一條水平虛線（綠色）<br>
-2. 這條線與 y 軸的交點，就是 y 坐標<br>
-3. 從刻度可以看出 y = ${point.y}<br>
+【第二步：找 $y$ 坐標】<br>
+1. 從點 $A$ 向左引一條水平虛線（綠色）<br>
+2. 這條線與 $y$ 軸的交點，就是 $y$ 坐標<br>
+3. 從刻度可以看出 $y = $ <span style="color: blue">${point.y}</span><br>
 
 <div style="text-align: center;">
 ${step2System.toString()}
 </div>
 
-因此，點 A 的坐標為 (<span style="color: red">${point.x}</span>, <span style="color: blue">${point.y}</span>)
+因此，點 $A$ 的坐標為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
             `.trim(),
             type: 'text',
             displayOptions: {
