@@ -145,28 +145,30 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             // 只显示 x 轴的坐标系统
             const coordSystem = new CoordinateSystem({
                 width: 400,
-                height: 150,  // 增加高度，让数字更清晰
+                height: 150,
                 xRange: [-5, 5],
-                yRange: [-2, 2],  // 增加 y 范围，给标签更多空间
+                yRange: [-2, 2],
                 showGrid: false,
                 axisColor: '#333',
                 axisWidth: 1.5,
                 showArrows: true,
                 labelColor: '#666',
                 labelSize: 14,
-                showYAxis: false  // 不显示 y 轴
+                showYAxis: false
             });
 
             // 添加刻度线和标签
             for (let x = -5; x <= 5; x++) {
-                // 添加刻度线
-                coordSystem.addLineSegment(x, -0.2, x, 0.2, "black", "solid");  // 增加刻度线长度
+                // 只在非端点处添加刻度线
+                if (x !== 5) {
+                    coordSystem.addLineSegment(x, -0.2, x, 0.2, "black", "solid");
+                }
                 // 添加标签
-                coordSystem.addText(x, -0.6, `${x}`);  // 调整标签位置，远离刻度线
+                coordSystem.addText(x, -0.6, `${x}`);
             }
 
             // 添加点
-            coordSystem.addPoint(point.x, 0, "●", "A", 15, 40, "#00cc00");  // 增加标签的垂直偏移
+            coordSystem.addPoint(point.x, 0, "●", "A", 15, 40, "#00cc00");
 
             return coordSystem.toString();
         } else if (this.difficulty === 2) {
