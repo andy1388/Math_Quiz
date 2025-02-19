@@ -188,24 +188,22 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
 
             // 添加刻度线和标签
             for (let x = -5; x <= 5; x++) {
-                // 只在非端点处添加刻度线
                 if (x !== 5) {
                     coordSystem.addLineSegment(x, -0.2, x, 0.2, "black", "solid");
                 }
-                // 添加标签
                 coordSystem.addText(x, -0.6, `${x}`);
             }
 
-            // 添加点
+            // 只添加点，不添加箭头和标签
             coordSystem.addPoint(point.x, 0, "●", "A", 15, 40, "#00cc00");
 
             return coordSystem.toString();
         } else if (this.difficulty === 2) {
             // 只显示 y 轴的坐标系统
             const coordSystem = new CoordinateSystem({
-                width: 150,      // 适当的宽度
-                height: 400,     // 与 level 1 对应
-                xRange: [-2, 2], // 给标签足够空间
+                width: 150,
+                height: 400,
+                xRange: [-2, 2],
                 yRange: [-5, 5],
                 showGrid: false,
                 axisColor: '#333',
@@ -213,21 +211,19 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showArrows: true,
                 labelColor: '#666',
                 labelSize: 14,
-                showXAxis: false  // 不显示 x 轴
+                showXAxis: false
             });
 
             // 添加刻度线和标签
             for (let y = -5; y <= 5; y++) {
-                // 只在非端点处添加刻度线
                 if (y !== 5) {
                     coordSystem.addLineSegment(-0.2, y, 0.2, y, "black", "solid");
                 }
-                // 添加标签
-                coordSystem.addText(-0.6, y, `${y}`);
+                coordSystem.addText(-0.8, y, `${y}`);
             }
 
-            // 添加点
-            coordSystem.addPoint(0, point.y, "●", "A", -40, 0, "#00cc00");  // 调整标签位置
+            // 只添加点，不添加箭头和标签
+            coordSystem.addPoint(0, point.y, "●", "A", -40, 0, "#00cc00");
 
             return coordSystem.toString();
         }
@@ -313,16 +309,114 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
     }
 
     private generateExplanation(point: Point): string {
-        if (this.difficulty === 1 || this.difficulty === 2) {
-            const coordSystem = this.generateCoordinateSystem(point, 'A');
+        if (this.difficulty === 1) {
+            // 创建只有 x 轴的坐标系统
+            const coordSystem = new CoordinateSystem({
+                width: 400,
+                height: 150,
+                xRange: [-5, 5],
+                yRange: [-2, 2],
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showYAxis: false
+            });
+
+            // 添加刻度线和标签
+            for (let x = -5; x <= 5; x++) {
+                if (x !== 5) {
+                    coordSystem.addLineSegment(x, -0.2, x, 0.2, "black", "solid");
+                }
+                coordSystem.addText(x, -0.6, `${x}`);
+            }
+
+            // 添加点
+            coordSystem.addPoint(point.x, 0, "●", "A", 15, 40, "#00cc00");
+
+            // 添加从原点到 x 坐标的红色线段（带箭头）
+            if (point.x !== 0) {
+                coordSystem.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                // 添加箭头
+                const arrowSize = 0.2;
+                if (point.x > 0) {
+                    coordSystem.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                    coordSystem.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+                } else {
+                    coordSystem.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                    coordSystem.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+                }
+            }
+
+            // 添加坐标值标签
+            coordSystem.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
+
             return `
-解答：正確答案顯示的數線中，點 A 的 ${this.difficulty === 1 ? 'x' : 'y'} 坐標為 ${point.x}
+解答：正確答案顯示的數線中，點 A 的 x 坐標為 ${point.x}
 
 <div style="text-align: center;">
-${coordSystem}
+${coordSystem.toString()}
 </div>
 
-因此，點 A 的 ${this.difficulty === 1 ? 'x' : 'y'} 坐標為 ${point.x}
+因此，點 A 的 x 坐標為 ${point.x}
+            `.trim();
+        } 
+        
+        if (this.difficulty === 2) {
+            // 创建只有 y 轴的坐标系统
+            const coordSystem = new CoordinateSystem({
+                width: 150,
+                height: 400,
+                xRange: [-2, 2],
+                yRange: [-5, 5],
+                showGrid: false,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showXAxis: false
+            });
+
+            // 添加刻度线和标签
+            for (let y = -5; y <= 5; y++) {
+                if (y !== 5) {
+                    coordSystem.addLineSegment(-0.2, y, 0.2, y, "black", "solid");
+                }
+                // 调整标签位置，向左移动更多
+                coordSystem.addText(-0.8, y, `${y}`);
+            }
+
+            // 添加点
+            coordSystem.addPoint(0, point.y, "●", "A", -40, 0, "#00cc00");
+
+            // 添加从原点到 y 坐标的蓝色线段（带箭头）
+            if (point.y !== 0) {
+                coordSystem.addLineSegment(0, 0, 0, point.y, "blue", "solid");
+                // 添加箭头
+                const arrowSize = 0.2;
+                if (point.y > 0) {
+                    coordSystem.addLineSegment(0, point.y, arrowSize, point.y - arrowSize, "blue", "solid");
+                    coordSystem.addLineSegment(0, point.y, -arrowSize, point.y - arrowSize, "blue", "solid");
+                } else {
+                    coordSystem.addLineSegment(0, point.y, arrowSize, point.y + arrowSize, "blue", "solid");
+                    coordSystem.addLineSegment(0, point.y, -arrowSize, point.y + arrowSize, "blue", "solid");
+                }
+            }
+
+            // 调整坐标值标签位置，向左移动更多，避免与刻度标签重叠
+            coordSystem.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 18);
+
+            return `
+解答：正確答案顯示的數線中，點 A 的 y 坐標為 ${point.y}
+
+<div style="text-align: center;">
+${coordSystem.toString()}
+</div>
+
+因此，點 A 的 y 坐標為 ${point.y}
             `.trim();
         }
 
