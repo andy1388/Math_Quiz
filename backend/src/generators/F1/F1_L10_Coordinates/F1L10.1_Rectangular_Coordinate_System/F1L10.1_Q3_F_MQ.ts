@@ -433,8 +433,19 @@ ${coordSystem.toString()}
             axisWidth: 1.5,
             showArrows: true,
             labelColor: '#666',
-            labelSize: 14
+            labelSize: 14,
+            showAllGrids: true  // 确保显示所有网格线
         });
+
+        // 添加刻度线（每个整数位置）
+        for (let i = -5; i <= 5; i++) {
+            if (i !== 0) {  // 跳过原点
+                // 添加 x 轴刻度线
+                step1System.addLineSegment(i, -0.1, i, 0.1, "black", "solid");
+                // 添加 y 轴刻度线
+                step1System.addLineSegment(-0.1, i, 0.1, i, "black", "solid");
+            }
+        }
 
         // 添加点
         step1System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
@@ -461,7 +472,6 @@ ${coordSystem.toString()}
 
         // 第二步：显示 y 坐标
         const step2System = new CoordinateSystem({
-            // 使用相同的配置
             width: 400,
             height: 400,
             xRange: [-5, 5],
@@ -473,13 +483,24 @@ ${coordSystem.toString()}
             axisWidth: 1.5,
             showArrows: true,
             labelColor: '#666',
-            labelSize: 14
+            labelSize: 14,
+            showAllGrids: true  // 确保显示所有网格线
         });
+
+        // 添加刻度线（每个整数位置）
+        for (let i = -5; i <= 5; i++) {
+            if (i !== 0) {  // 跳过原点
+                // 添加 x 轴刻度线
+                step2System.addLineSegment(i, -0.1, i, 0.1, "black", "solid");
+                // 添加 y 轴刻度线
+                step2System.addLineSegment(-0.1, i, 0.1, i, "black", "solid");
+            }
+        }
 
         // 添加点
         step2System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
         
-        // 保留第一步的红色线段和箭头
+        // 保留第一步的红色线段和标签
         if (point.x !== 0) {
             step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
             const arrowSize = 0.2;
@@ -498,14 +519,14 @@ ${coordSystem.toString()}
         
         // 添加从原点到 y 坐标的蓝色线段和箭头
         if (point.y !== 0) {
-            step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
+            step2System.addLineSegment(0, 0, 0, point.y, "blue", "solid");
             const arrowSize = 0.2;
             if (point.y > 0) {
-                step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y - arrowSize, "blue", "solid");
-                step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y - arrowSize, "blue", "solid");
+                step2System.addLineSegment(0, point.y, arrowSize, point.y - arrowSize, "blue", "solid");
+                step2System.addLineSegment(0, point.y, -arrowSize, point.y - arrowSize, "blue", "solid");
             } else {
-                step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y + arrowSize, "blue", "solid");
-                step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y + arrowSize, "blue", "solid");
+                step2System.addLineSegment(0, point.y, arrowSize, point.y + arrowSize, "blue", "solid");
+                step2System.addLineSegment(0, point.y, -arrowSize, point.y + arrowSize, "blue", "solid");
             }
         }
         
