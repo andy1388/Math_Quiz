@@ -94,6 +94,25 @@ interface Point {
     color?: string;  // 添加可選的顏色屬性
 }
 
+// 添加新的接口来定义解释坐标系的配置
+interface ExplanationSystemConfig {
+    width: number;
+    height: number;
+    xRange: [number, number];
+    yRange: [number, number];
+    point: { x: number; y: number };
+    showXAxis?: boolean;
+    showYAxis?: boolean;
+    showGrid?: boolean;
+    showAllGrids?: boolean;
+    axisLabels?: number[];
+    labelOffset?: { x: number; y: number };
+    isXAxisOnly?: boolean;   // 是否只显示x轴
+    isYAxisOnly?: boolean;   // 是否只显示y轴
+    showAxisNumbers?: boolean; // 新增：是否显示坐标轴上的数字
+    showGridLines?: boolean;   // 新增：是否显示网格线
+}
+
 export class CoordinateSystem {
     private options: CoordinateSystemOptions;
     private points: Point[] = [];
@@ -563,5 +582,175 @@ export class CoordinateSystem {
 
         svg += '</svg>';
         return svg;
+    }
+
+    static createExplanationSystem(config: ExplanationSystemConfig): CoordinateSystem {
+        const {
+            width,
+            height,
+            xRange,
+            yRange,
+            point,
+            showXAxis = true,
+            showYAxis = true,
+            showGrid = true,
+            showAllGrids = true,
+            axisLabels = [],
+            labelOffset = { x: 15, y: -20 },
+            isXAxisOnly = false,
+            isYAxisOnly = false,
+            showAxisNumbers = true,  // 默认显示数字
+            showGridLines = true     // 默认显示网格
+        } = config;
+
+        // 根据是否只显示单轴调整配置
+        const adjustedConfig: CoordinateSystemOptions = {
+            width: isYAxisOnly ? 200 : width,
+            height: isXAxisOnly ? 200 : height,
+            xRange: isYAxisOnly ? [-1, 1] as [number, number] : xRange,
+            yRange: isXAxisOnly ? [-1, 1] as [number, number] : yRange,
+            showGrid: showGridLines && !isXAxisOnly && !isYAxisOnly,  // 只在完整坐标系中显示网格
+            gridColor: '#e0e0e0',
+            gridOpacity: 0.8,
+            axisColor: '#333',
+            axisWidth: 1.5,
+            showArrows: true,
+            labelColor: '#666',
+            labelSize: 14,
+            showXAxis: !isYAxisOnly,
+            showYAxis: !isXAxisOnly,
+            showAllGrids
+        };
+
+        const system = new CoordinateSystem(adjustedConfig);
+
+        // 添加坐标轴标签
+        if (showAxisNumbers && axisLabels.length > 0) {
+            system.addAxisLabels(
+                !isYAxisOnly ? axisLabels : [], 
+                !isXAxisOnly ? axisLabels : []
+            );
+        }
+
+        // 添加刻度线
+        if (!isYAxisOnly) {  // x轴刻度线
+            for (let x = Math.floor(xRange[0]); x <= Math.ceil(xRange[1]); x++) {
+                if (x !== Math.ceil(xRange[1])) {
+                    system.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
+                }
+            }
+        }
+        if (!isXAxisOnly) {  // y轴刻度线
+            for (let y = Math.floor(yRange[0]); y <= Math.ceil(yRange[1]); y++) {
+                if (y !== Math.ceil(yRange[1])) {
+                    system.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
+                }
+            }
+        }
+
+        // 添加点
+        system.addPoint(
+            point.x, 
+            point.y, 
+            "●", 
+            "A", 
+            isYAxisOnly ? -40 : labelOffset.x,
+            isXAxisOnly ? 40 : labelOffset.y,
+            "#00cc00"
+        );
+
+        return system;
+    }
+
+    // 修改 addExplanationLines 方法
+    addExplanationLines(point: { x: number; y: number }, step: 1 | 2, isXAxisOnly = false, isYAxisOnly = false): void {
+        if (isXAxisOnly) {
+            // 只显示x轴的情况
+            if (point.x !== 0) {
+                this.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                const arrowSize = 0.2;
+                if (point.x > 0) {
+                    this.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                    this.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+                } else {
+                    this.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                    this.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+                }
+            }
+            this.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 24);
+            return;
+        }
+
+        if (isYAxisOnly) {
+            // 只显示y轴的情况
+            if (point.y !== 0) {
+                this.addLineSegment(0, 0, 0, point.y, "blue", "solid");
+                const arrowSize = 0.2;
+                if (point.y > 0) {
+                    this.addLineSegment(0, point.y, arrowSize, point.y - arrowSize, "blue", "solid");
+                    this.addLineSegment(0, point.y, -arrowSize, point.y - arrowSize, "blue", "solid");
+                } else {
+                    this.addLineSegment(0, point.y, arrowSize, point.y + arrowSize, "blue", "solid");
+                    this.addLineSegment(0, point.y, -arrowSize, point.y + arrowSize, "blue", "solid");
+                }
+            }
+            this.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 24);
+            return;
+        }
+
+        // 完整坐标系的处理逻辑
+        if (step === 1) {
+            // 添加垂直辅助线（绿色虚线）
+            this.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
+            
+            // 添加x轴红色线段和箭头
+            if (point.x !== 0) {
+                this.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                const arrowSize = 0.2;
+                if (point.x > 0) {
+                    this.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                    this.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+                } else {
+                    this.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                    this.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+                }
+            }
+            
+            // 添加x坐标标签
+            this.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 24);
+        } else {
+            // 添加水平辅助线（绿色虚线）
+            this.addLineSegment(0, point.y, point.x, point.y, "green", "dotted");
+            
+            // 保留第一步的红色线段和箭头
+            if (point.x !== 0) {
+                this.addLineSegment(0, 0, point.x, 0, "red", "solid");
+                const arrowSize = 0.2;
+                if (point.x > 0) {
+                    this.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                    this.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+                } else {
+                    this.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                    this.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+                }
+            }
+            
+            // 添加y轴蓝色线段和箭头
+            if (point.y !== 0) {
+                this.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
+                const arrowSize = 0.2;
+                if (point.y > 0) {
+                    this.addLineSegment(point.x, point.y, point.x + arrowSize, point.y - arrowSize, "blue", "solid");
+                    this.addLineSegment(point.x, point.y, point.x - arrowSize, point.y - arrowSize, "blue", "solid");
+                } else {
+                    this.addLineSegment(point.x, point.y, point.x + arrowSize, point.y + arrowSize, "blue", "solid");
+                    this.addLineSegment(point.x, point.y, point.x - arrowSize, point.y + arrowSize, "blue", "solid");
+                }
+            }
+            
+            // 添加坐标标签
+            this.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 24);
+            this.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 24);
+        }
     }
 }

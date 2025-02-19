@@ -324,232 +324,87 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
 
     private generateExplanation(point: Point): string {
         if (this.difficulty === 1) {
-            const coordSystem = new CoordinateSystem({
+            const system = CoordinateSystem.createExplanationSystem({
                 width: 400,
-                height: 150,
-                xRange: [-5, 5],
-                yRange: [-2, 2],
-                showGrid: false,
-                axisColor: '#333',
-                axisWidth: 1.5,
-                showArrows: true,
-                labelColor: '#666',
-                labelSize: 14,
-                showYAxis: false
+                height: 200,
+                xRange: [-5, 5] as [number, number],
+                yRange: [-1, 1] as [number, number],
+                point: point,
+                isXAxisOnly: true,
+                axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+                showGridLines: false,  // 不显示网格
+                showAxisNumbers: true  // 显示数字
             });
 
-            // 1. 首先添加刻度线和标签
-            for (let x = -5; x <= 5; x++) {
-                if (x !== 5) {
-                    coordSystem.addLineSegment(x, -0.2, x, 0.2, "black", "solid");
-                }
-                coordSystem.addText(x, -0.6, `${x}`);
-            }
-
-            // 2. 添加从原点到 x 坐标的红色线段
-            if (point.x !== 0) {
-                coordSystem.addLineSegment(0, 0, point.x, 0, "red", "solid");
-            }
-
-            // 3. 添加点
-            coordSystem.addPoint(point.x, 0, "●", "A", 15, 40, "#00cc00");
-
-            // 4. 添加坐标值标签（调整 y 位置到 -0.8，更低一些）
-            coordSystem.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 18);
-
-            // 5. 最后添加箭头，确保在最上层
-            if (point.x !== 0) {
-                const arrowSize = 0.2;
-                if (point.x > 0) {
-                    coordSystem.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
-                    coordSystem.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
-                } else {
-                    coordSystem.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
-                    coordSystem.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
-                }
-            }
+            system.addExplanationLines(point, 1, true, false);
 
             return `
 正確答案顯示的數線中，點 $A$ 的 $x$ 坐標為 <span style="color: red">$${point.x}$</span>
 
 <div style="text-align: center;">
-${coordSystem.toString()}
+${system.toString()}
 </div>
 
 因此，點 $A$ 的 $x$ 坐標為 <span style="color: red">$${point.x}$</span>
             `.trim();
-        } 
-        
+        }
+
         if (this.difficulty === 2) {
-            const coordSystem = new CoordinateSystem({
-                width: 150,
+            const system = CoordinateSystem.createExplanationSystem({
+                width: 200,
                 height: 400,
-                xRange: [-2, 2],
-                yRange: [-5, 5],
-                showGrid: false,
-                axisColor: '#333',
-                axisWidth: 1.5,
-                showArrows: true,
-                labelColor: '#666',
-                labelSize: 14,
-                showXAxis: false
+                xRange: [-1, 1] as [number, number],
+                yRange: [-5, 5] as [number, number],
+                point: point,
+                isYAxisOnly: true,
+                axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+                showGridLines: false,  // 不显示网格
+                showAxisNumbers: true  // 显示数字
             });
 
-            // 1. 首先添加刻度线和标签
-            for (let y = -5; y <= 5; y++) {
-                if (y !== 5) {
-                    coordSystem.addLineSegment(-0.2, y, 0.2, y, "black", "solid");
-                }
-                coordSystem.addText(-0.8, y, `${y}`);
-            }
-
-            // 2. 添加从原点到 y 坐标的蓝色线段
-            if (point.y !== 0) {
-                coordSystem.addLineSegment(0, 0, 0, point.y, "blue", "solid");
-            }
-
-            // 3. 添加坐标值标签
-            coordSystem.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 18);
-
-            // 4. 添加点
-            coordSystem.addPoint(0, point.y, "●", "A", -40, 0, "#00cc00");
-
-            // 5. 最后添加箭头，确保在最上层
-            if (point.y !== 0) {
-                const arrowSize = 0.2;
-                if (point.y > 0) {
-                    coordSystem.addLineSegment(0, point.y, arrowSize, point.y - arrowSize, "blue", "solid");
-                    coordSystem.addLineSegment(0, point.y, -arrowSize, point.y - arrowSize, "blue", "solid");
-                } else {
-                    coordSystem.addLineSegment(0, point.y, arrowSize, point.y + arrowSize, "blue", "solid");
-                    coordSystem.addLineSegment(0, point.y, -arrowSize, point.y + arrowSize, "blue", "solid");
-                }
-            }
+            system.addExplanationLines(point, 1, false, true);
 
             return `
 正確答案顯示的數線中，點 $A$ 的 $y$ 坐標為 <span style="color: blue">$${point.y}$</span>
 
 <div style="text-align: center;">
-${coordSystem.toString()}
+${system.toString()}
 </div>
 
 因此，點 $A$ 的 $y$ 坐標為 <span style="color: blue">$${point.y}$</span>
             `.trim();
         }
 
-        // 第一步：显示 x 坐标
-        const step1System = new CoordinateSystem({
+        // 完整坐标系的处理（难度3-5）
+        const step1System = CoordinateSystem.createExplanationSystem({
             width: 400,
             height: 400,
-            xRange: [-5, 5],
-            yRange: [-5, 5],
+            xRange: [-5, 5] as [number, number],
+            yRange: [-5, 5] as [number, number],
+            point: point,
             showGrid: true,
-            gridColor: '#e0e0e0',
-            gridOpacity: 0.8,
-            axisColor: '#333',
-            axisWidth: 1.5,
-            showArrows: true,
-            labelColor: '#666',
-            labelSize: 14,
-            showAllGrids: true  // 确保显示所有网格线
+            showAllGrids: true,
+            axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+            showGridLines: true,    // 显示网格
+            showAxisNumbers: true   // 显示数字
         });
 
-        // 添加刻度线（每个整数位置）
-        for (let i = -5; i <= 5; i++) {
-            if (i !== 0) {  // 跳过原点
-                // 添加 x 轴刻度线
-                step1System.addLineSegment(i, -0.1, i, 0.1, "black", "solid");
-                // 添加 y 轴刻度线
-                step1System.addLineSegment(-0.1, i, 0.1, i, "black", "solid");
-            }
-        }
+        step1System.addExplanationLines(point, 1);
 
-        // 添加点
-        step1System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
-        
-        // 添加从点到 x 轴的垂直虚线
-        step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
-        
-        // 添加从原点到 x 坐标的红色线段（带箭头）
-        if (point.x !== 0) {
-            step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-            // 添加箭头
-            const arrowSize = 0.2;
-            if (point.x > 0) {
-                step1System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
-                step1System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
-            } else {
-                step1System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
-                step1System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
-            }
-        }
-        
-        // 在 x 轴上标记坐标值
-        step1System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
-
-        // 第二步：显示 y 坐标
-        const step2System = new CoordinateSystem({
+        const step2System = CoordinateSystem.createExplanationSystem({
             width: 400,
             height: 400,
-            xRange: [-5, 5],
-            yRange: [-5, 5],
+            xRange: [-5, 5] as [number, number],
+            yRange: [-5, 5] as [number, number],
+            point: point,
             showGrid: true,
-            gridColor: '#e0e0e0',
-            gridOpacity: 0.8,
-            axisColor: '#333',
-            axisWidth: 1.5,
-            showArrows: true,
-            labelColor: '#666',
-            labelSize: 14,
-            showAllGrids: true  // 确保显示所有网格线
+            showAllGrids: true,
+            axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+            showGridLines: true,    // 显示网格
+            showAxisNumbers: true   // 显示数字
         });
 
-        // 添加刻度线（每个整数位置）
-        for (let i = -5; i <= 5; i++) {
-            if (i !== 0) {  // 跳过原点
-                // 添加 x 轴刻度线
-                step2System.addLineSegment(i, -0.1, i, 0.1, "black", "solid");
-                // 添加 y 轴刻度线
-                step2System.addLineSegment(-0.1, i, 0.1, i, "black", "solid");
-            }
-        }
-
-        // 添加点
-        step2System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
-        
-        // 保留第一步的红色线段和标签
-        if (point.x !== 0) {
-            step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-            const arrowSize = 0.2;
-            if (point.x > 0) {
-                step2System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
-                step2System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
-            } else {
-                step2System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
-                step2System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
-            }
-            step2System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
-        }
-        
-        // 添加从点到 y 轴的水平虚线
-        step2System.addLineSegment(0, point.y, point.x, point.y, "green", "dotted");
-        
-        // 添加从 x 坐标点到目标点的蓝色线段和箭头
-        if (point.y !== 0) {
-            // 从 x 坐标点开始画蓝色线段
-            step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
-            const arrowSize = 0.2;
-            if (point.y > 0) {
-                step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y - arrowSize, "blue", "solid");
-                step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y - arrowSize, "blue", "solid");
-            } else {
-                step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y + arrowSize, "blue", "solid");
-                step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y + arrowSize, "blue", "solid");
-            }
-        }
-        
-        // 在 y 轴上标记坐标值
-        step2System.addTextWithBackground(-0.5, point.y, `${point.y}`, "blue", 18);
+        step2System.addExplanationLines(point, 2);
 
         return `
 正確答案顯示的坐標平面中，點 $A$ 的位置為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
@@ -565,7 +420,7 @@ ${step2System.toString()}
 </div>
 
 因此，點 $A$ 的坐標為 $($<span style="color: red">${point.x}</span>$,$ <span style="color: blue">${point.y}</span>$)$
-`.trim();
+        `.trim();
     }
 
     private getQuadrantName(point: Point): string {
