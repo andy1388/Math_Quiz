@@ -370,13 +370,13 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             }
 
             return `
-正確答案顯示的數線中，點 A 的 x 坐標為 ${point.x}
+正確答案顯示的數線中，點 A 的 x 坐標為 <span style="color: red">${point.x}</span>
 
 <div style="text-align: center;">
 ${coordSystem.toString()}
 </div>
 
-因此，點 A 的 x 坐標為 ${point.x}
+因此，點 A 的 x 坐標為 <span style="color: red">${point.x}</span>
             `.trim();
         } 
         
@@ -427,13 +427,13 @@ ${coordSystem.toString()}
             }
 
             return `
-正確答案顯示的數線中，點 A 的 y 坐標為 ${point.y}
+正確答案顯示的數線中，點 A 的 y 坐標為 <span style="color: blue">${point.y}</span>
 
 <div style="text-align: center;">
 ${coordSystem.toString()}
 </div>
 
-因此，點 A 的 y 坐標為 ${point.y}
+因此，點 A 的 y 坐標為 <span style="color: blue">${point.y}</span>
             `.trim();
         }
 
@@ -552,20 +552,20 @@ ${coordSystem.toString()}
         step2System.addTextWithBackground(-0.5, point.y, `${point.y}`, "blue", 18);
 
         return `
-解答：正確答案顯示的坐標平面中，點 A 的位置為 (${point.x}, ${point.y})
-
-【第一步】找出 x 坐標：從點 A 向下引一條垂直虛線（綠色），交 x 軸於 ${point.x}
+正確答案顯示的坐標平面中，點 A 的位置為 (<span style="color: red">${point.x}</span>, <span style="color: blue">${point.y}</span>)
+<br>
+【第一步】找出 x 坐標：從點 A 向下引一條垂直虛線（綠色），交 x 軸於 <span style="color: red">${point.x}</span>
 <div style="text-align: center;">
 ${step1System.toString()}
 </div>
 
-【第二步】找出 y 坐標：從點 A 向左引一條水平虛線（綠色），交 y 軸於 ${point.y}
+【第二步】找出 y 坐標：從點 A 向左引一條水平虛線（綠色），交 y 軸於 <span style="color: blue">${point.y}</span>
 <div style="text-align: center;">
 ${step2System.toString()}
 </div>
 
-因此，點 A 的坐標為 (${point.x}, ${point.y})
-        `.trim();
+因此，點 A 的坐標為 (<span style="color: red">${point.x}</span>, <span style="color: blue">${point.y}</span>)
+`.trim();
     }
 
     private getQuadrantName(point: Point): string {
