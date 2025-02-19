@@ -370,13 +370,13 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             }
 
             return `
-正確答案顯示的數線中，點 A 的 x 坐標為 <span style="color: red">${point.x}</span>
+正確答案顯示的數線中，點 $A$ 的 $x$ 坐標為 <span style="color: red">$${point.x}$</span>
 
 <div style="text-align: center;">
 ${coordSystem.toString()}
 </div>
 
-因此，點 A 的 x 坐標為 <span style="color: red">${point.x}</span>
+因此，點 $A$ 的 $x$ 坐標為 <span style="color: red">$${point.x}$</span>
             `.trim();
         } 
         
@@ -427,13 +427,13 @@ ${coordSystem.toString()}
             }
 
             return `
-正確答案顯示的數線中，點 A 的 y 坐標為 <span style="color: blue">${point.y}</span>
+正確答案顯示的數線中，點 $A$ 的 $y$ 坐標為 <span style="color: blue">$${point.y}$</span>
 
 <div style="text-align: center;">
 ${coordSystem.toString()}
 </div>
 
-因此，點 A 的 y 坐標為 <span style="color: blue">${point.y}</span>
+因此，點 $A$ 的 $y$ 坐標為 <span style="color: blue">$${point.y}$</span>
             `.trim();
         }
 
