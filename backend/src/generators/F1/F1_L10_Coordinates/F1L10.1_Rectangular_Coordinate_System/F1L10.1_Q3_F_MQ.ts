@@ -63,8 +63,8 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             
             case 3: // 第一象限
                 return {
-                    x: getRandomInt(0, 5),  // 包含 0
-                    y: getRandomInt(0, 5)   // 包含 0
+                    x: getRandomInt(1, 5),  // 避免 0
+                    y: getRandomInt(1, 5)   // 避免 0
                 };
             
             case 4: // 任意象限（整数）
@@ -119,10 +119,11 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 break;
             
             case 3: // 第一象限
+                // 生成其他三个点，但都在第一象限内
                 wrongPoints.push(
-                    { x: -correctPoint.x, y: correctPoint.y },    // 第二象限
-                    { x: -correctPoint.x, y: -correctPoint.y },   // 第三象限
-                    { x: correctPoint.x, y: -correctPoint.y }     // 第四象限
+                    { x: correctPoint.y, y: correctPoint.x },    // 交换 x 和 y
+                    { x: getRandomInt(1, 5), y: getRandomInt(1, 5) },  // 随机点1
+                    { x: getRandomInt(1, 5), y: getRandomInt(1, 5) }   // 随机点2
                 );
                 break;
             
@@ -174,9 +175,9 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         } else if (this.difficulty === 2) {
             // 只显示 y 轴的坐标系统
             const coordSystem = new CoordinateSystem({
-                width: 50,  // 减小宽度
-                height: 200,
-                xRange: [-1, 1],  // 缩小 x 范围
+                width: 150,      // 适当的宽度
+                height: 400,     // 与 level 1 对应
+                xRange: [-2, 2], // 给标签足够空间
                 yRange: [-5, 5],
                 showGrid: false,
                 axisColor: '#333',
@@ -187,18 +188,45 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showXAxis: false  // 不显示 x 轴
             });
 
-            // 添加刻度线
+            // 添加刻度线和标签
             for (let y = -5; y <= 5; y++) {
-                coordSystem.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
-            }
-
-            // 添加标签
-            for (let y = -5; y <= 5; y++) {
-                coordSystem.addText(-0.3, y, `${y}`);
+                // 只在非端点处添加刻度线
+                if (y !== 5) {
+                    coordSystem.addLineSegment(-0.2, y, 0.2, y, "black", "solid");
+                }
+                // 添加标签
+                coordSystem.addText(-0.6, y, `${y}`);
             }
 
             // 添加点
-            coordSystem.addPoint(0, point.y, "●", "A", 15, -20, "#00cc00");
+            coordSystem.addPoint(0, point.y, "●", "A", -40, 0, "#00cc00");  // 调整标签位置
+
+            return coordSystem.toString();
+        }
+
+        if (this.difficulty === 3) {
+            // 只显示第一象限
+            const coordSystem = new CoordinateSystem({
+                width: 200,
+                height: 200,
+                xRange: [0, 5],  // 只显示正 x 轴部分
+                yRange: [0, 5],  // 只显示正 y 轴部分
+                showGrid: true,
+                gridColor: '#e0e0e0',
+                gridOpacity: 0.8,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14
+            });
+
+            // 只添加 0 和 5 的标签
+            const axisLabels = [0, 5];
+            coordSystem.addAxisLabels(axisLabels, axisLabels);
+
+            // 添加点
+            coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
 
             return coordSystem.toString();
         }
