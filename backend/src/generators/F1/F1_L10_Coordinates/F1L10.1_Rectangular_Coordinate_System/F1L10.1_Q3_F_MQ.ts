@@ -163,8 +163,53 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
     }
 
     private generateExplanation(point: Point): string {
-        // 生成解释用的坐标系统
-        const explainSystem = this.generateCoordinateSystem(point, 'A');
+        if (this.difficulty === 1) {
+            const step1System = new CoordinateSystem({
+                width: 400,
+                height: 400,
+                xRange: [-5, 5],
+                yRange: [-5, 5],
+                showGrid: true,
+                gridColor: '#e0e0e0',
+                gridOpacity: 0.8,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 14,
+                showAllGrids: true
+            });
+
+            // 只添加 -5 和 5 的标签，移除 0
+            const axisLabels = [-5, 5];
+            step1System.addAxisLabels(axisLabels, axisLabels);
+
+            // 添加点
+            step1System.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
+            
+            // 添加从点到 x 轴的垂直虚线
+            step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
+            
+            // 添加从原点到 x 坐标的红色线段（直接到点的 x 坐标）
+            step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
+            
+            // 在 x 轴上标记坐标值
+            step1System.addTextWithBackground(point.x, -0.5, `${point.x}`, "red", 18);
+
+            return `
+解答：正確答案顯示的坐標平面中，點 A 的 x 坐標為 ${point.x}
+
+【解題步驟】從點 A 向下引一條垂直虛線（綠色），交 x 軸於 ${point.x}：
+<div style="text-align: center;">
+${step1System.toString()}
+</div>
+
+因此，點 A 的 x 坐標為 ${point.x}
+            `.trim();
+        }
+
+        // 其他难度的解释保持不变...
+        const coordSystem = this.generateCoordinateSystem(point, 'A');
         
         return `
 解答：正確答案顯示的坐標平面中，點 A 的位置為 (${point.x}, ${point.y})
@@ -175,7 +220,7 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
 3. 因此點位於${this.getQuadrantName(point)}
 
 <div style="text-align: center;">
-${explainSystem}
+${coordSystem}
 </div>
 
 其他選項中的點都位於不同的象限，座標不正確。
