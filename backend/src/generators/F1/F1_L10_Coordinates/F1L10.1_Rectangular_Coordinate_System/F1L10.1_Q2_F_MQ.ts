@@ -171,10 +171,24 @@ ${explainSystem.toString()}
                 }
             }
 
-            // 在解釋中添加點、藍色線段和標籤
+            // 在解釋中添加點、藍色線段和箭头
             explainSystem.addPoint(0, point.y, "●", "A", 15, -20, "#00cc00");
             explainSystem.addLineSegment(0, 0, 0, point.y, "blue", "solid");
-            explainSystem.addTextWithBackground(-0.3, point.y, `${point.y}`, "blue", 18);
+
+            // 添加箭头
+            if (point.y !== 0) {
+                const arrowSize = 0.2;
+                if (point.y > 0) {
+                    explainSystem.addLineSegment(0, point.y, arrowSize, point.y - arrowSize, "blue", "solid");
+                    explainSystem.addLineSegment(0, point.y, -arrowSize, point.y - arrowSize, "blue", "solid");
+                } else {
+                    explainSystem.addLineSegment(0, point.y, arrowSize, point.y + arrowSize, "blue", "solid");
+                    explainSystem.addLineSegment(0, point.y, -arrowSize, point.y + arrowSize, "blue", "solid");
+                }
+            }
+
+            // 添加坐标值标签
+            explainSystem.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 18);
 
             return {
                 content: `在下面的數線上，請寫出點 A 的 y 坐標。<br>\n${coordSystem.toString()}`,
@@ -241,22 +255,32 @@ ${explainSystem.toString()}
             showAllGrids: true
         });
 
-        // 添加坐標軸標籤（只有最小和最大值）
+        // 添加坐標軸標籤
         step1System.addAxisLabels(axisLabels, axisLabels);
         
         // 添加點 A
         step1System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
         
-        // 添加垂直輔助線（綠色虛線，只到 x 軸）
+        // 添加垂直輔助線（綠色虛線）
         step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
         
         // 在 x 軸上添加紅色線段，從原點到 x 坐標
         step1System.addLineSegment(0, 0, point.x, 0, "red", "solid");
         
-        // 第一步：添加 x 坐標的標籤（使用紅色）
-        const xLabelOffsetY = this.difficulty === 3 ? -1 : (point.y <= 0 ? 0.5 : -0.5);
-        const fontSize = this.difficulty === 3 ? 24 : 18;  // level 3 使用更大的字体
-        step1System.addTextWithBackground(point.x, xLabelOffsetY, `${point.x}`, "red", fontSize);
+        // 添加红色箭头
+        if (point.x !== 0) {
+            const arrowSize = 0.2;
+            if (point.x > 0) {
+                step1System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                step1System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+            } else {
+                step1System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                step1System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+            }
+        }
+
+        // 添加 x 坐标值标签
+        step1System.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 24);
 
         // 生成第二步的坐标系（顯示找 y 坐標的輔助線）
         const step2System = new CoordinateSystem({
@@ -275,25 +299,44 @@ ${explainSystem.toString()}
             showAllGrids: true
         });
 
-        // 添加坐標軸標籤（只有最小和最大值）
+        // 添加坐標軸標籤
         step2System.addAxisLabels(axisLabels, axisLabels);
 
         // 添加點 A
         step2System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
         
-        // 保留第一步的紅色線段和標籤
+        // 保留第一步的红色线段和箭头
         step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
-        step2System.addTextWithBackground(point.x, xLabelOffsetY, `${point.x}`, "red", fontSize);
-        
-        // 添加水平輔助線（綠色虛線，只到點 A）
+        if (point.x !== 0) {
+            const arrowSize = 0.2;
+            if (point.x > 0) {
+                step2System.addLineSegment(point.x, 0, point.x - arrowSize, arrowSize, "red", "solid");
+                step2System.addLineSegment(point.x, 0, point.x - arrowSize, -arrowSize, "red", "solid");
+            } else {
+                step2System.addLineSegment(point.x, 0, point.x + arrowSize, arrowSize, "red", "solid");
+                step2System.addLineSegment(point.x, 0, point.x + arrowSize, -arrowSize, "red", "solid");
+            }
+        }
+
+        // 添加水平輔助線（綠色虛線）
         step2System.addLineSegment(0, point.y, point.x, point.y, "green", "dotted");
-        
-        // 添加藍色垂直線段，從 x 軸到點 A
-        step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
-        
-        // 添加 y 坐標的標籤（使用藍色）
-        const yLabelOffsetX = this.difficulty === 3 ? -1 : (point.x <= 0 ? 0.5 : -0.5);
-        step2System.addTextWithBackground(yLabelOffsetX, point.y, `${point.y}`, "blue", fontSize);
+
+        // 添加从 x 坐标点到目标点的蓝色线段和箭头
+        if (point.y !== 0) {
+            step2System.addLineSegment(point.x, 0, point.x, point.y, "blue", "solid");
+            const arrowSize = 0.2;
+            if (point.y > 0) {
+                step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y - arrowSize, "blue", "solid");
+                step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y - arrowSize, "blue", "solid");
+            } else {
+                step2System.addLineSegment(point.x, point.y, point.x + arrowSize, point.y + arrowSize, "blue", "solid");
+                step2System.addLineSegment(point.x, point.y, point.x - arrowSize, point.y + arrowSize, "blue", "solid");
+            }
+        }
+
+        // 添加坐标值标签
+        step2System.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 24);
+        step2System.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 24);
 
         return {
             content: `在下面的坐標系中，請寫出點 A 的坐標。\n${coordSystem.toString()}`,
