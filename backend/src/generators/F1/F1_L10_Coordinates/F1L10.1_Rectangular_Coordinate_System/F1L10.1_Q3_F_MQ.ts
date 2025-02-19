@@ -23,39 +23,27 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         // 生成错误的点（在其他象限）
         const wrongPoints = this.generateWrongPoints(point);
         
-        // 将所有点（包括正确点）放入数组并打乱顺序
-        const allPoints = [point, ...wrongPoints];
-        const shuffledPoints = shuffleArray([...allPoints]);
-        
-        // 找出正确答案的索引（A, B, C, D）
-        const correctIndex = shuffledPoints.findIndex((p: Point) => 
-            p.x === point.x && p.y === point.y);
-        const correctAnswer = String.fromCharCode(65 + correctIndex); // A, B, C, 或 D
-        
         // 生成所有坐标平面的图形
-        const coordSystems = shuffledPoints.map((p: Point, index: number) => {
-            const label = String.fromCharCode(65 + index);
-            return this.generateCoordinateSystem(p, label);
-        });
+        const allSystems = [
+            this.generateCoordinateSystem(point, 'A'),
+            ...wrongPoints.map((p, index) => 
+                this.generateCoordinateSystem(p, 'A')  // 所有点都使用 'A' 标签
+            )
+        ];
 
-        // 直接将每个坐标系统作为选项
         const content = `在下列哪一個坐標平面中，點 A 的位置是正確的？
 點 A 的坐標為 (${point.x}, ${point.y})`;
 
+        // 让 MC_Maker 处理选项的打乱
         return {
             content,
-            correctAnswer,
-            wrongAnswers: ['A', 'B', 'C', 'D'].filter(ans => ans !== correctAnswer),
-            explanation: this.generateExplanation(point, correctAnswer),
+            correctAnswer: allSystems[0],  // 第一个是正确答案
+            wrongAnswers: allSystems.slice(1),  // 其余是错误答案
+            explanation: this.generateExplanation(point),
             type: 'text',
             displayOptions: {
                 graph: true
-            },
-            // 使用 optionContents 而不是 options
-            optionContents: coordSystems.map((svg, index) => {
-                const label = String.fromCharCode(65 + index);
-                return svg;
-            })
+            }
         };
     }
 
@@ -174,21 +162,20 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         return coordSystem.toString();
     }
 
-    private generateExplanation(point: Point, correctAnswer: string): string {
-        const coordSystem = this.generateCoordinateSystem(point, correctAnswer);
+    private generateExplanation(point: Point): string {
+        // 生成解释用的坐标系统
+        const explainSystem = this.generateCoordinateSystem(point, 'A');
         
         return `
-解答：${correctAnswer}
+解答：正確答案顯示的坐標平面中，點 A 的位置為 (${point.x}, ${point.y})
 
-點 A 的正確坐標是 (${point.x}, ${point.y})。
-
-在選項 ${correctAnswer} 中：
+在正確的坐標平面中：
 1. x 坐標 = ${point.x}${point.x > 0 ? '（正）' : '（負）'}
 2. y 坐標 = ${point.y}${point.y > 0 ? '（正）' : '（負）'}
 3. 因此點位於${this.getQuadrantName(point)}
 
 <div style="text-align: center;">
-${coordSystem}
+${explainSystem}
 </div>
 
 其他選項中的點都位於不同的象限，座標不正確。
