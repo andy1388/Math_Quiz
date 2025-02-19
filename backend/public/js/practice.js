@@ -775,7 +775,7 @@ function displayQuestion(question, isNewGenerator = true) {
     }
 }
 
-// 生成题目内容的辅助函数
+// 修改 generateQuestionContent 函数
 function generateQuestionContent(question) {
     return `
         <div class="question-content">${question.content}</div>
@@ -785,7 +785,7 @@ function generateQuestionContent(question) {
                 <div class="option" data-index="${index}">
                     <div class="option-label">${letter}.</div>
                     <div class="option-content">
-                        <div class="option-value">\\(${question.options[index]}\\)</div>
+                        <div class="option-value">${question.options[index]}</div>
                     </div>
                 </div>
             `).join('')}
