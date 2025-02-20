@@ -1,5 +1,6 @@
 import { QuestionGenerator, IGeneratorOutput } from '@/generators/QuestionGenerator';
 import { getRandomInt } from '@/utils/mathUtils';
+import { CoordinateSystem } from '@/utils/coordinates';
 
 interface Point {
     x: number;
@@ -17,7 +18,7 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         const point = this.generatePoint(this.difficulty);
         
         // 生成问题内容
-        const content = `在座標平面上標出點 $${point.label}(${point.x}, ${point.y})$，並判斷該點的位置。`;
+        const content = `判斷$A$點$(${point.x}, ${point.y})$在座標平面上的位置。`;
 
         // 生成正确答案和错误答案
         const { correctAnswer, wrongAnswers } = this.generateAnswers(point);
@@ -126,20 +127,91 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
     }
 
     private generateExplanation(point: Point): string {
-        let explanation = `點 $${point.label}(${point.x}, ${point.y})$ 的位置判斷：\n\n`;
+        // 第一步
+        let explanation = `$A$點$(${point.x}, ${point.y})$ 的位置判斷：\n\n`;
+        explanation += `【第一步】找出 x 坐標：$x = ${point.x}$，${point.x === 0 ? '在 y 軸上' : point.x > 0 ? '在 y 軸右方' : '在 y 軸左方'}。<br>\n\n`;
+        
+        // 创建第一步的坐标系统（只显示x坐标）
+        const system1 = CoordinateSystem.createExplanationSystem({
+            width: 400,
+            height: 400,
+            xRange: [-5, 5] as [number, number],
+            yRange: [-5, 5] as [number, number],
+            point: point,
+            showGrid: true,
+            showAllGrids: true,
+            axisLabels: [-5, 5],
+            showGridLines: true,
+            showAxisNumbers: true,
+            showAxisTicks: false
+        });
+
+        // 第一步只添加点和x坐标定位线
+        system1.addPoint(point.x, point.y, "●", "A", 0.3, 0.3, "#00CC00");
+        system1.addCoordinateLocatingGuides(point, 1);
+
+        explanation += `<div style="text-align: center;">\n${system1.toString()}\n</div>\n\n`;
+
+        // 第二步
+        explanation += `【第二步】找出 y 坐標：$y = ${point.y}$，${point.y === 0 ? '在 x 軸上' : point.y > 0 ? '在 x 軸上方' : '在 x 軸下方'}。<br>\n\n`;
+
+        // 创建第二步的坐标系统（显示x和y坐标）
+        const system2 = CoordinateSystem.createExplanationSystem({
+            width: 400,
+            height: 400,
+            xRange: [-5, 5] as [number, number],
+            yRange: [-5, 5] as [number, number],
+            point: point,
+            showGrid: true,
+            showAllGrids: true,
+            axisLabels: [-5, 5],
+            showGridLines: true,
+            showAxisNumbers: true,
+            showAxisTicks: false
+        });
+
+        // 第二步添加点和完整定位线
+        system2.addPoint(point.x, point.y, "●", "A", 0.3, 0.3, "#00CC00");
+        system2.addCoordinateLocatingGuides(point, 2);
+
+        explanation += `<div style="text-align: center;">\n${system2.toString()}\n</div>\n\n`;
+
+        // 第三步
+        explanation += `【第三步】辨認象限：`;
+        
+        // 创建第三步的坐标系统（添加象限标记）
+        const system3 = CoordinateSystem.createExplanationSystem({
+            width: 400,
+            height: 400,
+            xRange: [-5, 5] as [number, number],
+            yRange: [-5, 5] as [number, number],
+            point: point,
+            showGrid: true,
+            showAllGrids: true,
+            axisLabels: [-5, 5],
+            showGridLines: true,
+            showAxisNumbers: true,
+            showAxisTicks: false
+        });
+
+        // 第三步添加象限标记和点
+        system3.addText(3, 3, "Ⅰ", "#000000", 48);
+        system3.addText(-3, 3, "Ⅱ", "#000000", 48);
+        system3.addText(-3, -3, "Ⅲ", "#000000", 48);
+        system3.addText(3, -3, "Ⅳ", "#000000", 48);
+        system3.addPoint(point.x, point.y, "●", "A", 0.3, 0.3, "#00CC00");
         
         if (point.x === 0 && point.y === 0) {
-            explanation += `因為 $x = 0$ 且 $y = 0$，所以點 $${point.label}$ 在原點。`;
+            explanation += `因為 $x = 0$ 且 $y = 0$，所以$A$點在原點。<br>\n\n`;
         } else if (point.x === 0) {
-            explanation += `因為 $x = 0$，所以點 $${point.label}$ 在 y 軸上。`;
+            explanation += `因為 $x = 0$，所以$A$點在 y 軸上。<br>\n\n`;
         } else if (point.y === 0) {
-            explanation += `因為 $y = 0$，所以點 $${point.label}$ 在 x 軸上。`;
+            explanation += `因為 $y = 0$，所以$A$點在 x 軸上。<br>\n\n`;
         } else {
-            const quadrant = point.x > 0 && point.y > 0 ? '第一' :
-                           point.x < 0 && point.y > 0 ? '第二' :
-                           point.x < 0 && point.y < 0 ? '第三' : '第四';
-            explanation += `因為 $x ${point.x > 0 ? '> 0' : '< 0'}$ 且 $y ${point.y > 0 ? '> 0' : '< 0'}$，\n所以點 $${point.label}$ 在${quadrant}象限。`;
+            explanation += `因為 $x ${point.x > 0 ? '> 0' : '< 0'}$ 且 $y ${point.y > 0 ? '> 0' : '< 0'}$，所以$A$點在${point.x > 0 && point.y > 0 ? '第一' : point.x < 0 && point.y > 0 ? '第二' : point.x < 0 && point.y < 0 ? '第三' : '第四'}象限。<br>\n\n`;
         }
+
+        explanation += `<div style="text-align: center;">\n${system3.toString()}\n</div>`;
 
         return explanation;
     }
