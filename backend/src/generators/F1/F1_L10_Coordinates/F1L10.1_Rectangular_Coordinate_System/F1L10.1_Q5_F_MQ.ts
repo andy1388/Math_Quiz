@@ -57,42 +57,89 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
         };
     }
 
-    private generatePoint(level: number): Point[] {
+    private isPointTooClose(newPoint: {x: number, y: number}, existingPoints: Point[], minDistance: number = 2): boolean {
+        return existingPoints.some(point => {
+            const dx = point.x - newPoint.x;
+            const dy = point.y - newPoint.y;
+            return Math.sqrt(dx * dx + dy * dy) < minDistance;
+        });
+    }
+
+    private getRandomPointInQuadrant(quadrant: number, existingPoints: Point[]): {x: number, y: number} {
         let x: number, y: number;
+        let attempts = 0;
+        const maxAttempts = 20;
+
+        do {
+            switch (quadrant) {
+                case 1:
+                    x = getRandomInt(1, 4);
+                    y = getRandomInt(1, 4);
+                    break;
+                case 2:
+                    x = getRandomInt(-4, -1);
+                    y = getRandomInt(1, 4);
+                    break;
+                case 3:
+                    x = getRandomInt(-4, -1);
+                    y = getRandomInt(-4, -1);
+                    break;
+                case 4:
+                    x = getRandomInt(1, 4);
+                    y = getRandomInt(-4, -1);
+                    break;
+                default:
+                    throw new Error("Invalid quadrant");
+            }
+            attempts++;
+        } while (this.isPointTooClose({x, y}, existingPoints) && attempts < maxAttempts);
+
+        return {x, y};
+    }
+
+    private generatePoint(level: number): Point[] {
         let result: Point[] = [];
         
         switch (level) {
             case 1: // 四个象限的整数点
                 do {
-                    x = getRandomInt(-5, 5);
-                    y = getRandomInt(-5, 5);
-                } while (x === 0 || y === 0); // 确保点不在坐标轴上
-                result.push({
-                    x,
-                    y,
-                    label: 'A',
-                    color: '#00cc00'
-                });
+                    const point = this.getRandomPointInQuadrant(getRandomInt(1, 4), result);
+                    result.push({
+                        x: point.x,
+                        y: point.y,
+                        label: 'A',
+                        color: '#00cc00'
+                    });
+                } while (result.length < 4);
                 break;
 
             case 2: // 包含坐标轴上的点和原点
                 const position = getRandomInt(1, 3);
                 if (position === 1) { // 在 y 轴上
-                    x = 0;
-                    y = getRandomInt(-5, 5);
+                    const point = this.getRandomPointInQuadrant(2, result);
+                    result.push({
+                        x: point.x,
+                        y: point.y,
+                        label: 'A',
+                        color: '#00cc00'
+                    });
                 } else if (position === 2) { // 在 x 轴上
-                    x = getRandomInt(-5, 5);
-                    y = 0;
+                    const point = this.getRandomPointInQuadrant(3, result);
+                    result.push({
+                        x: point.x,
+                        y: point.y,
+                        label: 'A',
+                        color: '#00cc00'
+                    });
                 } else { // 在原点
-                    x = 0;
-                    y = 0;
+                    const point = this.getRandomPointInQuadrant(4, result);
+                    result.push({
+                        x: point.x,
+                        y: point.y,
+                        label: 'A',
+                        color: '#00cc00'
+                    });
                 }
-                result.push({
-                    x,
-                    y,
-                    label: 'A',
-                    color: '#00cc00'
-                });
                 break;
 
             case 3: // 四个点在不同象限
@@ -118,28 +165,10 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
 
                 // 根据象限生成具体坐标
                 quadrantData.forEach(data => {
-                    let x = 0, y = 0;
-                    switch (data.quadrant) {
-                        case 1:
-                            x = getRandomInt(1, 4);
-                            y = getRandomInt(1, 4);
-                            break;
-                        case 2:
-                            x = getRandomInt(-4, -1);
-                            y = getRandomInt(1, 4);
-                            break;
-                        case 3:
-                            x = getRandomInt(-4, -1);
-                            y = getRandomInt(-4, -1);
-                            break;
-                        case 4:
-                            x = getRandomInt(1, 4);
-                            y = getRandomInt(-4, -1);
-                            break;
-                    }
+                    const point = this.getRandomPointInQuadrant(data.quadrant, result);
                     result.push({
-                        x,
-                        y,
+                        x: point.x,
+                        y: point.y,
                         label: data.label,
                         color: data.color
                     });
@@ -147,102 +176,117 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                 break;
 
             case 4: // 特殊位置的点
-                // 根据已经决定的 targetPosition 生成点
                 if (this.targetPosition === '在 y 軸上') {
                     // 生成在y轴上的点（正确答案）
+                    const yAxisY = this.getRandomNonZeroInt(-3, 3);
                     result.push({
                         x: 0,
-                        y: this.getRandomNonZeroInt(-4, 4),
+                        y: yAxisY,
                         label: 'P',
                         color: '#FF0000'
                     });
 
-                    // 生成在x轴上的点
+                    // 生成在x轴上的点（确保与其他点距离足够）
+                    let xAxisX;
+                    do {
+                        xAxisX = this.getRandomNonZeroInt(-3, 3);
+                    } while (Math.abs(xAxisX) < 2);
                     result.push({
-                        x: this.getRandomNonZeroInt(-4, 4),
+                        x: xAxisX,
                         y: 0,
                         label: 'Q',
                         color: '#00CC00'
                     });
 
-                    // 生成第一象限的点（确保不在y轴上）
+                    // 生成第一象限和第三象限的点
+                    const quad1Point = this.getRandomPointInQuadrant(1, result);
                     result.push({
-                        x: getRandomInt(1, 4),  // x必须为正
-                        y: getRandomInt(1, 4),
+                        x: quad1Point.x,
+                        y: quad1Point.y,
                         label: 'R',
                         color: '#0000FF'
                     });
 
-                    // 生成第三象限的点（确保不在y轴上）
+                    const quad3Point = this.getRandomPointInQuadrant(3, result);
                     result.push({
-                        x: getRandomInt(-4, -1),  // x必须为负
-                        y: getRandomInt(-4, -1),
+                        x: quad3Point.x,
+                        y: quad3Point.y,
                         label: 'S',
                         color: '#FFA500'
                     });
 
                 } else if (this.targetPosition === '在 x 軸上') {
                     // 生成在x轴上的点（正确答案）
+                    const xAxisX = this.getRandomNonZeroInt(-3, 3);
                     result.push({
-                        x: this.getRandomNonZeroInt(-4, 4),
+                        x: xAxisX,
                         y: 0,
                         label: 'P',
                         color: '#FF0000'
                     });
 
-                    // 生成在y轴上的点
+                    // 生成在y轴上的点（确保与其他点距离足够）
+                    let yAxisY;
+                    do {
+                        yAxisY = this.getRandomNonZeroInt(-3, 3);
+                    } while (Math.abs(yAxisY) < 2);
                     result.push({
                         x: 0,
-                        y: this.getRandomNonZeroInt(-4, 4),
+                        y: yAxisY,
                         label: 'Q',
                         color: '#00CC00'
                     });
 
-                    // 生成第二象限的点（确保不在x轴上）
+                    // 生成第二象限和第四象限的点
+                    const quad2Point = this.getRandomPointInQuadrant(2, result);
                     result.push({
-                        x: getRandomInt(-4, -1),
-                        y: getRandomInt(1, 4),  // y必须为正
+                        x: quad2Point.x,
+                        y: quad2Point.y,
                         label: 'R',
                         color: '#0000FF'
                     });
 
-                    // 生成第四象限的点（确保不在x轴上）
+                    const quad4Point = this.getRandomPointInQuadrant(4, result);
                     result.push({
-                        x: getRandomInt(1, 4),
-                        y: getRandomInt(-4, -1),  // y必须为负
+                        x: quad4Point.x,
+                        y: quad4Point.y,
                         label: 'S',
                         color: '#FFA500'
                     });
 
                 } else { // 问原点
                     // 生成原点（正确答案）
+                    const point = this.getRandomPointInQuadrant(4, result);
                     result.push({
-                        x: 0,
-                        y: 0,
+                        x: point.x,
+                        y: point.y,
                         label: 'P',
                         color: '#FF0000'
                     });
 
                     // 生成在x轴上的点（非原点）
+                    const xAxisX = this.getRandomNonZeroInt(-3, 3);
                     result.push({
-                        x: this.getRandomNonZeroInt(-4, 4),
+                        x: xAxisX,
                         y: 0,
                         label: 'Q',
                         color: '#00CC00'
                     });
 
                     // 生成在y轴上的点（非原点）
+                    const yAxisY = this.getRandomNonZeroInt(-3, 3);
                     result.push({
                         x: 0,
-                        y: this.getRandomNonZeroInt(-4, 4),
+                        y: yAxisY,
                         label: 'R',
                         color: '#0000FF'
                     });
 
                     // 生成第一象限的点
+                    const quad1Point = this.getRandomPointInQuadrant(1, result);
                     result.push({
-                        x: getRandomInt(1, 4),
-                        y: getRandomInt(1, 4),
+                        x: quad1Point.x,
+                        y: quad1Point.y,
                         label: 'S',
                         color: '#FFA500'
                     });
