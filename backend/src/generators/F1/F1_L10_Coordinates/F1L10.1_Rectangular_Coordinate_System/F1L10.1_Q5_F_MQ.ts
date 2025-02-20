@@ -89,10 +89,30 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                     y = getRandomInt(-4, -1);
                     break;
                 default:
-                    throw new Error("Invalid quadrant");
+                    throw new Error(`无效的象限: ${quadrant}`);
             }
             attempts++;
+
+            // 验证生成的点确实在正确的象限内
+            const isInCorrectQuadrant = (() => {
+                switch (quadrant) {
+                    case 1: return x > 0 && y > 0;
+                    case 2: return x < 0 && y > 0;
+                    case 3: return x < 0 && y < 0;
+                    case 4: return x > 0 && y < 0;
+                    default: return false;
+                }
+            })();
+
+            if (!isInCorrectQuadrant) {
+                continue;
+            }
+
         } while (this.isPointTooClose({x, y}, existingPoints) && attempts < maxAttempts);
+
+        if (attempts >= maxAttempts) {
+            throw new Error(`无法在${maxAttempts}次尝试内生成合适的点`);
+        }
 
         return {x, y};
     }
@@ -145,9 +165,9 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
             case 3: // 四个点在不同象限
                 const quadrantData = [
                     { label: 'P', color: '#FF0000', quadrant: getRandomInt(1, 4) },
-                    { label: 'Q', color: '#00CC00' },
-                    { label: 'R', color: '#0000FF' },
-                    { label: 'S', color: '#FFA500' }
+                    { label: 'Q', color: '#00CC00', quadrant: 0 }, // 初始化quadrant
+                    { label: 'R', color: '#0000FF', quadrant: 0 },
+                    { label: 'S', color: '#FFA500', quadrant: 0 }
                 ];
 
                 // 记录已使用的象限
@@ -254,12 +274,11 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                         color: '#FFA500'
                     });
 
-                } else { // 问原点
+                } else { // 在原点
                     // 生成原点（正确答案）
-                    const point = this.getRandomPointInQuadrant(4, result);
                     result.push({
-                        x: point.x,
-                        y: point.y,
+                        x: 0,  // 修改：直接使用(0,0)作为原点坐标
+                        y: 0,
                         label: 'P',
                         color: '#FF0000'
                     });
@@ -346,7 +365,13 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                     default: return false;
                 }
             });
-            const correctAnswer = targetPoint!.label;
+
+            // 添加空值检查
+            if (!targetPoint) {
+                throw new Error(`找不到在第${this.targetQuadrant}象限的点`);
+            }
+
+            const correctAnswer = targetPoint.label;
             const wrongAnswers = points
                 .filter(p => p.label !== correctAnswer)
                 .map(p => p.label);
@@ -361,7 +386,13 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                     default: return false;
                 }
             });
-            const correctAnswer = targetPoint!.label;
+
+            // 添加空值检查
+            if (!targetPoint) {
+                throw new Error(`找不到${this.targetPosition}的点`);
+            }
+
+            const correctAnswer = targetPoint.label;
             const wrongAnswers = points
                 .filter(p => p.label !== correctAnswer)
                 .map(p => p.label);
