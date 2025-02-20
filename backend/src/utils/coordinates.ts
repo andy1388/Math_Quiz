@@ -349,7 +349,8 @@ export class CoordinateSystem {
         x: number,
         y: number,
         text: string,
-        color: string = "black"
+        color: string = "black",
+        fontSize?: number  // 添加可选的 fontSize 参数
     ) {
         const { width, height, xRange, yRange } = this.options;
         
@@ -372,7 +373,8 @@ export class CoordinateSystem {
             x: xPos,
             y: yPos,
             text,
-            color
+            color,
+            fontSize  // 添加 fontSize 到 texts 数组中
         });
     }
 
