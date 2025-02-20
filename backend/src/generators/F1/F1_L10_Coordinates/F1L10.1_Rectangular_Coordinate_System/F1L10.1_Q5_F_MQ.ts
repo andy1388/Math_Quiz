@@ -625,6 +625,143 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
     }
 
     private generateExplanation(points: Point[]): string {
+        if (this.difficulty === 5) {
+            // 找到正确答案的点
+            const correctPoint = points.find(p => {
+                switch (this.questionType) {
+                    case 'x坐標為正數': return p.x > 0;
+                    case 'x坐標為負數': return p.x < 0;
+                    case 'y坐標為正數': return p.y > 0;
+                    case 'y坐標為負數': return p.y < 0;
+                    default: return false;
+                }
+            })!;
+
+            // 创建主要的坐标系统
+            const mainSystem = CoordinateSystem.createExplanationSystem({
+                width: 400,
+                height: 400,
+                xRange: [-5, 5] as [number, number],
+                yRange: [-5, 5] as [number, number],
+                point: correctPoint,
+                showGrid: true,
+                showAllGrids: true,
+                axisLabels: [-5, 5],
+                showGridLines: true,
+                showAxisNumbers: true,
+                showAxisTicks: false
+            });
+
+            // 添加所有点
+            points.forEach(point => {
+                const offset = this.getLabelOffset(point);
+                mainSystem.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, point.color);
+            });
+
+            // 创建第二个坐标系统来展示区域
+            const regionSystem = new CoordinateSystem({
+                width: 200,
+                height: 200,
+                xRange: [-5, 5],
+                yRange: [-5, 5],
+                showGrid: true,
+                gridColor: '#e0e0e0',
+                gridOpacity: 0.8
+            });
+
+            // 在第二个坐标系统中添加区域着色
+            switch (this.questionType) {
+                case 'x坐標為正數':
+                    // 使用函数来表示 x > 0
+                    regionSystem.addLinearConstraint(
+                        (x: number) => x,  // 返回 x 值本身
+                        0,                 // y-截距
+                        true,             // 大于
+                        '#FFE4E1',        // 颜色
+                        'solid'           // 样式
+                    );
+                    break;
+                case 'x坐標為負數':
+                    // 使用函数来表示 x < 0
+                    regionSystem.addLinearConstraint(
+                        (x: number) => x,  // 返回 x 值本身
+                        0,                 // y-截距
+                        false,            // 小于
+                        '#FFE4E1',        // 颜色
+                        'solid'           // 样式
+                    );
+                    break;
+                case 'y坐標為正數':
+                    // 使用函数来表示 y > 0
+                    regionSystem.addLinearConstraint(
+                        (x: number) => 0,  // 水平线 y = 0
+                        0,                 // y-截距
+                        true,             // 大于
+                        '#FFE4E1',        // 颜色
+                        'solid'           // 样式
+                    );
+                    break;
+                case 'y坐標為負數':
+                    // 使用函数来表示 y < 0
+                    regionSystem.addLinearConstraint(
+                        (x: number) => 0,  // 水平线 y = 0
+                        0,                 // y-截距
+                        false,            // 小于
+                        '#FFE4E1',        // 颜色
+                        'solid'           // 样式
+                    );
+                    break;
+            }
+
+            // 生成解释文本
+            let explanation = `點 $${correctPoint.label}(${correctPoint.x}, ${correctPoint.y})$ 的位置判斷：\n\n`;
+            switch (this.questionType) {
+                case 'x坐標為正數':
+                    explanation += `因為點 $${correctPoint.label}$ 的 $x$ 座標為 $${correctPoint.x} > 0$，所以點 $${correctPoint.label}$ 的 x 座標為正數。`;
+                    break;
+                case 'x坐標為負數':
+                    explanation += `因為點 $${correctPoint.label}$ 的 $x$ 座標為 $${correctPoint.x} < 0$，所以點 $${correctPoint.label}$ 的 x 座標為負數。`;
+                    break;
+                case 'y坐標為正數':
+                    explanation += `因為點 $${correctPoint.label}$ 的 $y$ 座標為 $${correctPoint.y} > 0$，所以點 $${correctPoint.label}$ 的 y 座標為正數。`;
+                    break;
+                case 'y坐標為負數':
+                    explanation += `因為點 $${correctPoint.label}$ 的 $y$ 座標為 $${correctPoint.y} < 0$，所以點 $${correctPoint.label}$ 的 y 座標為負數。`;
+                    break;
+            }
+
+            // 添加区域说明
+            let regionExplanation = '';
+            switch (this.questionType) {
+                case 'x坐標為正數':
+                    regionExplanation = '紅色區域表示 x > 0 的部分';
+                    break;
+                case 'x坐標為負數':
+                    regionExplanation = '紅色區域表示 x < 0 的部分';
+                    break;
+                case 'y坐標為正數':
+                    regionExplanation = '紅色區域表示 y > 0 的部分';
+                    break;
+                case 'y坐標為負數':
+                    regionExplanation = '紅色區域表示 y < 0 的部分';
+                    break;
+            }
+
+            return `
+${explanation}\n
+<div style="display: flex; justify-content: space-around; align-items: center;">
+    <div style="text-align: center;">
+        ${mainSystem.toString()}
+        <p>座標平面上的點</p>
+    </div>
+    <div style="text-align: center;">
+        ${regionSystem.toString()}
+        <p>${regionExplanation}</p>
+    </div>
+</div>
+            `.trim();
+        }
+
         const system = CoordinateSystem.createExplanationSystem({
             width: 400,
             height: 400,
