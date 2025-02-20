@@ -18,6 +18,12 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
     }
 
     generate(): IGeneratorOutput {
+        if (this.difficulty === 4) {
+            // 先随机决定要问的位置
+            const positions = ['在 x 軸上', '在 y 軸上', '在原點'];
+            this.targetPosition = positions[getRandomInt(0, 2)];
+        }
+
         // 生成点
         const points = this.generatePoint(this.difficulty);
         
@@ -31,9 +37,6 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
             this.targetQuadrant = targetQuadrant;
             content = `在下面的坐標平面中，哪一個點在第${this.convertToChineseNumber(targetQuadrant)}象限？`;
         } else if (this.difficulty === 4) {
-            // 随机选择要问的位置（x轴、y轴或原点）
-            const positions = ['在 x 軸上', '在 y 軸上', '在原點'];
-            this.targetPosition = positions[getRandomInt(0, 2)];
             content = `在下面的坐標平面中，哪一個點${this.targetPosition}？`;
         } else {
             content = `在下面的坐標平面中，點 $${points[0].label}$ 在哪一個位置？`;
@@ -144,149 +147,106 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                 break;
 
             case 4: // 特殊位置的点
-                const specialData = [
-                    { label: 'P', color: '#FF0000' },
-                    { label: 'Q', color: '#00CC00' },
-                    { label: 'R', color: '#0000FF' },
-                    { label: 'S', color: '#FFA500' }
-                ];
-
-                // 随机选择要问的位置（x轴、y轴或原点）
-                const positions = ['在 x 軸上', '在 y 軸上', '在原點'];
-                this.targetPosition = positions[getRandomInt(0, 2)];
-
-                // 用于存储已使用的x和y坐标
-                const usedX = new Set<number>();
-                const usedY = new Set<number>();
-
-                // 根据问题类型分配点的位置
-                let pointAssignments: { label: string; color: string; location: string }[] = [];
-                
-                if (this.targetPosition === '在 x 軸上') {
-                    pointAssignments = [
-                        { ...specialData[0], location: 'x' },  // P 在 x 轴上
-                        { ...specialData[1], location: 'y' },  // Q 在 y 轴上
-                        { ...specialData[2], location: 'q1' }, // R 在第一个象限
-                        { ...specialData[3], location: 'q2' }  // S 在第二个象限
-                    ];
-                } else if (this.targetPosition === '在 y 軸上') {
-                    pointAssignments = [
-                        { ...specialData[0], location: 'y' },  // P 在 y 轴上
-                        { ...specialData[1], location: 'x' },  // Q 在 x 轴上
-                        { ...specialData[2], location: 'q1' }, // R 在第一个象限
-                        { ...specialData[3], location: 'q2' }  // S 在第二个象限
-                    ];
-                } else {
-                    pointAssignments = [
-                        { ...specialData[0], location: 'o' },  // P 在原点
-                        { ...specialData[1], location: 'x' },  // Q 在 x 轴上
-                        { ...specialData[2], location: 'y' },  // R 在 y 轴上
-                        { ...specialData[3], location: 'q' }   // S 在象限中
-                    ];
-                }
-
-                // 生成每个点的具体坐标
-                pointAssignments.forEach(point => {
-                    let x = 0, y = 0;
-                    switch (point.location) {
-                        case 'x':  // x轴上
-                            do {
-                                x = getRandomInt(-4, 4);
-                            } while (x === 0 || usedX.has(x));
-                            y = 0;
-                            usedX.add(x);
-                            break;
-                        case 'y':  // y轴上
-                            x = 0;
-                            do {
-                                y = getRandomInt(-4, 4);
-                            } while (y === 0 || usedY.has(y));
-                            usedY.add(y);
-                            break;
-                        case 'o':  // 原点
-                            x = 0;
-                            y = 0;
-                            break;
-                        case 'q1':  // 第一个象限中的点
-                            do {
-                                const quadrant = getRandomInt(1, 4);
-                                switch (quadrant) {
-                                    case 1:
-                                        x = getRandomInt(1, 4);
-                                        y = getRandomInt(1, 4);
-                                        break;
-                                    case 2:
-                                        x = getRandomInt(-4, -1);
-                                        y = getRandomInt(1, 4);
-                                        break;
-                                    case 3:
-                                        x = getRandomInt(-4, -1);
-                                        y = getRandomInt(-4, -1);
-                                        break;
-                                    case 4:
-                                        x = getRandomInt(1, 4);
-                                        y = getRandomInt(-4, -1);
-                                        break;
-                                }
-                            } while (x === 0 || y === 0);
-                            break;
-                        case 'q2':  // 第二个象限中的点
-                            do {
-                                let quadrant;
-                                do {
-                                    quadrant = getRandomInt(1, 4);
-                                } while (quadrant === Math.ceil((x > 0 ? (y > 0 ? 1 : 4) : (y > 0 ? 2 : 3)))); // 避免和第一个象限点在同一象限
-                                switch (quadrant) {
-                                    case 1:
-                                        x = getRandomInt(1, 4);
-                                        y = getRandomInt(1, 4);
-                                        break;
-                                    case 2:
-                                        x = getRandomInt(-4, -1);
-                                        y = getRandomInt(1, 4);
-                                        break;
-                                    case 3:
-                                        x = getRandomInt(-4, -1);
-                                        y = getRandomInt(-4, -1);
-                                        break;
-                                    case 4:
-                                        x = getRandomInt(1, 4);
-                                        y = getRandomInt(-4, -1);
-                                        break;
-                                }
-                            } while (x === 0 || y === 0);
-                            break;
-                        case 'q':  // 象限中的点（用于原点问题）
-                            do {
-                                const quadrant = getRandomInt(1, 4);
-                                switch (quadrant) {
-                                    case 1:
-                                        x = getRandomInt(1, 4);
-                                        y = getRandomInt(1, 4);
-                                        break;
-                                    case 2:
-                                        x = getRandomInt(-4, -1);
-                                        y = getRandomInt(1, 4);
-                                        break;
-                                    case 3:
-                                        x = getRandomInt(-4, -1);
-                                        y = getRandomInt(-4, -1);
-                                        break;
-                                    case 4:
-                                        x = getRandomInt(1, 4);
-                                        y = getRandomInt(-4, -1);
-                                        break;
-                                }
-                            } while (x === 0 || y === 0);
-                            break;
-                    }
+                // 根据已经决定的 targetPosition 生成点
+                if (this.targetPosition === '在 y 軸上') {
+                    // 生成在y轴上的点（正确答案）
                     result.push({
-                        x,
-                        y,
-                        label: point.label,
-                        color: point.color
+                        x: 0,
+                        y: this.getRandomNonZeroInt(-4, 4),
+                        label: 'P',
+                        color: '#FF0000'
                     });
-                });
+
+                    // 生成在x轴上的点
+                    result.push({
+                        x: this.getRandomNonZeroInt(-4, 4),
+                        y: 0,
+                        label: 'Q',
+                        color: '#00CC00'
+                    });
+
+                    // 生成第一象限的点（确保不在y轴上）
+                    result.push({
+                        x: getRandomInt(1, 4),  // x必须为正
+                        y: getRandomInt(1, 4),
+                        label: 'R',
+                        color: '#0000FF'
+                    });
+
+                    // 生成第三象限的点（确保不在y轴上）
+                    result.push({
+                        x: getRandomInt(-4, -1),  // x必须为负
+                        y: getRandomInt(-4, -1),
+                        label: 'S',
+                        color: '#FFA500'
+                    });
+
+                } else if (this.targetPosition === '在 x 軸上') {
+                    // 生成在x轴上的点（正确答案）
+                    result.push({
+                        x: this.getRandomNonZeroInt(-4, 4),
+                        y: 0,
+                        label: 'P',
+                        color: '#FF0000'
+                    });
+
+                    // 生成在y轴上的点
+                    result.push({
+                        x: 0,
+                        y: this.getRandomNonZeroInt(-4, 4),
+                        label: 'Q',
+                        color: '#00CC00'
+                    });
+
+                    // 生成第二象限的点（确保不在x轴上）
+                    result.push({
+                        x: getRandomInt(-4, -1),
+                        y: getRandomInt(1, 4),  // y必须为正
+                        label: 'R',
+                        color: '#0000FF'
+                    });
+
+                    // 生成第四象限的点（确保不在x轴上）
+                    result.push({
+                        x: getRandomInt(1, 4),
+                        y: getRandomInt(-4, -1),  // y必须为负
+                        label: 'S',
+                        color: '#FFA500'
+                    });
+
+                } else { // 问原点
+                    // 生成原点（正确答案）
+                    result.push({
+                        x: 0,
+                        y: 0,
+                        label: 'P',
+                        color: '#FF0000'
+                    });
+
+                    // 生成在x轴上的点（非原点）
+                    result.push({
+                        x: this.getRandomNonZeroInt(-4, 4),
+                        y: 0,
+                        label: 'Q',
+                        color: '#00CC00'
+                    });
+
+                    // 生成在y轴上的点（非原点）
+                    result.push({
+                        x: 0,
+                        y: this.getRandomNonZeroInt(-4, 4),
+                        label: 'R',
+                        color: '#0000FF'
+                    });
+
+                    // 生成第一象限的点
+                    result.push({
+                        x: getRandomInt(1, 4),
+                        y: getRandomInt(1, 4),
+                        label: 'S',
+                        color: '#FFA500'
+                    });
+                }
                 break;
 
             default:
@@ -434,42 +394,70 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
         system.addText(3, -3, "Ⅳ", "##FFD700", 48);    // 第四象限
 
         // 添加坐标轴标签和原点标记
-        if (this.difficulty === 2) {
-                system.addLineSegment(0, -5, 0, 5, "#0000FF", "solid", 3);  // 蓝色y轴
-                system.addText(1.3, 4.5, "y-axis", "#0000FF", 24);  // y轴标签
-                system.addLineSegment(-5, 0, 5, 0, "#FF0000", "solid", 3);  // 红色x轴
-                system.addText(4.5, -0.7, "x-axis", "#FF0000", 24); // x轴标签
-                system.addPoint(0, 0, "●", "", 0, 0, "#800080");  // 添加紫色原点
-                system.addText(0.5, 0.5, "O", "#800080", 24);    // 紫色原点标记
-            }
-
-        let position: string;
-        if (points[0].x === 0 && points[0].y === 0) {
-            position = '在原點';
-        } else if (points[0].x === 0) {
-            position = '在 y 軸上';
-        } else if (points[0].y === 0) {
-            position = '在 x 軸上';
-        } else if (points[0].x > 0 && points[0].y > 0) {
-            position = '第一象限';
-        } else if (points[0].x < 0 && points[0].y > 0) {
-            position = '第二象限';
-        } else if (points[0].x < 0 && points[0].y < 0) {
-            position = '第三象限';
-        } else {
-            position = '第四象限';
+        if (this.difficulty === 2 || this.difficulty === 4) {
+            system.addLineSegment(0, -5, 0, 5, "#0000FF", "solid", 3);  // 蓝色y轴
+            system.addText(1.3, 4.5, "y-axis", "#0000FF", 24);  // y轴标签
+            system.addLineSegment(-5, 0, 5, 0, "#FF0000", "solid", 3);  // 红色x轴
+            system.addText(4.5, -0.7, "x-axis", "#FF0000", 24); // x轴标签
+            system.addPoint(0, 0, "●", "", 0, 0, "#800080");  // 添加紫色原点
+            system.addText(0.5, 0.5, "O", "#800080", 24);    // 紫色原点标记
         }
 
-        let explanation = `點 $${points[0].label}(${points[0].x}, ${points[0].y})$ 的位置判斷：\n\n`;
+        let explanation = '';
         
-        if (points[0].x === 0 && points[0].y === 0) {
-            explanation += `因為 $x = 0$ 且 $y = 0$，所以點 $${points[0].label}$ 在原點。`;
-        } else if (points[0].x === 0) {
-            explanation += `因為 $x = 0$，所以點 $${points[0].label}$ 在 y 軸上。`;
-        } else if (points[0].y === 0) {
-            explanation += `因為 $y = 0$，所以點 $${points[0].label}$ 在 x 軸上。`;
+        if (this.difficulty === 4) {
+            // 找到正确答案的点
+            const correctPoint = points.find(p => {
+                switch (this.targetPosition) {
+                    case '在 x 軸上': return p.y === 0 && p.x !== 0;
+                    case '在 y 軸上': return p.x === 0 && p.y !== 0;
+                    case '在原點': return p.x === 0 && p.y === 0;
+                    default: return false;
+                }
+            })!;
+
+            explanation = `點 $${correctPoint.label}(${correctPoint.x}, ${correctPoint.y})$ 的位置判斷：\n\n`;
+            
+            switch (this.targetPosition) {
+                case '在 x 軸上':
+                    explanation += `因為點 $${correctPoint.label}$ 的 $y$ 座標為 $0$，且 $x$ 座標不為 $0$，所以點 $${correctPoint.label}$ 在 x 軸上。`;
+                    break;
+                case '在 y 軸上':
+                    explanation += `因為點 $${correctPoint.label}$ 的 $x$ 座標為 $0$，且 $y$ 座標不為 $0$，所以點 $${correctPoint.label}$ 在 y 軸上。`;
+                    break;
+                case '在原點':
+                    explanation += `因為點 $${correctPoint.label}$ 的 $x$ 座標和 $y$ 座標都為 $0$，所以點 $${correctPoint.label}$ 在原點。`;
+                    break;
+            }
         } else {
-            explanation += `因為 $x ${points[0].x > 0 ? '> 0' : '< 0'}$ 且 $y ${points[0].y > 0 ? '> 0' : '< 0'}$，\n所以點 $${points[0].label}$ 在${position}。`;
+            let position: string;
+            if (points[0].x === 0 && points[0].y === 0) {
+                position = '在原點';
+            } else if (points[0].x === 0) {
+                position = '在 y 軸上';
+            } else if (points[0].y === 0) {
+                position = '在 x 軸上';
+            } else if (points[0].x > 0 && points[0].y > 0) {
+                position = '第一象限';
+            } else if (points[0].x < 0 && points[0].y > 0) {
+                position = '第二象限';
+            } else if (points[0].x < 0 && points[0].y < 0) {
+                position = '第三象限';
+            } else {
+                position = '第四象限';
+            }
+
+            explanation = `點 $${points[0].label}(${points[0].x}, ${points[0].y})$ 的位置判斷：\n\n`;
+            
+            if (points[0].x === 0 && points[0].y === 0) {
+                explanation += `因為 $x = 0$ 且 $y = 0$，所以點 $${points[0].label}$ 在原點。`;
+            } else if (points[0].x === 0) {
+                explanation += `因為 $x = 0$，所以點 $${points[0].label}$ 在 y 軸上。`;
+            } else if (points[0].y === 0) {
+                explanation += `因為 $y = 0$，所以點 $${points[0].label}$ 在 x 軸上。`;
+            } else {
+                explanation += `因為 $x ${points[0].x > 0 ? '> 0' : '< 0'}$ 且 $y ${points[0].y > 0 ? '> 0' : '< 0'}$，\n所以點 $${points[0].label}$ 在${position}。`;
+            }
         }
 
         return `
@@ -509,5 +497,13 @@ ${explanation}\n
     private convertToChineseNumber(num: number): string {
         const chineseNumbers = ['一', '二', '三', '四'];
         return chineseNumbers[num - 1];
+    }
+
+    private getRandomNonZeroInt(min: number, max: number): number {
+        let result;
+        do {
+            result = getRandomInt(min, max);
+        } while (result === 0);
+        return result;
     }
 } 
