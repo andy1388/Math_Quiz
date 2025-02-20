@@ -147,7 +147,7 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         });
 
         // 第一步只添加点和x坐标定位线
-        system1.addPoint(point.x, point.y, "●", "A", 0.3, 0.3, "#00CC00");
+        system1.addPoint(point.x, point.y, "●", "A", 15, -15);
         system1.addCoordinateLocatingGuides(point, 1);
 
         explanation += `<div style="text-align: center;">\n${system1.toString()}\n</div>\n\n`;
@@ -171,7 +171,7 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         });
 
         // 第二步添加点和完整定位线
-        system2.addPoint(point.x, point.y, "●", "A", 0.3, 0.3, "#00CC00");
+        system2.addPoint(point.x, point.y, "●", "A", 15, -15);
         system2.addCoordinateLocatingGuides(point, 2);
 
         explanation += `<div style="text-align: center;">\n${system2.toString()}\n</div>\n\n`;
@@ -199,7 +199,7 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         system3.addText(-3, 3, "Ⅱ", "#000000", 48);
         system3.addText(-3, -3, "Ⅲ", "#000000", 48);
         system3.addText(3, -3, "Ⅳ", "#000000", 48);
-        system3.addPoint(point.x, point.y, "●", "A", 0.3, 0.3, "#00CC00");
+        system3.addPoint(point.x, point.y, "●", "A", 15, -15);
         
         if (point.x === 0 && point.y === 0) {
             explanation += `因為 $x = 0$ 且 $y = 0$，所以$A$點在原點。<br>\n\n`;
