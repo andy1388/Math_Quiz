@@ -343,7 +343,8 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
         // 添加所有点和标签
         if (this.difficulty === 3 || this.difficulty === 4) {
             points.forEach(point => {
-                coordSystem.addPoint(point.x, point.y, "●", point.label, 0.3, 0.3, point.color);
+                const offset = this.getLabelOffset(point);  // 为每个点获取偏移量
+                coordSystem.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, point.color);
             });
         } else {
             const offset = this.getLabelOffset(points[0]);
