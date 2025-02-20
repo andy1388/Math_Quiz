@@ -336,6 +336,10 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
                 showAxisNumbers: true  // 显示数字
             });
 
+            // 添加点和标签
+            system.addPoint(point.x, 0, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            system.addText(point.x, 0.4, "A", "#00cc00");  // 标签在上方
+
             system.addCoordinateLocatingGuides(point, 1, true, false);
 
             return `
@@ -361,6 +365,10 @@ ${system.toString()}
                 showGridLines: false,  // 不显示网格
                 showAxisNumbers: true  // 显示数字
             });
+
+            // 添加点和标签
+            system.addPoint(0, point.y, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            system.addText(0.4, point.y, "A", "#00cc00");  // 标签在右边
 
             system.addCoordinateLocatingGuides(point, 1, false, true);
 
@@ -389,6 +397,10 @@ ${system.toString()}
             showAxisNumbers: true   // 显示数字
         });
 
+        // 添加点和标签
+        step1System.addPoint(point.x, point.y, "●", "", 0, 0, "#00cc00");  // 点不带标签
+        step1System.addText(point.x + 0.3, point.y + 0.3, "A", "#00cc00");  // 标签位置根据需要调整
+
         step1System.addCoordinateLocatingGuides(point, 1);
 
         const step2System = CoordinateSystem.createExplanationSystem({
@@ -403,6 +415,10 @@ ${system.toString()}
             showGridLines: true,    // 显示网格
             showAxisNumbers: true   // 显示数字
         });
+
+        // 添加点和标签
+        step2System.addPoint(point.x, point.y, "●", "", 0, 0, "#00cc00");  // 点不带标签
+        step2System.addText(point.x + 0.3, point.y + 0.3, "A", "#00cc00");  // 标签位置根据需要调整
 
         step2System.addCoordinateLocatingGuides(point, 2);
 
