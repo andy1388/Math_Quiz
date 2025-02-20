@@ -269,25 +269,24 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
             return coordSystem.toString();
         }
 
-        // 其他难度保持原有的完整坐标系统显示
-        const range: [number, number] = [-5, 5];
-        
+        // 难度 4-5 的完整坐标系配置
         const coordSystem = new CoordinateSystem({
             width: 200,  // 减小尺寸以适应选项框
             height: 200,
-            xRange: range,
-            yRange: range,
-            showGrid: false,
+            xRange: [-5, 5],
+            yRange: [-5, 5],
+            showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
             axisColor: '#333',
             axisWidth: 1.5,
             showArrows: true,
             labelColor: '#666',
-            labelSize: 14
+            labelSize: 14,
+            showAllGrids: true  // 显示所有象限的网格
         });
 
-        // 只添加 -5 和 5 的标签
+        // 添加坐标轴标签
         const axisLabels = [-5, 5];
         coordSystem.addAxisLabels(axisLabels, axisLabels);
 
@@ -295,30 +294,15 @@ export default class F1L10_1_Q3_F_MQ extends QuestionGenerator {
         for (let i = -5; i <= 5; i++) {
             if (i !== 0) {  // 跳过原点
                 // 添加 x 轴刻度线
-                coordSystem.addLineSegment(i, -0.1, i, 0.1, "black", "solid");
+                coordSystem.addLineSegment(i, -0.2, i, 0.2, "#333", "solid");
                 // 添加 y 轴刻度线
-                coordSystem.addLineSegment(-0.1, i, 0.1, i, "black", "solid");
-            }
-        }
-
-        // 手动添加网格线
-        // 垂直网格线（所有整数位置）
-        for (let x = -5; x <= 5; x++) {
-            if (x !== 0) {  // 跳过 y 轴
-                coordSystem.addLineSegment(x, -5, x, 5, "#e0e0e0", "solid");
-            }
-        }
-        // 水平网格线（所有整数位置）
-        for (let y = -5; y <= 5; y++) {
-            if (y !== 0) {  // 跳过 x 轴
-                coordSystem.addLineSegment(-5, y, 5, y, "#e0e0e0", "solid");
+                coordSystem.addLineSegment(-0.2, i, 0.2, i, "#333", "solid");
             }
         }
 
         // 添加点
         coordSystem.addPoint(point.x, point.y, "●", "A", 15, -20, "#00cc00");
 
-        // 返回不包含标签的坐标系统
         return coordSystem.toString();
     }
 
