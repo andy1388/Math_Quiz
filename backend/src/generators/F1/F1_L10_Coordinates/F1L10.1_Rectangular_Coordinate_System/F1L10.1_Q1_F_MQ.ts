@@ -63,8 +63,9 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 }
             }
 
-            // 只添加點，不添加紅色線段和標籤
-            coordSystem.addPoint(point.x, 0, "●", "A", 15, -20, "#00cc00");
+            // 只添加点和标签
+            coordSystem.addPoint(point.x, 0, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            coordSystem.addText(point.x, 0.4, "A", "#00cc00");  // 标签在上方
 
             // 解釋用的坐標系
             const explainSystem = new CoordinateSystem({
@@ -92,7 +93,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             }
 
             // 在解釋中添加點、紅色線段和箭头
-            explainSystem.addPoint(point.x, 0, "●", "A", 15, -20, "#00cc00");
+            explainSystem.addPoint(point.x, 0, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            explainSystem.addText(point.x, 0.4, "A", "#00cc00");  // 标签在上方
             explainSystem.addLineSegment(0, 0, point.x, 0, "red", "solid");
 
             // 添加红色箭头
@@ -149,8 +151,9 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 }
             }
 
-            // 只添加點，不添加藍色線段和標籤
-            coordSystem.addPoint(0, point.y, "●", "A", 15, -20, "#00cc00");
+            // 只添加点和标签
+            coordSystem.addPoint(0, point.y, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            coordSystem.addText(0.4, point.y, "A", "#00cc00");  // 标签在右边
 
             // 解釋用的坐標系
             const explainSystem = new CoordinateSystem({
@@ -177,8 +180,9 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 }
             }
 
-            // 在解釋中添加點、藍色線段和標籤
-            explainSystem.addPoint(0, point.y, "●", "A", 15, -20, "#00cc00");
+            // 在解釋中添加点和标签
+            explainSystem.addPoint(0, point.y, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            explainSystem.addText(0.4, point.y, "A", "#00cc00");  // 标签在右边
             explainSystem.addLineSegment(0, 0, 0, point.y, "blue", "solid");
 
             // 添加箭头
@@ -209,7 +213,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         }
 
         // 根據點的位置決定標籤的偏移量
-        const labelOffset = this.getLabelOffset(point);
+        const offset = this.getLabelOffset(point);
 
         // 生成坐标系图形
         const coordSystem = new CoordinateSystem({
@@ -232,7 +236,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         coordSystem.addAxisLabels(axisLabels, axisLabels);
 
         // 添加点和标签，使用動態的偏移量
-        coordSystem.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
+        coordSystem.addPoint(point.x, point.y, "●", "", offset.x, offset.y, "#00cc00");
+        coordSystem.addText(point.x + offset.x/20, point.y + offset.y/20, "A", "#00cc00");
 
         // 生成第一步的坐标系（顯示找 x 坐標的輔助線）
         const step1System = new CoordinateSystem({
@@ -255,7 +260,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         step1System.addAxisLabels(axisLabels, axisLabels);
         
         // 添加點 A
-        step1System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
+        step1System.addPoint(point.x, point.y, "●", "", offset.x, offset.y, "#00cc00");
         
         // 添加垂直輔助線（綠色虛線）
         step1System.addLineSegment(point.x, 0, point.x, point.y, "green", "dotted");
@@ -299,7 +304,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         step2System.addAxisLabels(axisLabels, axisLabels);
 
         // 添加點 A
-        step2System.addPoint(point.x, point.y, "●", "A", labelOffset.x, labelOffset.y, "#00cc00");
+        step2System.addPoint(point.x, point.y, "●", "", offset.x, offset.y, "#00cc00");
         
         // 第二步：保留第一步的红色线段和箭头
         step2System.addLineSegment(0, 0, point.x, 0, "red", "solid");
@@ -404,21 +409,40 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
     // 新增方法：根據點的位置決定標籤的偏移量
     private getLabelOffset(point: Point): { x: number; y: number } {
-        // 默認值
-        let offsetX = 15;
-        let offsetY = -20;
+        const offsetDistance = 15;  // 标签偏移距离
 
-        // 如果 x 座標為負，將標籤向左偏移
-        if (point.x <= 0) {
-            offsetX = -25;
+        // 点在 x 轴上
+        if (point.y === 0) {
+            return { x: 0, y: offsetDistance };  // 正下方
         }
 
-        // 如果 y 座標為負，將標籤向下偏移
-        if (point.y <= 0) {
-            offsetY = 25;
+        // 点在 y 轴上
+        if (point.x === 0) {
+            return { x: 0, y: -offsetDistance };   // 正上方
         }
 
-        return { x: offsetX, y: offsetY };
+        // 第一象限
+        if (point.x > 0 && point.y > 0) {
+            return { x: offsetDistance, y: offsetDistance };  // 右下
+        }
+
+        // 第二象限
+        if (point.x < 0 && point.y > 0) {
+            return { x: -offsetDistance, y: offsetDistance };  // 左下
+        }
+
+        // 第三象限
+        if (point.x < 0 && point.y < 0) {
+            return { x: -offsetDistance, y: -offsetDistance };  // 左上
+        }
+
+        // 第四象限
+        if (point.x > 0 && point.y < 0) {
+            return { x: offsetDistance, y: -offsetDistance };  // 右上
+        }
+
+        // 默认情况（不应该发生）
+        return { x: offsetDistance, y: offsetDistance };
     }
 
     // 為 level 1 生成錯誤答案
@@ -460,6 +484,11 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 showAxisNumbers: true
             });
 
+            // 先添加点和标签
+            system.addPoint(point.x, 0, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            system.addText(point.x, 0.4, "A", "#00cc00");  // 标签在上方
+
+            // 然后添加辅助线
             system.addCoordinateLocatingGuides(point, 1, true, false);
 
             return `
@@ -486,6 +515,11 @@ ${system.toString()}
                 showAxisNumbers: true
             });
 
+            // 先添加点和标签
+            system.addPoint(0, point.y, "●", "", 0, 0, "#00cc00");  // 点不带标签
+            system.addText(0.4, point.y, "A", "#00cc00");  // 标签在右边
+
+            // 然后添加辅助线
             system.addCoordinateLocatingGuides(point, 1, false, true);
 
             return `
@@ -512,6 +546,12 @@ ${system.toString()}
             showAxisNumbers: true
         });
 
+        // 先添加点和标签
+        const offset = this.getLabelOffset(point);
+        step1System.addPoint(point.x, point.y, "●", "", offset.x, offset.y, "#00cc00");
+        step1System.addText(point.x + offset.x/20, point.y + offset.y/20, "A", "#00cc00");
+
+        // 然后添加辅助线
         step1System.addCoordinateLocatingGuides(point, 1);
 
         const step2System = CoordinateSystem.createExplanationSystem({
@@ -527,6 +567,11 @@ ${system.toString()}
             showAxisNumbers: true
         });
 
+        // 先添加点和标签
+        step2System.addPoint(point.x, point.y, "●", "", offset.x, offset.y, "#00cc00");
+        step2System.addText(point.x + offset.x/20, point.y + offset.y/20, "A", "#00cc00");
+
+        // 然后添加辅助线
         step2System.addCoordinateLocatingGuides(point, 2);
 
         return `
