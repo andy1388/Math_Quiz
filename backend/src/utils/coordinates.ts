@@ -130,19 +130,20 @@ export class CoordinateSystem {
         y: []
     };
     private texts: { x: number; y: number; text: string; color: string; fontSize?: number; hasBackground?: boolean }[] = [];
+    private readonly gridXStart: number;
+    private readonly gridXEnd: number;
+    private readonly gridYStart: number;
+    private readonly gridYEnd: number;
 
     constructor(options: CoordinateSystemOptions) {
-        // 設置默認值
         this.options = {
             ...options,
-            // 保持原始範圍，不需要擴展
             showGrid: options.showGrid ?? true,
-            gridColor: options.gridColor ?? '#e0e0e0',  // 改為更深的灰色
-            gridOpacity: options.gridOpacity ?? 0.8,    // 提高不透明度
+            gridColor: options.gridColor ?? '#e0e0e0',
+            gridOpacity: options.gridOpacity ?? 0.8,
             showHorizontalGrid: options.showHorizontalGrid ?? true,
             showVerticalGrid: options.showVerticalGrid ?? true,
             
-            // 其他設置保持不變
             showAxis: options.showAxis ?? true,
             axisColor: options.axisColor ?? 'black',
             axisWidth: options.axisWidth ?? 1,
@@ -156,6 +157,21 @@ export class CoordinateSystem {
             labelColor: options.labelColor ?? 'black',
             labelSize: options.labelSize ?? 16
         };
+
+        // 修改网格范围的计算逻辑
+        if (!this.options.showAllGrids) {
+            // 对于难度3，网格范围是[0,5]
+            this.gridXStart = 0;
+            this.gridXEnd = 5;
+            this.gridYStart = 0;
+            this.gridYEnd = 5;
+        } else {
+            // 对于其他难度，网格范围比显示范围小一个单位
+            this.gridXStart = Math.ceil(options.xRange[0]);
+            this.gridXEnd = Math.floor(options.xRange[1] - 1);
+            this.gridYStart = Math.ceil(options.yRange[0]);
+            this.gridYEnd = Math.floor(options.yRange[1] - 1);
+        }
     }
 
     addPoint(x: number, y: number, symbol: string = "●", label?: string, labelOffsetX: number = 10, labelOffsetY: number = -10, color: string = "black") {
@@ -423,12 +439,16 @@ export class CoordinateSystem {
         if (this.options.showGrid) {
             // 垂直網格線
             if (this.options.showVerticalGrid) {
-                const gridStart = this.options.showAllGrids ? xRange[0] : Math.max(0, xRange[0]);
-                const gridEnd = this.options.showAllGrids ? xRange[1] : Math.min(5, xRange[1]);
+                // 根据难度决定网格范围
+                const gridStart = !this.options.showAllGrids ? 0 : -5;  // 难度3用[0,5]，其他用[-5,5]
+                const gridEnd = !this.options.showAllGrids ? 5 : 5;
                 
                 for (let x = gridStart; x <= gridEnd; x++) {
                     const xPos = x * xScale + xOffset;
-                    svg += `<line x1="${xPos}" y1="${margin}" x2="${xPos}" y2="${height-margin}" 
+                    const yStart = !this.options.showAllGrids ? this.transformY(0) : this.transformY(-5);
+                    const yEnd = !this.options.showAllGrids ? this.transformY(5) : this.transformY(5);
+                    
+                    svg += `<line x1="${xPos}" y1="${yStart}" x2="${xPos}" y2="${yEnd}" 
                         stroke="${this.options.gridColor}" 
                         stroke-width="1"
                         opacity="${this.options.gridOpacity}"/>`;
@@ -437,12 +457,16 @@ export class CoordinateSystem {
 
             // 水平網格線
             if (this.options.showHorizontalGrid) {
-                const gridStart = this.options.showAllGrids ? yRange[0] : Math.max(0, yRange[0]);
-                const gridEnd = this.options.showAllGrids ? yRange[1] : Math.min(5, yRange[1]);
+                // 根据难度决定网格范围
+                const gridStart = !this.options.showAllGrids ? 0 : -5;  // 难度3用[0,5]，其他用[-5,5]
+                const gridEnd = !this.options.showAllGrids ? 5 : 5;
                 
                 for (let y = gridStart; y <= gridEnd; y++) {
                     const yPos = yOffset - y * yScale;
-                    svg += `<line x1="${margin}" y1="${yPos}" x2="${width-margin}" y2="${yPos}" 
+                    const xStart = !this.options.showAllGrids ? this.transformX(0) : this.transformX(-5);
+                    const xEnd = !this.options.showAllGrids ? this.transformX(5) : this.transformX(5);
+                    
+                    svg += `<line x1="${xStart}" y1="${yPos}" x2="${xEnd}" y2="${yPos}" 
                         stroke="${this.options.gridColor}" 
                         stroke-width="1"
                         opacity="${this.options.gridOpacity}"/>`;
@@ -457,14 +481,18 @@ export class CoordinateSystem {
             // x轴
             if (this.options.showXAxis) {
                 const yAxisPos = yOffset;
-                svg += `<line x1="${margin}" y1="${yAxisPos}" x2="${width-margin}" y2="${yAxisPos}" 
+                // 根据难度决定坐标轴范围
+                const xStart = !this.options.showAllGrids ? this.transformX(0) : this.transformX(-5);
+                const xEnd = !this.options.showAllGrids ? this.transformX(5) : this.transformX(5);
+                
+                svg += `<line x1="${xStart}" y1="${yAxisPos}" x2="${xEnd}" y2="${yAxisPos}" 
                     stroke="${this.options.axisColor}" 
-                    stroke-width="${this.options.axisWidth}"${arrowMarker}/>`;
+                    stroke-width="${this.options.axisWidth}"${arrowMarker}"/>`;
                 
                 // x轴标签
                 if (this.options.showLabels) {
-                    const fontSize = (this.options.labelSize ?? 16) * 1.5;  // 添加默認值
-                    svg += `<text x="${width-margin+5}" y="${yOffset+5}" 
+                    const fontSize = (this.options.labelSize ?? 16) * 1.5;
+                    svg += `<text x="${xEnd+5}" y="${yOffset+5}" 
                         style="font-family: serif; font-style: italic; font-size: ${fontSize}px; fill: ${this.options.labelColor}"
                         >${this.options.xLabel}</text>`;
                 }
@@ -473,14 +501,18 @@ export class CoordinateSystem {
             // y轴
             if (this.options.showYAxis) {
                 const xAxisPos = xOffset;
-                svg += `<line x1="${xAxisPos}" y1="${height-margin}" x2="${xAxisPos}" y2="${margin}" 
+                // 根据难度决定坐标轴范围
+                const yStart = !this.options.showAllGrids ? this.transformY(0) : this.transformY(-5);
+                const yEnd = !this.options.showAllGrids ? this.transformY(5) : this.transformY(5);
+                
+                svg += `<line x1="${xAxisPos}" y1="${yStart}" x2="${xAxisPos}" y2="${yEnd}" 
                     stroke="${this.options.axisColor}" 
-                    stroke-width="${this.options.axisWidth}"${arrowMarker}/>`;
+                    stroke-width="${this.options.axisWidth}"${arrowMarker}"/>`;
                 
                 // y轴标签
                 if (this.options.showLabels) {
-                    const fontSize = (this.options.labelSize ?? 16) * 1.5;  // 添加默認值
-                    svg += `<text x="${xOffset-5}" y="${margin-5}" 
+                    const fontSize = (this.options.labelSize ?? 16) * 1.5;
+                    svg += `<text x="${xOffset-5}" y="${yEnd-5}" 
                         style="font-family: serif; font-style: italic; font-size: ${fontSize}px; fill: ${this.options.labelColor}"
                         >${this.options.yLabel}</text>`;
                 }
@@ -746,5 +778,66 @@ export class CoordinateSystem {
             this.addTextWithBackground(point.x, -0.8, `${point.x}`, "red", 24);
             this.addTextWithBackground(-1.2, point.y, `${point.y}`, "blue", 24);
         }
+    }
+
+    // 添加坐标转换方法
+    private transformX(x: number): number {
+        const { width, xRange } = this.options;
+        const margin = 30;
+        const innerWidth = width - 2 * margin;
+        const xScale = innerWidth / (xRange[1] - xRange[0]);
+        const xOffset = margin - xRange[0] * xScale;
+        return x * xScale + xOffset;
+    }
+
+    private transformY(y: number): number {
+        const { height, yRange } = this.options;
+        const margin = 30;
+        const innerHeight = height - 2 * margin;
+        const yScale = innerHeight / (yRange[1] - yRange[0]);
+        const yOffset = height - margin + yRange[0] * yScale;
+        return yOffset - y * yScale;
+    }
+
+    // 修改 drawGrid 方法，使用新的转换方法
+    private drawGrid(): string {
+        if (!this.options.showGrid) return '';
+
+        let gridLines = '';
+        const gridStyle = `stroke="${this.options.gridColor}" stroke-opacity="${this.options.gridOpacity}"`;
+
+        // 绘制垂直网格线
+        for (let x = this.gridXStart; x <= this.gridXEnd; x++) {
+            // 对于难度3（!showAllGrids），只在[0,5]范围内绘制网格线
+            if (!this.options.showAllGrids) {
+                if (x >= 0 && x <= 5) {
+                    const xPos = this.transformX(x);
+                    gridLines += `<line x1="${xPos}" y1="${this.transformY(0)}" 
+                        x2="${xPos}" y2="${this.transformY(5)}" ${gridStyle}/>`;
+                }
+            } else {
+                const xPos = this.transformX(x);
+                gridLines += `<line x1="${xPos}" y1="${this.transformY(this.options.yRange[0])}" 
+                    x2="${xPos}" y2="${this.transformY(this.options.yRange[1])}" ${gridStyle}/>`;
+            }
+        }
+
+        // 绘制水平网格线
+        for (let y = this.gridYStart; y <= this.gridYEnd; y++) {
+            // 对于难度3（!showAllGrids），只在[0,5]范围内绘制网格线
+            if (!this.options.showAllGrids) {
+                if (y >= 0 && y <= 5) {
+                    const yPos = this.transformY(y);
+                    gridLines += `<line x1="${this.transformX(0)}" y1="${yPos}" 
+                        x2="${this.transformX(5)}" y2="${yPos}" ${gridStyle}/>`;
+                }
+            } else {
+                const yPos = this.transformY(y);
+                gridLines += `<line x1="${this.transformX(this.options.xRange[0])}" y1="${yPos}" 
+                    x2="${this.transformX(this.options.xRange[1])}" y2="${yPos}" ${gridStyle}/>`;
+            }
+        }
+
+        return gridLines;
     }
 }

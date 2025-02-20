@@ -20,8 +20,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 生成坐标点
         const point = this.generatePoint(this.difficulty);
 
-        // 所有難度都使用相同的範圍
-        const range: [number, number] = this.difficulty === 3 ? [0, 5] : [-5, 5];
+        // 定义显示范围
+        const range: [number, number] = this.difficulty === 3 ? [-1, 6] : [-6, 6];
         
         // 根据难度级别设置不同的标签
         let axisLabels;
@@ -215,12 +215,12 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         // 根據點的位置決定標籤的偏移量
         const offset = this.getLabelOffset(point);
 
-        // 生成坐标系图形
+        // 使用修改后的 CoordinateSystem
         const coordSystem = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: range as [number, number],
-            yRange: range as [number, number],
+            xRange: range,
+            yRange: range,
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -229,7 +229,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             showArrows: true,
             labelColor: '#666',
             labelSize: 14,
-            showAllGrids: this.difficulty !== 3  // level 3 不顯示負象限的網格
+            showAllGrids: this.difficulty !== 3  // 这里控制是否显示负象限的网格
         });
 
         // 添加坐標軸上的數字標籤
@@ -243,8 +243,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         const step1System = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
-            yRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
+            xRange: range,
+            yRange: range,
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -253,7 +253,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             showArrows: true,
             labelColor: '#666',
             labelSize: 14,
-            showAllGrids: this.difficulty !== 3  // level 3 不顯示負象限的網格
+            showAllGrids: this.difficulty !== 3
         });
 
         // 添加坐標軸標籤
@@ -287,8 +287,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         const step2System = new CoordinateSystem({
             width: 400,
             height: 400,
-            xRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
-            yRange: this.difficulty === 3 ? [-1, 6] : range as [number, number],  // 只在 level 3 扩大范围
+            xRange: range,
+            yRange: range,
             showGrid: true,
             gridColor: '#e0e0e0',
             gridOpacity: 0.8,
@@ -297,7 +297,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             showArrows: true,
             labelColor: '#666',
             labelSize: 14,
-            showAllGrids: this.difficulty !== 3  // level 3 不顯示負象限的網格
+            showAllGrids: this.difficulty !== 3
         });
 
         // 添加坐標軸標籤
@@ -407,9 +407,9 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         return wrongAnswers;
     }
 
-    // 新增方法：根據點的位置決定標籤的偏移量
+    // 保持原有的标签偏移逻辑
     private getLabelOffset(point: Point): { x: number; y: number } {
-        const offsetDistance = 15;  // 标签偏移距离
+        const offsetDistance = 15;  // 保持原有的偏移距离
 
         // 点在 x 轴上
         if (point.y === 0) {
