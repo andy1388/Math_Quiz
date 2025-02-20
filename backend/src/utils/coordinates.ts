@@ -648,23 +648,17 @@ export class CoordinateSystem {
             }
         }
 
-        // 添加点
-        system.addPoint(
-            point.x, 
-            point.y, 
-            "●", 
-            "A", 
-            isYAxisOnly ? -40 : labelOffset.x,
-            isXAxisOnly ? 40 : labelOffset.y,
-            "#00cc00"
-        );
-
         return system;
     }
 
-    // 修改函数名为更贴切的描述
-    addCoordinateLocatingGuides(point: { x: number; y: number }, step: 1 | 2, isXAxisOnly = false, isYAxisOnly = false): void {
-        if (isXAxisOnly) {
+    // 修改函数签名，只接受四个参数
+    addCoordinateLocatingGuides(
+        point: { x: number; y: number }, 
+        step: 1 | 2, 
+        showXGuide = true, 
+        showYGuide = true
+    ): void {
+        if (showXGuide && !showYGuide) {
             // 只显示x轴的情况
             if (point.x !== 0) {
                 this.addLineSegment(0, 0, point.x, 0, "red", "solid");
@@ -681,7 +675,7 @@ export class CoordinateSystem {
             return;
         }
 
-        if (isYAxisOnly) {
+        if (showYGuide && !showXGuide) {
             // 只显示y轴的情况
             if (point.y !== 0) {
                 this.addLineSegment(0, 0, 0, point.y, "blue", "solid");

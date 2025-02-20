@@ -10,6 +10,7 @@ interface Point {
     x: number;
     y: number;
     label: string;
+    color: string;
 }
 
 export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
@@ -30,13 +31,15 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         // 生成问题内容
         const content = this.generateContent(targetPoint);
 
-        // 生成选项（A、B、C、D）
-        const options = ['A', 'B', 'C', 'D'];
+        // 生成错误答案：从其他三个点中选择它们的标签
+        const wrongAnswers = points
+            .filter(point => point !== targetPoint)
+            .map(point => `$${point.label}$`);
 
         return {
             content: `${content}<br>\n${coordSystem.toString()}`,
             correctAnswer: `$${targetPoint.label}$`,
-            wrongAnswers: options.filter(opt => opt !== targetPoint.label).map(opt => `$${opt}$`),
+            wrongAnswers,
             explanation: this.generateExplanation(points, targetPoint),
             type: 'text',
             displayOptions: {
@@ -47,13 +50,14 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
 
     private generatePoints(level: number): Point[] {
         const points: Point[] = [];
-        const labels = ['A', 'B', 'C', 'D'];
+        const labels = ['P', 'Q', 'R', 'S'];
+        const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFA500'];
         const usedCoords = new Set<string>();
 
-        const addPoint = (x: number, y: number, label: string) => {
+        const addPoint = (x: number, y: number, label: string, color: string) => {
             const key = `${x},${y}`;
             if (!usedCoords.has(key)) {
-                points.push({ x, y, label });
+                points.push({ x, y, label, color });
                 usedCoords.add(key);
                 return true;
             }
@@ -64,14 +68,14 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
             case 1: // 只有 x 轴
                 while (points.length < 4) {
                     const x = getRandomInt(-5, 5);
-                    addPoint(x, 0, labels[points.length]);
+                    addPoint(x, 0, labels[points.length], colors[points.length]);
                 }
                 break;
 
             case 2: // 只有 y 轴
                 while (points.length < 4) {
                     const y = getRandomInt(-5, 5);
-                    addPoint(0, y, labels[points.length]);
+                    addPoint(0, y, labels[points.length], colors[points.length]);
                 }
                 break;
 
@@ -79,7 +83,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
                 while (points.length < 4) {
                     const x = getRandomInt(0, 5);
                     const y = getRandomInt(0, 5);
-                    addPoint(x, y, labels[points.length]);
+                    addPoint(x, y, labels[points.length], colors[points.length]);
                 }
                 break;
 
@@ -89,7 +93,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
                     while (!added) {
                         const x = getRandomInt(-5, 5);
                         const y = getRandomInt(-5, 5);
-                        added = addPoint(x, y, labels[i]);
+                        added = addPoint(x, y, labels[i], colors[i]);
                     }
                 }
                 break;
@@ -100,7 +104,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
                     while (!added) {
                         const x = Number(getRandomDecimal(-5, 5, 1));
                         const y = Number(getRandomDecimal(-5, 5, 1));
-                        added = addPoint(x, y, labels[i]);
+                        added = addPoint(x, y, labels[i], colors[i]);
                     }
                 }
                 break;
@@ -139,9 +143,10 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
                 coordSystem.addText(x, -0.6, `${x}`);
             });
 
-            // 添加点
+            // 添加点和标签
             points.forEach(point => {
-                coordSystem.addPoint(point.x, 0, "●", point.label, 15, 40, "#00cc00");
+                coordSystem.addPoint(point.x, 0, "●", "", 0, 0, point.color);  // 点不带标签
+                coordSystem.addText(point.x, 0.4, point.label, point.color);   // 标签放在上方
             });
 
             return coordSystem;
@@ -176,9 +181,10 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
                 coordSystem.addText(-0.8, y, `${y}`);
             });
 
-            // 添加点
+            // 添加点和标签
             points.forEach(point => {
-                coordSystem.addPoint(0, point.y, "●", point.label, -40, 0, "#00cc00");
+                coordSystem.addPoint(0, point.y, "●", "", 0, 0, point.color);  // 点不带标签
+                coordSystem.addText(0.4, point.y, point.label, point.color);   // 标签放在右边
             });
 
             return coordSystem;
@@ -210,7 +216,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         // 添加所有点
         points.forEach(point => {
             const offset = this.getLabelOffset(point);
-            coordSystem.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, "#00cc00");
+            coordSystem.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, point.color);
         });
 
         return coordSystem;
@@ -236,23 +242,23 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
                 point: targetPoint,
                 isXAxisOnly: true,
                 axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
-                showGridLines: false,  // 不显示网格
-                showAxisNumbers: true  // 显示数字
+                showGridLines: false,
+                showAxisNumbers: true
             });
 
-            // 添加所有点
+            // 先添加点和标签
             points.forEach(point => {
-                const color = point === targetPoint ? "#ff0000" : "#00cc00";
-                system.addPoint(point.x, 0, "●", point.label, 15, 40, color);
+                system.addPoint(point.x, 0, "●", "", 0, 0, point.color);
+                system.addText(point.x, 0.4, point.label, point.color);
             });
 
-            // 添加坐标定位辅助线
+            // 然后添加辅助线
             system.addCoordinateLocatingGuides(targetPoint, 1, true, false);
 
             return `
-點 ${targetPoint.label} 的 $x$ 坐標是 <span style="color: red">$${targetPoint.x}$</span>\n
+點 $${targetPoint.label}$ 的 $x$ 坐標是 <span style="color: red">$${targetPoint.x}$</span>\n
 <div style="text-align: center;">\n${system.toString()}\n</div>\n
-因此，$x$ 坐標為 ${targetPoint.x} 的點是 ${targetPoint.label}
+因此，$x$ 坐標為 ${targetPoint.x} 的點是 $${targetPoint.label}$
             `.trim();
         }
 
@@ -265,21 +271,17 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
                 point: targetPoint,
                 isYAxisOnly: true,
                 axisLabels: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
-                showGridLines: false,  // 不显示网格
-                showAxisNumbers: true  // 显示数字
+                showGridLines: false,
+                showAxisNumbers: true
             });
 
-            // Add all points first (without labels)
+            // 先添加点和标签
             points.forEach(point => {
-                system.addPoint(0, point.y, "●", "", -40, 0, "#00cc00");  // Empty string for label
+                system.addPoint(0, point.y, "●", "", 0, 0, point.color);
+                system.addText(0.4, point.y, point.label, point.color);
             });
 
-            // Add labels separately
-            points.forEach(point => {
-                system.addText(-0.8, point.y, point.label, "#00cc00");
-            });
-
-            // Add coordinate guides
+            // 然后添加辅助线
             system.addCoordinateLocatingGuides(targetPoint, 1, false, true);
 
             return `
@@ -290,7 +292,6 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         }
 
         // level 3-5 的解释
-        // 第一步：显示 x 坐标
         const step1System = CoordinateSystem.createExplanationSystem({
             width: 400,
             height: 400,
@@ -304,17 +305,16 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
             showAxisNumbers: true
         });
 
-        // 添加所有点
+        // 先添加点和标签
         points.forEach(point => {
             const offset = this.getLabelOffset(point);
-            const color = point === targetPoint ? "#ff0000" : "#00cc00";
-            step1System.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, color);
+            step1System.addPoint(point.x, point.y, "●", "", offset.x, offset.y, point.color);
+            step1System.addText(point.x + offset.x/20, point.y + offset.y/20, point.label, point.color);
         });
 
-        // 添加第一步的辅助线（只显示 x 坐标）
-        step1System.addCoordinateLocatingGuides(targetPoint, 1);
+        // 然后添加辅助线
+        step1System.addCoordinateLocatingGuides(targetPoint, 1, true, false);
 
-        // 第二步：显示 y 坐标
         const step2System = CoordinateSystem.createExplanationSystem({
             width: 400,
             height: 400,
@@ -328,15 +328,15 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
             showAxisNumbers: true
         });
 
-        // 添加所有点
+        // 先添加点和标签
         points.forEach(point => {
             const offset = this.getLabelOffset(point);
-            const color = point === targetPoint ? "#ff0000" : "#00cc00";
-            step2System.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, color);
+            step2System.addPoint(point.x, point.y, "●", "", offset.x, offset.y, point.color);
+            step2System.addText(point.x + offset.x/20, point.y + offset.y/20, point.label, point.color);
         });
 
-        // 添加第二步的辅助线（显示 x 和 y 坐标）
-        step2System.addCoordinateLocatingGuides(targetPoint, 2);
+        // 然后添加辅助线
+        step2System.addCoordinateLocatingGuides(targetPoint, 2, true, true);
 
         return `
 【第一步】找出 $x$ 坐標：從點 $${targetPoint.label}$ 向下引一條垂直虛線（綠色），交 $x$ 軸於 <span style="color: red">$${targetPoint.x}$</span>\n
@@ -350,15 +350,15 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
     }
 
     private getLabelOffset(point: Point): { x: number; y: number } {
-        let offsetX = 15;
-        let offsetY = -20;
+        let offsetX = 10;
+        let offsetY = -15;
 
         if (point.x <= 0) {
-            offsetX = -25;
+            offsetX = -20;
         }
 
         if (point.y <= 0) {
-            offsetY = 25;
+            offsetY = 20;
         }
 
         return { x: offsetX, y: offsetY };
