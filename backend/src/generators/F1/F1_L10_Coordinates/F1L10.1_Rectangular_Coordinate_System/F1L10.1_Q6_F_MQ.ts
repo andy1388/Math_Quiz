@@ -38,23 +38,23 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         switch (level) {
             case 1: // 四个象限的整数点
                 do {
-                    const quadrant = getRandomInt(1, 4);
+                    const quadrant = getRandomInt(1, 5);
                     switch (quadrant) {
                         case 1:
-                            x = getRandomInt(1, 4);
-                            y = getRandomInt(1, 4);
+                            x = getRandomInt(1, 5);
+                            y = getRandomInt(1, 5);
                             break;
                         case 2:
-                            x = getRandomInt(-4, -1);
-                            y = getRandomInt(1, 4);
+                            x = getRandomInt(-5, -1);
+                            y = getRandomInt(1, 5);
                             break;
                         case 3:
-                            x = getRandomInt(-4, -1);
-                            y = getRandomInt(-4, -1);
+                            x = getRandomInt(-5, -1);
+                            y = getRandomInt(-5, -1);
                             break;
                         case 4:
-                            x = getRandomInt(1, 4);
-                            y = getRandomInt(-4, -1);
+                            x = getRandomInt(1, 5);
+                            y = getRandomInt(-5, -1);
                             break;
                         default:
                             throw new Error("Invalid quadrant");
@@ -63,12 +63,12 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
                 break;
 
             case 2: // 包含坐标轴上的点和原点
-                const position = getRandomInt(1, 3);
+                const position = getRandomInt(1, 2);
                 if (position === 1) { // 在 y 轴上
                     x = 0;
-                    y = this.getRandomNonZeroInt(-4, 4);
+                    y = this.getRandomNonZeroInt(-5, 5);
                 } else if (position === 2) { // 在 x 轴上
-                    x = this.getRandomNonZeroInt(-4, 4);
+                    x = this.getRandomNonZeroInt(-5, 5);
                     y = 0;
                 } else { // 在原点
                     x = 0;
@@ -147,7 +147,7 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         });
 
         // 第一步只添加点和x坐标定位线
-        system1.addPoint(point.x, point.y, "●", "A", 15, -15);
+        system1.addPoint(point.x, point.y, "●", "A", 15, -15, "#00CC00");
         system1.addCoordinateLocatingGuides(point, 1);
 
         explanation += `<div style="text-align: center;">\n${system1.toString()}\n</div>\n\n`;
@@ -171,7 +171,7 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         });
 
         // 第二步添加点和完整定位线
-        system2.addPoint(point.x, point.y, "●", "A", 15, -15);
+        system2.addPoint(point.x, point.y, "●", "A", 15, -15, "#00CC00");
         system2.addCoordinateLocatingGuides(point, 2);
 
         explanation += `<div style="text-align: center;">\n${system2.toString()}\n</div>\n\n`;
@@ -195,11 +195,20 @@ export default class F1L10_1_Q6_F_MQ extends QuestionGenerator {
         });
 
         // 第三步添加象限标记和点
-        system3.addText(3, 3, "Ⅰ", "#000000", 48);
-        system3.addText(-3, 3, "Ⅱ", "#000000", 48);
-        system3.addText(-3, -3, "Ⅲ", "#000000", 48);
-        system3.addText(3, -3, "Ⅳ", "#000000", 48);
-        system3.addPoint(point.x, point.y, "●", "A", 15, -15);
+        system3.addText(3, 3, "Ⅰ", "#FFD700", 48);
+        system3.addText(-3, 3, "Ⅱ", "#FFD700", 48);
+        system3.addText(-3, -3, "Ⅲ", "#FFD700", 48);
+        system3.addText(3, -3, "Ⅳ", "#FFD700", 48);
+
+        // 添加彩色坐标轴标签和紫色原点
+        system3.addLineSegment(0, -5, 0, 5, "#0000FF", "solid", 3);  // 蓝色y轴
+        system3.addText(1.3, 4.5, "y-axis", "#0000FF", 24);  // y轴标签
+        system3.addLineSegment(-5, 0, 5, 0, "#FF0000", "solid", 3);  // 红色x轴
+        system3.addText(4.5, -0.7, "x-axis", "#FF0000", 24); // x轴标签
+        system3.addPoint(0, 0, "●", "", 0, 0, "#800080");  // 添加紫色原点
+        system3.addText(0.5, 0.5, "O", "#800080", 24);    // 紫色原点标记
+
+        system3.addPoint(point.x, point.y, "●", "A", 15, -15, "#00CC00");
         
         if (point.x === 0 && point.y === 0) {
             explanation += `因為 $x = 0$ 且 $y = 0$，所以$A$點在原點。<br>\n\n`;
