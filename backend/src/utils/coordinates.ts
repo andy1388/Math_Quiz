@@ -37,6 +37,7 @@ interface LineEquation {
     style?: string;
     labelOffsetX?: number;
     labelOffsetY?: number;
+    width?: number;
 }
 
 interface PointLabel {
@@ -111,12 +112,13 @@ interface ExplanationSystemConfig {
     isYAxisOnly?: boolean;   // 是否只显示y轴
     showAxisNumbers?: boolean; // 新增：是否显示坐标轴上的数字
     showGridLines?: boolean;   // 新增：是否显示网格线
+    showAxisTicks?: boolean;  // 添加这一行
 }
 
 export class CoordinateSystem {
     private options: CoordinateSystemOptions;
     private points: Point[] = [];
-    private lines: { from: [number, number]; to: [number, number]; color: string; style?: string }[] = [];
+    private lines: { from: [number, number]; to: [number, number]; color: string; style?: string; width?: number }[] = [];
     private verticalLines: { x: number; color: string; style?: string }[] = [];
     private equations: LineEquation[] = [];
     private functions: FunctionEquation[] = [];  // 新增：函数数组
@@ -326,14 +328,16 @@ export class CoordinateSystem {
         x2: number,
         y2: number,
         color: string = "black",
-        style: string = "solid"
+        style: string = "solid",
+        width: number = 1  // 添加线宽参数
     ) {
         // 添加線段
         this.lines.push({
             from: [x1, y1],
             to: [x2, y2],
             color,
-            style
+            style,
+            width  // 添加线宽
         });
     }
 
@@ -576,15 +580,13 @@ export class CoordinateSystem {
         
         // 繪製所有線段
         for (const line of this.lines) {
-            const [x1, y1] = line.from;
-            const [x2, y2] = line.to;
             svg += `<line 
-                x1="${x1 * xScale + xOffset}" 
-                y1="${yOffset - y1 * yScale}" 
-                x2="${x2 * xScale + xOffset}" 
-                y2="${yOffset - y2 * yScale}"
+                x1="${line.from[0] * xScale + xOffset}" 
+                y1="${yOffset - line.from[1] * yScale}" 
+                x2="${line.to[0] * xScale + xOffset}" 
+                y2="${yOffset - line.to[1] * yScale}"
                 stroke="${line.color}"
-                stroke-width="2"
+                stroke-width="${line.width || 1}"  // 使用线宽，默认为1
                 stroke-dasharray="${line.style === 'dotted' ? '4,4' : ''}"
             />`;
         }
@@ -680,7 +682,8 @@ export class CoordinateSystem {
             isXAxisOnly = false,
             isYAxisOnly = false,
             showAxisNumbers = true,  // 默认显示数字
-            showGridLines = true     // 默认显示网格
+            showGridLines = true,     // 默认显示网格
+            showAxisTicks = true,  // 添加默认值
         } = config;
 
         // 根据是否只显示单轴调整配置
@@ -712,18 +715,21 @@ export class CoordinateSystem {
             );
         }
 
-        // 添加刻度线
-        if (!isYAxisOnly) {  // x轴刻度线
-            for (let x = Math.floor(xRange[0]); x <= Math.ceil(xRange[1]); x++) {
-                if (x !== Math.ceil(xRange[1])) {
-                    system.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
+        // 修改添加刻度线的部分
+        if (showAxisTicks) {  // 只在 showAxisTicks 为 true 时添加刻度线
+            // 添加刻度线
+            if (!isYAxisOnly) {  // x轴刻度线
+                for (let x = Math.floor(xRange[0]); x <= Math.ceil(xRange[1]); x++) {
+                    if (x !== Math.ceil(xRange[1])) {
+                        system.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
+                    }
                 }
             }
-        }
-        if (!isXAxisOnly) {  // y轴刻度线
-            for (let y = Math.floor(yRange[0]); y <= Math.ceil(yRange[1]); y++) {
-                if (y !== Math.ceil(yRange[1])) {
-                    system.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
+            if (!isXAxisOnly) {  // y轴刻度线
+                for (let y = Math.floor(yRange[0]); y <= Math.ceil(yRange[1]); y++) {
+                    if (y !== Math.ceil(yRange[1])) {
+                        system.addLineSegment(-0.1, y, 0.1, y, "black", "solid");
+                    }
                 }
             }
         }
