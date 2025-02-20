@@ -253,7 +253,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
             });
 
             // 然后添加辅助线
-            system.addCoordinateLocatingGuides(targetPoint, 1, true, false);
+            system.addCoordinateLocatingGuides(targetPoint, 1);
 
             return `
 點 $${targetPoint.label}$ 的 $x$ 坐標是 <span style="color: red">$${targetPoint.x}$</span>\n
@@ -282,7 +282,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
             });
 
             // 然后添加辅助线
-            system.addCoordinateLocatingGuides(targetPoint, 1, false, true);
+            system.addCoordinateLocatingGuides(targetPoint, 1);
 
             return `
 點 $${targetPoint.label}$ 的 $y$ 坐標是 <span style="color: blue">$${targetPoint.y}$</span>\n
@@ -313,7 +313,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         });
 
         // 然后添加辅助线
-        step1System.addCoordinateLocatingGuides(targetPoint, 1, true, false);
+        step1System.addCoordinateLocatingGuides(targetPoint, 1);
 
         const step2System = CoordinateSystem.createExplanationSystem({
             width: 400,
@@ -336,7 +336,7 @@ export default class F1L10_1_Q4_F_MQ extends QuestionGenerator {
         });
 
         // 然后添加辅助线
-        step2System.addCoordinateLocatingGuides(targetPoint, 2, true, true);
+        step2System.addCoordinateLocatingGuides(targetPoint, 2);
 
         return `
 【第一步】找出 $x$ 坐標：從點 $${targetPoint.label}$ 向下引一條垂直虛線（綠色），交 $x$ 軸於 <span style="color: red">$${targetPoint.x}$</span>\n
