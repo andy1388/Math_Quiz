@@ -58,7 +58,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
             // 添加刻度短線（所有整數位置）
             for (let x = range[0]; x <= range[1]; x++) {
-                if (x !== 5) {  // 跳過 5 位置（箭頭處）
+                if (x !== 5 && x !== -6 && x !== 6) {  // 跳過 5 位置（箭頭處）以及 -6 和 6 位置
                     coordSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
                 }
             }
@@ -87,7 +87,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
             // 添加刻度短線（除了 5 位置）
             for (const x of axisLabels) {
-                if (x !== 5) {  // 跳過 5 位置（箭頭處）
+                if (x !== 5 && x !== -6 && x !== 6) {  // 跳過 5 位置（箭頭處）以及 -6 和 6 位置
                     explainSystem.addLineSegment(x, -0.1, x, 0.1, "black", "solid");
                 }
             }

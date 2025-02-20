@@ -439,15 +439,38 @@ export class CoordinateSystem {
         if (this.options.showGrid) {
             // 垂直網格線
             if (this.options.showVerticalGrid) {
-                // 根据难度决定网格范围
-                const gridStart = !this.options.showAllGrids ? 0 : -5;  // 难度3用[0,5]，其他用[-5,5]
-                const gridEnd = !this.options.showAllGrids ? 5 : 5;
+                let gridStart, gridEnd, yStart, yEnd;
                 
+                if (this.options.showXAxis && !this.options.showYAxis) {
+                    // 难度1：只显示x轴，网格线范围为[-5,5]
+                    gridStart = -5;
+                    gridEnd = 5;
+                    yStart = this.transformY(-0.1);
+                    yEnd = this.transformY(0.1);
+                } else if (!this.options.showXAxis && this.options.showYAxis) {
+                    // 难度2：只显示y轴
+                    gridStart = -0.1;
+                    gridEnd = 0.1;
+                    yStart = this.transformY(-5);
+                    yEnd = this.transformY(5);
+                } else if (!this.options.showAllGrids) {
+                    // 难度3：第一象限[0,5]
+                    gridStart = 0;
+                    gridEnd = 5;
+                    yStart = this.transformY(0);
+                    yEnd = this.transformY(5);
+                } else {
+                    // 难度4-5：完整坐标系[-5,5]
+                    gridStart = -5;
+                    gridEnd = 5;
+                    yStart = this.transformY(-5);
+                    yEnd = this.transformY(5);
+                }
+                
+                // 修改循环条件，确保不在显示区域边界绘制网格线
                 for (let x = gridStart; x <= gridEnd; x++) {
+                    // 不需要特别跳过-6和6，因为它们不在循环范围内
                     const xPos = x * xScale + xOffset;
-                    const yStart = !this.options.showAllGrids ? this.transformY(0) : this.transformY(-5);
-                    const yEnd = !this.options.showAllGrids ? this.transformY(5) : this.transformY(5);
-                    
                     svg += `<line x1="${xPos}" y1="${yStart}" x2="${xPos}" y2="${yEnd}" 
                         stroke="${this.options.gridColor}" 
                         stroke-width="1"
@@ -457,15 +480,36 @@ export class CoordinateSystem {
 
             // 水平網格線
             if (this.options.showHorizontalGrid) {
-                // 根据难度决定网格范围
-                const gridStart = !this.options.showAllGrids ? 0 : -5;  // 难度3用[0,5]，其他用[-5,5]
-                const gridEnd = !this.options.showAllGrids ? 5 : 5;
+                let gridStart, gridEnd, xStart, xEnd;
+                
+                if (this.options.showXAxis && !this.options.showYAxis) {
+                    // 难度1：只显示x轴
+                    gridStart = -0.1;
+                    gridEnd = 0.1;
+                    xStart = this.transformX(-5);
+                    xEnd = this.transformX(5);
+                } else if (!this.options.showXAxis && this.options.showYAxis) {
+                    // 难度2：只显示y轴
+                    gridStart = -5;
+                    gridEnd = 5;
+                    xStart = this.transformX(-0.1);
+                    xEnd = this.transformX(0.1);
+                } else if (!this.options.showAllGrids) {
+                    // 难度3：第一象限[0,5]
+                    gridStart = 0;
+                    gridEnd = 5;
+                    xStart = this.transformX(0);
+                    xEnd = this.transformX(5);
+                } else {
+                    // 难度4-5：完整坐标系[-5,5]
+                    gridStart = -5;
+                    gridEnd = 5;
+                    xStart = this.transformX(-5);
+                    xEnd = this.transformX(5);
+                }
                 
                 for (let y = gridStart; y <= gridEnd; y++) {
                     const yPos = yOffset - y * yScale;
-                    const xStart = !this.options.showAllGrids ? this.transformX(0) : this.transformX(-5);
-                    const xEnd = !this.options.showAllGrids ? this.transformX(5) : this.transformX(5);
-                    
                     svg += `<line x1="${xStart}" y1="${yPos}" x2="${xEnd}" y2="${yPos}" 
                         stroke="${this.options.gridColor}" 
                         stroke-width="1"
@@ -481,9 +525,10 @@ export class CoordinateSystem {
             // x轴
             if (this.options.showXAxis) {
                 const yAxisPos = yOffset;
-                // 根据难度决定坐标轴范围
-                const xStart = !this.options.showAllGrids ? this.transformX(0) : this.transformX(-5);
-                const xEnd = !this.options.showAllGrids ? this.transformX(5) : this.transformX(5);
+                const xStart = this.options.showXAxis && !this.options.showYAxis ? 
+                    this.transformX(-5) : // 难度1：完整x轴[-5,5]
+                    !this.options.showAllGrids ? this.transformX(0) : this.transformX(-5); // 其他难度
+                const xEnd = this.transformX(5);
                 
                 svg += `<line x1="${xStart}" y1="${yAxisPos}" x2="${xEnd}" y2="${yAxisPos}" 
                     stroke="${this.options.axisColor}" 
@@ -501,9 +546,10 @@ export class CoordinateSystem {
             // y轴
             if (this.options.showYAxis) {
                 const xAxisPos = xOffset;
-                // 根据难度决定坐标轴范围
-                const yStart = !this.options.showAllGrids ? this.transformY(0) : this.transformY(-5);
-                const yEnd = !this.options.showAllGrids ? this.transformY(5) : this.transformY(5);
+                const yStart = !this.options.showXAxis && this.options.showYAxis ? 
+                    this.transformY(-5) : // 难度2：完整y轴[-5,5]
+                    !this.options.showAllGrids ? this.transformY(0) : this.transformY(-5); // 其他难度
+                const yEnd = this.transformY(5);
                 
                 svg += `<line x1="${xAxisPos}" y1="${yStart}" x2="${xAxisPos}" y2="${yEnd}" 
                     stroke="${this.options.axisColor}" 
