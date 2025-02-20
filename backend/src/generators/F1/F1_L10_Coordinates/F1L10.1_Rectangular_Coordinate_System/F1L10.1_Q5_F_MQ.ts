@@ -11,17 +11,23 @@ interface Point {
 
 export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
     private targetQuadrant: number = 1;
-    private targetPosition: string = '';  // 新增：用于存储难度4的目标位置
+    private targetPosition: string = '';
+    private questionType: string = ''; // 新增：存储难度5的问题类型
 
     constructor(difficulty: number) {
         super(difficulty, 'F1L10.1_Q5_F_MQ');
     }
 
     generate(): IGeneratorOutput {
-        if (this.difficulty === 4) {
-            // 先随机决定要问的位置
-            const positions = ['在 x 軸上', '在 y 軸上', '在原點'];
-            this.targetPosition = positions[getRandomInt(0, 2)];
+        if (this.difficulty === 5) {
+            // 先决定问题类型
+            const questionTypes = [
+                'x坐標為正數',
+                'x坐標為負數',
+                'y坐標為正數',
+                'y坐標為負數'
+            ];
+            this.questionType = questionTypes[getRandomInt(0, 3)];
         }
 
         // 生成点
@@ -32,7 +38,9 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
 
         // 生成问题内容
         let content;
-        if (this.difficulty === 3) {
+        if (this.difficulty === 5) {
+            content = `在下面的坐標平面中，哪一個點的${this.questionType}？`;
+        } else if (this.difficulty === 3) {
             const targetQuadrant = getRandomInt(1, 4);
             this.targetQuadrant = targetQuadrant;
             content = `在下面的坐標平面中，哪一個點在第${this.convertToChineseNumber(targetQuadrant)}象限？`;
@@ -119,6 +127,76 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
 
     private generatePoint(level: number): Point[] {
         let result: Point[] = [];
+        
+        if (level === 5) {
+            // 随机决定哪个点是正确答案
+            const labels = ['P', 'Q', 'R', 'S'];
+            const colors = ['#FF0000', '#00CC00', '#0000FF', '#FFA500'];
+            const correctIndex = getRandomInt(0, 3);
+            
+            // 根据问题类型生成正确答案的点
+            let correctPoint: Point;
+            switch (this.questionType) {
+                case 'x坐標為正數':
+                    correctPoint = {
+                        x: getRandomInt(1, 5),
+                        y: getRandomInt(-5, 5),
+                        label: labels[correctIndex],
+                        color: colors[correctIndex]
+                    };
+                    break;
+                case 'x坐標為負數':
+                    correctPoint = {
+                        x: getRandomInt(-5, -1),
+                        y: getRandomInt(-5, 5),
+                        label: labels[correctIndex],
+                        color: colors[correctIndex]
+                    };
+                    break;
+                case 'y坐標為正數':
+                    correctPoint = {
+                        x: getRandomInt(-5, 5),
+                        y: getRandomInt(1, 5),
+                        label: labels[correctIndex],
+                        color: colors[correctIndex]
+                    };
+                    break;
+                case 'y坐標為負數':
+                    correctPoint = {
+                        x: getRandomInt(-5, 5),
+                        y: getRandomInt(-5, -1),
+                        label: labels[correctIndex],
+                        color: colors[correctIndex]
+                    };
+                    break;
+                default:
+                    throw new Error('Invalid question type');
+            }
+            result.push(correctPoint);
+
+            // 生成其他不满足条件的点
+            let remainingLabels = labels.filter((_, i) => i !== correctIndex);
+            let remainingColors = colors.filter((_, i) => i !== correctIndex);
+
+            // 确保生成的点分布在不同区域
+            const regions = this.getDistinctRegions(this.questionType);
+            
+            for (let i = 0; i < 3; i++) {
+                let point: Point;
+                do {
+                    point = this.generateWrongPoint(
+                        this.questionType,
+                        remainingLabels[i],
+                        remainingColors[i],
+                        result,
+                        regions[i]
+                    );
+                } while (this.isPointTooClose(point, result));
+                result.push(point);
+            }
+
+            return result;
+        }
         
         switch (level) {
             case 1: // 四个象限的整数点
@@ -341,15 +419,23 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
         coordSystem.addAxisLabels(axisLabels, axisLabels);
 
         // 添加所有点和标签
-        if (this.difficulty === 3 || this.difficulty === 4) {
-            points.forEach(point => {
-                const offset = this.getLabelOffset(point);  // 为每个点获取偏移量
-                coordSystem.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, point.color);
-            });
-        } else {
-            const offset = this.getLabelOffset(points[0]);
-            coordSystem.addPoint(points[0].x, points[0].y, "●", points[0].label, offset.x, offset.y, points[0].color);
-        }
+        points.forEach(point => {
+            // 为每个点计算合适的标签偏移量
+            const offset = this.getLabelOffset(point);
+            // 确保每个点都被添加到坐标系统中
+            coordSystem.addPoint(
+                point.x, 
+                point.y, 
+                "●", // 点的符号
+                point.label, // 点的标签 (P, Q, R, S)
+                offset.x, 
+                offset.y, 
+                point.color // 使用点的指定颜色
+            );
+            
+            // 调试输出
+            console.log(`Adding point ${point.label} at (${point.x}, ${point.y}) with color ${point.color}`);
+        });
 
         return coordSystem;
     }
@@ -543,7 +629,7 @@ ${explanation}\n
     }
 
     private getLabelOffset(point: Point): { x: number; y: number } {
-        const offsetDistance = 15;
+        const offsetDistance = 0.3; // 减小偏移距离，使标签更靠近点
 
         if (point.x === 0 && point.y === 0) {
             return { x: offsetDistance, y: -offsetDistance };  // 原点时标签放在右上
@@ -581,5 +667,73 @@ ${explanation}\n
             result = getRandomInt(min, max);
         } while (result === 0);
         return result;
+    }
+
+    private getDistinctRegions(questionType: string): string[] {
+        switch (questionType) {
+            case 'x坐標為正數':
+                return ['negative_x', 'zero_x', 'zero_x'];
+            case 'x坐標為負數':
+                return ['positive_x', 'zero_x', 'zero_x'];
+            case 'y坐標為正數':
+                return ['negative_y', 'zero_y', 'zero_y'];
+            case 'y坐標為負數':
+                return ['positive_y', 'zero_y', 'zero_y'];
+            default:
+                throw new Error('Invalid question type');
+        }
+    }
+
+    private generateWrongPoint(
+        questionType: string,
+        label: string,
+        color: string,
+        existingPoints: Point[],
+        region: string
+    ): Point {
+        let x: number, y: number;
+        
+        switch (questionType) {
+            case 'x坐標為正數':
+                if (region === 'negative_x') {
+                    x = getRandomInt(-5, -1);
+                    y = getRandomInt(-5, 5);
+                } else { // zero_x
+                    x = 0;
+                    y = getRandomInt(-5, 5);
+                }
+                break;
+            case 'x坐標為負數':
+                if (region === 'positive_x') {
+                    x = getRandomInt(1, 5);
+                    y = getRandomInt(-5, 5);
+                } else { // zero_x
+                    x = 0;
+                    y = getRandomInt(-5, 5);
+                }
+                break;
+            case 'y坐標為正數':
+                if (region === 'negative_y') {
+                    x = getRandomInt(-5, 5);
+                    y = getRandomInt(-5, -1);
+                } else { // zero_y
+                    x = getRandomInt(-5, 5);
+                    y = 0;
+                }
+                break;
+            case 'y坐標為負數':
+                if (region === 'positive_y') {
+                    x = getRandomInt(-5, 5);
+                    y = getRandomInt(1, 5);
+                } else { // zero_y
+                    x = getRandomInt(-5, 5);
+                    y = 0;
+                }
+                break;
+            default:
+                throw new Error('Invalid question type');
+        }
+
+        return { x, y, label, color };
     }
 } 
