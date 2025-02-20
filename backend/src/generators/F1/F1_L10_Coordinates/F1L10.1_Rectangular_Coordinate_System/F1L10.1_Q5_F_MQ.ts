@@ -28,6 +28,10 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                 'y坐標為負數'
             ];
             this.questionType = questionTypes[getRandomInt(0, 3)];
+        } else if (this.difficulty === 4) {
+            // 先决定要问的位置
+            const positions = ['在 x 軸上', '在 y 軸上', '在原點'];
+            this.targetPosition = positions[getRandomInt(0, 2)];
         }
 
         // 生成点
@@ -198,42 +202,111 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
             return result;
         }
         
+        if (level === 4) {
+            const labels = ['P', 'Q', 'R', 'S'];
+            const colors = ['#FF0000', '#00CC00', '#0000FF', '#FFA500'];
+            
+            // 随机决定哪个点是正确答案
+            const correctIndex = getRandomInt(0, 3);
+            const correctLabel = labels[correctIndex];
+            const correctColor = colors[correctIndex];
+            
+            // 获取剩余的标签和颜色
+            const remainingLabels = labels.filter((_, i) => i !== correctIndex);
+            const remainingColors = colors.filter((_, i) => i !== correctIndex);
+            
+            // 生成目标点（正确答案）
+            let correctPoint: Point;
+            switch (this.targetPosition) {
+                case '在 x 軸上':
+                    correctPoint = {
+                        x: this.getRandomNonZeroInt(-4, 4),
+                        y: 0,
+                        label: correctLabel,
+                        color: correctColor
+                    };
+                    break;
+                case '在 y 軸上':
+                    correctPoint = {
+                        x: 0,
+                        y: this.getRandomNonZeroInt(-4, 4),
+                        label: correctLabel,
+                        color: correctColor
+                    };
+                    break;
+                case '在原點':
+                    correctPoint = {
+                        x: 0,
+                        y: 0,
+                        label: correctLabel,
+                        color: correctColor
+                    };
+                    break;
+                default:
+                    throw new Error('Invalid target position');
+            }
+            result.push(correctPoint);
+
+            // 生成其他三个点
+            // 一个在第一象限
+            result.push({
+                x: getRandomInt(1, 4),
+                y: getRandomInt(1, 4),
+                label: remainingLabels[0],
+                color: remainingColors[0]
+            });
+
+            // 一个在第三象限
+            result.push({
+                x: getRandomInt(-4, -1),
+                y: getRandomInt(-4, -1),
+                label: remainingLabels[1],
+                color: remainingColors[1]
+            });
+
+            // 一个在第四象限
+            result.push({
+                x: getRandomInt(1, 4),
+                y: getRandomInt(-4, -1),
+                label: remainingLabels[2],
+                color: remainingColors[2]
+            });
+
+            return result;
+        }
+        
         switch (level) {
             case 1: // 四个象限的整数点
-                do {
-                    const point = this.getRandomPointInQuadrant(getRandomInt(1, 4), result);
-                    result.push({
-                        x: point.x,
-                        y: point.y,
-                        label: 'A',
-                        color: '#00cc00'
-                    });
-                } while (result.length < 4);
+                // 只生成一个点
+                const point = this.getRandomPointInQuadrant(getRandomInt(1, 4), result);
+                result.push({
+                    x: point.x,
+                    y: point.y,
+                    label: 'A',
+                    color: '#00cc00'
+                });
                 break;
 
             case 2: // 包含坐标轴上的点和原点
                 const position = getRandomInt(1, 3);
                 if (position === 1) { // 在 y 轴上
-                    const point = this.getRandomPointInQuadrant(2, result);
                     result.push({
-                        x: point.x,
-                        y: point.y,
+                        x: 0,
+                        y: this.getRandomNonZeroInt(-4, 4), // 使用getRandomNonZeroInt
                         label: 'A',
                         color: '#00cc00'
                     });
                 } else if (position === 2) { // 在 x 轴上
-                    const point = this.getRandomPointInQuadrant(3, result);
                     result.push({
-                        x: point.x,
-                        y: point.y,
+                        x: this.getRandomNonZeroInt(-4, 4), // 使用getRandomNonZeroInt
+                        y: 0,
                         label: 'A',
                         color: '#00cc00'
                     });
                 } else { // 在原点
-                    const point = this.getRandomPointInQuadrant(4, result);
                     result.push({
-                        x: point.x,
-                        y: point.y,
+                        x: 0,
+                        y: 0,
                         label: 'A',
                         color: '#00cc00'
                     });
@@ -441,7 +514,55 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
     }
 
     private generateAnswers(points: Point[]): { correctAnswer: string; wrongAnswers: string[] } {
-        if (this.difficulty === 3) {
+        if (this.difficulty === 5) {
+            // 根据问题类型找出正确的点
+            const targetPoint = points.find(p => {
+                switch (this.questionType) {
+                    case 'x坐標為正數':
+                        return p.x > 0;
+                    case 'x坐標為負數':
+                        return p.x < 0;
+                    case 'y坐標為正數':
+                        return p.y > 0;
+                    case 'y坐標為負數':
+                        return p.y < 0;
+                    default:
+                        return false;
+                }
+            });
+
+            if (!targetPoint) {
+                throw new Error(`找不到满足${this.questionType}的点`);
+            }
+
+            const correctAnswer = targetPoint.label;
+            const wrongAnswers = points
+                .filter(p => p.label !== correctAnswer)
+                .map(p => p.label);
+
+            return { correctAnswer, wrongAnswers };
+        } else if (this.difficulty === 4) {
+            // 根据目标位置找出正确的点
+            const targetPoint = points.find(p => {
+                switch (this.targetPosition) {
+                    case '在 x 軸上': return p.y === 0 && p.x !== 0;
+                    case '在 y 軸上': return p.x === 0 && p.y !== 0;
+                    case '在原點': return p.x === 0 && p.y === 0;
+                    default: return false;
+                }
+            });
+
+            if (!targetPoint) {
+                throw new Error(`找不到${this.targetPosition}的点`);
+            }
+
+            const correctAnswer = targetPoint.label;
+            const wrongAnswers = points
+                .filter(p => p.label !== correctAnswer)
+                .map(p => p.label);
+
+            return { correctAnswer, wrongAnswers };
+        } else if (this.difficulty === 3) {
             // 根据目标象限找出正确的点
             const targetPoint = points.find(p => {
                 switch (this.targetQuadrant) {
@@ -463,65 +584,44 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                 .filter(p => p.label !== correctAnswer)
                 .map(p => p.label);
             return { correctAnswer, wrongAnswers };
-        } else if (this.difficulty === 4) {
-            // 根据目标位置找出正确的点
-            const targetPoint = points.find(p => {
-                switch (this.targetPosition) {
-                    case '在 x 軸上': return p.y === 0 && p.x !== 0;
-                    case '在 y 軸上': return p.x === 0 && p.y !== 0;
-                    case '在原點': return p.x === 0 && p.y === 0;
-                    default: return false;
-                }
-            });
+        } else {
+            let correctAnswer: string;
+            let possibleAnswers: string[];
 
-            // 添加空值检查
-            if (!targetPoint) {
-                throw new Error(`找不到${this.targetPosition}的点`);
+            if (points[0].x === 0 && points[0].y === 0) {
+                correctAnswer = '在原點';
+                possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限', '在 x 軸上', '在 y 軸上', '在原點'];
+            } else if (points[0].x === 0) {
+                correctAnswer = '在 y 軸上';
+                possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限', '在 x 軸上', '在 y 軸上'];
+            } else if (points[0].y === 0) {
+                correctAnswer = '在 x 軸上';
+                possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限', '在 x 軸上', '在 y 軸上'];
+            } else if (points[0].x > 0 && points[0].y > 0) {
+                correctAnswer = '第一象限';
+                possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
+            } else if (points[0].x < 0 && points[0].y > 0) {
+                correctAnswer = '第二象限';
+                possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
+            } else if (points[0].x < 0 && points[0].y < 0) {
+                correctAnswer = '第三象限';
+                possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
+            } else {
+                correctAnswer = '第四象限';
+                possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
             }
 
-            const correctAnswer = targetPoint.label;
-            const wrongAnswers = points
-                .filter(p => p.label !== correctAnswer)
-                .map(p => p.label);
-            return { correctAnswer, wrongAnswers };
+            // 从可能的答案中移除正确答案，然后随机选择3个作为错误答案
+            const wrongAnswers = possibleAnswers
+                .filter(answer => answer !== correctAnswer)
+                .sort(() => Math.random() - 0.5)
+                .slice(0, 3);
+
+            return {
+                correctAnswer,
+                wrongAnswers
+            };
         }
-        
-        let correctAnswer: string;
-        let possibleAnswers: string[];
-
-        if (points[0].x === 0 && points[0].y === 0) {
-            correctAnswer = '在原點';
-            possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限', '在 x 軸上', '在 y 軸上', '在原點'];
-        } else if (points[0].x === 0) {
-            correctAnswer = '在 y 軸上';
-            possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限', '在 x 軸上', '在 y 軸上'];
-        } else if (points[0].y === 0) {
-            correctAnswer = '在 x 軸上';
-            possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限', '在 x 軸上', '在 y 軸上'];
-        } else if (points[0].x > 0 && points[0].y > 0) {
-            correctAnswer = '第一象限';
-            possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
-        } else if (points[0].x < 0 && points[0].y > 0) {
-            correctAnswer = '第二象限';
-            possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
-        } else if (points[0].x < 0 && points[0].y < 0) {
-            correctAnswer = '第三象限';
-            possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
-        } else {
-            correctAnswer = '第四象限';
-            possibleAnswers = ['第一象限', '第二象限', '第三象限', '第四象限'];
-        }
-
-        // 从可能的答案中移除正确答案，然后随机选择3个作为错误答案
-        const wrongAnswers = possibleAnswers
-            .filter(answer => answer !== correctAnswer)
-            .sort(() => Math.random() - 0.5)
-            .slice(0, 3);
-
-        return {
-            correctAnswer,
-            wrongAnswers
-        };
     }
 
     private generateExplanation(points: Point[]): string {
