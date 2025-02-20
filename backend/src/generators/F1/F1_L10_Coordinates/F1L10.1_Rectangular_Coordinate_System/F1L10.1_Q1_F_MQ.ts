@@ -29,8 +29,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
             // level 1-2 显示所有标签，包括 0
             axisLabels = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
         } else if (this.difficulty === 3) {
-            // level 3 只显示 1-5
-            axisLabels = [1, 2, 3, 4, 5];
+            // level 3 显示 0-5
+            axisLabels = [0, 1, 2, 3, 4, 5];
         } else {
             // level 4-5 显示除了 0 以外的所有标签
             axisLabels = [-5, -4, -3, -2, -1, 1, 2, 3, 4, 5];
@@ -367,8 +367,8 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
                 };
             case 3: // 基礎坐标（第一象限整数）
                 return {
-                    x: getRandomInt(1, 5),  // 生成1到5之间的随机整数
-                    y: getRandomInt(1, 5)   // 生成1到5之间的随机整数
+                    x: getRandomInt(0, 5),  // 修改为从0到5之间的随机整数
+                    y: getRandomInt(0, 5)   // 修改为从0到5之间的随机整数
                 };
             case 4: // 擴展坐标（四象限整数）
                 return {
@@ -407,7 +407,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
         return wrongAnswers;
     }
 
-    // 保持原有的标签偏移逻辑
+    // 修改标签位置逻辑
     private getLabelOffset(point: Point): { x: number; y: number } {
         const offsetDistance = 15;  // 保持原有的偏移距离
 
@@ -418,7 +418,7 @@ export default class F1L10_1_Q1_F_MQ extends QuestionGenerator {
 
         // 点在 y 轴上
         if (point.x === 0) {
-            return { x: 0, y: -offsetDistance };   // 正上方
+            return { x: offsetDistance, y: 0 };   // 正右方
         }
 
         // 第一象限
