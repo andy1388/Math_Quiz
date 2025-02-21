@@ -658,59 +658,33 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                 mainSystem.addPoint(point.x, point.y, "●", point.label, offset.x, offset.y, point.color);
             });
 
-            // 创建第二个坐标系统来展示区域
-            const regionSystem = new CoordinateSystem({
-                width: 200,
-                height: 200,
-                xRange: [-5, 5],
-                yRange: [-5, 5],
+            // 创建演示坐标系统
+            const demoSystem = new CoordinateSystem({
+                width: 400,
+                height: 400,
+                xRange: [-6, 6],
+                yRange: [-6, 6],
                 showGrid: true,
                 gridColor: '#e0e0e0',
-                gridOpacity: 0.8
+                gridOpacity: 0.8,
+                showAllGrids: true,
+                axisColor: '#333',
+                axisWidth: 1.5,
+                showArrows: true,
+                labelColor: '#666',
+                labelSize: 16
             });
 
-            // 在第二个坐标系统中添加区域着色
-            switch (this.questionType) {
-                case 'x坐標為正數':
-                    // 使用函数来表示 x > 0
-                    regionSystem.addLinearConstraint(
-                        (x: number) => x,  // 返回 x 值本身
-                        0,                 // y-截距
-                        true,             // 大于
-                        '#FFE4E1',        // 颜色
-                        'solid'           // 样式
-                    );
-                    break;
-                case 'x坐標為負數':
-                    // 使用函数来表示 x < 0
-                    regionSystem.addLinearConstraint(
-                        (x: number) => x,  // 返回 x 值本身
-                        0,                 // y-截距
-                        false,            // 小于
-                        '#FFE4E1',        // 颜色
-                        'solid'           // 样式
-                    );
-                    break;
-                case 'y坐標為正數':
-                    // 使用函数来表示 y > 0
-                    regionSystem.addLinearConstraint(
-                        (x: number) => 0,  // 水平线 y = 0
-                        0,                 // y-截距
-                        true,             // 大于
-                        '#FFE4E1',        // 颜色
-                        'solid'           // 样式
-                    );
-                    break;
-                case 'y坐標為負數':
-                    // 使用函数来表示 y < 0
-                    regionSystem.addLinearConstraint(
-                        (x: number) => 0,  // 水平线 y = 0
-                        0,                 // y-截距
-                        false,            // 小于
-                        '#FFE4E1',        // 颜色
-                        'solid'           // 样式
-                    );
-                    break;
+            // 添加 y≥2x+3 的区域和边界线
+            demoSystem.addLinearConstraint(2, 3, true, 'rgba(255, 0, 0, 0.2)', 'solid');  // 添加阴影区域
+            demoSystem.addObliqueLine(2, 3, "blue", "solid");  // 添加边界线
+
+            // 添加网格线（-5 到 5）
+            for (let i = -5; i <= 5; i++) {
+                // 垂直线
+                demoSystem.addLineSegment(i, -5, i, 5, '#e0e0e0', 'solid');
+                // 水平线
+                demoSystem.addLineSegment(-5, i, 5, i, '#e0e0e0', 'solid');
             }
 
             // 生成解释文本
@@ -755,7 +729,7 @@ ${explanation}\n
         <p>座標平面上的點</p>
     </div>
     <div style="text-align: center;">
-        ${regionSystem.toString()}
+        ${demoSystem.toString()}
         <p>${regionExplanation}</p>
     </div>
 </div>

@@ -136,6 +136,7 @@ export class CoordinateSystem {
     private readonly gridXEnd: number;
     private readonly gridYStart: number;
     private readonly gridYEnd: number;
+    private paths: { d: string; fill: string }[] = [];
 
     constructor(options: CoordinateSystemOptions) {
         this.options = {
@@ -283,27 +284,63 @@ export class CoordinateSystem {
     }
 
     addLinearConstraint(
-        slope: number | ((x: number) => number),  // 可以是斜率或函數
+        slope: number | ((x: number) => number),
         yIntercept: number,
         isGreaterThan: boolean = true,
         color: string = "red",
-        style: string = "solid",
-        showEquation: boolean = false,
-        equation?: string,
-        labelOffsetX: number = 15,
-        labelOffsetY: number = -15
+        style: string = "solid"
     ) {
-        this.constraints.push({
-            slope,
-            yIntercept,
-            isGreaterThan,
-            color,
-            style,
-            showEquation,
-            equation,
-            labelOffsetX,
-            labelOffsetY
+        const { width, height, xRange, yRange } = this.options;
+        const margin = 30;
+        const innerWidth = width - 2 * margin;
+        const innerHeight = height - 2 * margin;
+        
+        // 计算缩放和偏移
+        const xScale = innerWidth / (xRange[1] - xRange[0]);
+        const yScale = innerHeight / (yRange[1] - yRange[0]);
+        const xOffset = margin - xRange[0] * xScale;
+        const yOffset = height - margin + yRange[0] * yScale;
+
+        // 如果是直线，只需要两个端点
+        let y1: number, y2: number;
+        if (typeof slope === 'number') {
+            y1 = slope * xRange[0] + yIntercept;
+            y2 = slope * xRange[1] + yIntercept;
+        } else {
+            y1 = slope(xRange[0]) + yIntercept;
+            y2 = slope(xRange[1]) + yIntercept;
+        }
+
+        // 转换为SVG坐标
+        const x1 = xRange[0] * xScale + xOffset;
+        const x2 = xRange[1] * xScale + xOffset;
+        const sy1 = yOffset - y1 * yScale;
+        const sy2 = yOffset - y2 * yScale;
+        const topY = yOffset - yRange[1] * yScale;
+        const bottomY = yOffset - yRange[0] * yScale;
+
+        // 构建填充区域路径
+        let pathD = `M ${x1} ${isGreaterThan ? topY : bottomY} `;  // 从左上/下角开始
+        pathD += `L ${x1} ${sy1} `;  // 到直线的左端点
+        pathD += `L ${x2} ${sy2} `;  // 到直线的右端点
+        pathD += `L ${x2} ${isGreaterThan ? topY : bottomY} `;  // 到右上/下角
+        pathD += 'Z';  // 闭合路径
+
+        // 添加到路径列表
+        this.paths.push({
+            d: pathD,
+            fill: color
         });
+
+        // 添加边界线
+        this.addLineSegment(
+            xRange[0],
+            y1,
+            xRange[1],
+            y2,
+            'blue',  // 使用蓝色作为线条颜色
+            style
+        );
     }
 
     addHorizontalLine(
@@ -418,6 +455,37 @@ export class CoordinateSystem {
         });
     }
 
+    addPath(pathCommands: string[], fillColor: string) {
+        const { width, height, xRange, yRange } = this.options;
+        
+        // 添加边距
+        const margin = 30;
+        const innerWidth = width - 2 * margin;
+        const innerHeight = height - 2 * margin;
+        
+        // 计算缩放和偏移
+        const xScale = innerWidth / (xRange[1] - xRange[0]);
+        const yScale = innerHeight / (yRange[1] - yRange[0]);
+        const xOffset = margin - xRange[0] * xScale;
+        const yOffset = height - margin + yRange[0] * yScale;
+
+        // 转换路径命令
+        const transformedPath = pathCommands.map(cmd => {
+            if (cmd === 'Z') return cmd;
+            const [letter, ...coords] = cmd.split(' ');
+            const [x, y] = coords.map(Number);
+            const transformedX = x * xScale + xOffset;
+            const transformedY = yOffset - y * yScale;
+            return `${letter} ${transformedX} ${transformedY}`;
+        }).join(' ');
+
+        // 添加到 SVG 中
+        this.paths.push({
+            d: transformedPath,
+            fill: fillColor
+        });
+    }
+
     toString(): string {
         const { width, height, xRange, yRange } = this.options;
         
@@ -522,6 +590,12 @@ export class CoordinateSystem {
                         opacity="${this.options.gridOpacity}"/>`;
                 }
             }
+        }
+        
+        // 在绘制网格之后，添加路径渲染代码
+        // 先渲染填充区域
+        for (const path of this.paths) {
+            svg += `<path d="${path.d}" fill="${path.fill}"/>`;
         }
         
         // 绘制坐标轴
