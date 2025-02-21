@@ -136,7 +136,12 @@ export class CoordinateSystem {
     private readonly gridXEnd: number;
     private readonly gridYStart: number;
     private readonly gridYEnd: number;
-    private paths: { d: string; fill: string }[] = [];
+    private paths: {
+        d: string;
+        fill: string;
+        stroke?: string;
+        'stroke-width'?: string;
+    }[] = [];
 
     constructor(options: CoordinateSystemOptions) {
         this.options = {
@@ -301,46 +306,81 @@ export class CoordinateSystem {
         const xOffset = margin - xRange[0] * xScale;
         const yOffset = height - margin + yRange[0] * yScale;
 
-        // 如果是直线，只需要两个端点
-        let y1: number, y2: number;
-        if (typeof slope === 'number') {
-            y1 = slope * xRange[0] + yIntercept;
-            y2 = slope * xRange[1] + yIntercept;
-        } else {
-            y1 = slope(xRange[0]) + yIntercept;
-            y2 = slope(xRange[1]) + yIntercept;
+        // 生成曲线点
+        const points: [number, number][] = [];
+        const step = 0.1;  // 步长，可以调整以获得更平滑的曲线
+        
+        // 使用可见范围来生成点
+        const visibleXMin = xRange[0] - 1;  // 扩展1个单位
+        const visibleXMax = xRange[1] + 1;
+        
+        // 计算函数值
+        for (let x = visibleXMin; x <= visibleXMax; x += step) {
+            let y: number;
+            if (typeof slope === 'number') {
+                y = slope * x + yIntercept;
+            } else {
+                y = slope(x) + yIntercept;
+            }
+            points.push([x, y]);
         }
 
         // 转换为SVG坐标
-        const x1 = xRange[0] * xScale + xOffset;
-        const x2 = xRange[1] * xScale + xOffset;
-        const sy1 = yOffset - y1 * yScale;
-        const sy2 = yOffset - y2 * yScale;
-        const topY = yOffset - yRange[1] * yScale;
-        const bottomY = yOffset - yRange[0] * yScale;
+        const svgPoints = points.map(([x, y]) => [
+            x * xScale + xOffset,
+            yOffset - y * yScale
+        ]);
 
         // 构建填充区域路径
-        let pathD = `M ${x1} ${isGreaterThan ? topY : bottomY} `;  // 从左上/下角开始
-        pathD += `L ${x1} ${sy1} `;  // 到直线的左端点
-        pathD += `L ${x2} ${sy2} `;  // 到直线的右端点
-        pathD += `L ${x2} ${isGreaterThan ? topY : bottomY} `;  // 到右上/下角
-        pathD += 'Z';  // 闭合路径
+        let pathD = '';
+        
+        if (isGreaterThan) {
+            // 从最左边的点开始
+            pathD = `M ${svgPoints[0][0]} ${svgPoints[0][1]} `;
+            // 沿着曲线向右
+            for (let i = 1; i < svgPoints.length; i++) {
+                pathD += `L ${svgPoints[i][0]} ${svgPoints[i][1]} `;
+            }
+            // 到最右边的点的顶部
+            pathD += `L ${svgPoints[svgPoints.length - 1][0]} ${margin} `;
+            // 到最左边的点的顶部
+            pathD += `L ${svgPoints[0][0]} ${margin} `;
+            // 闭合路径
+            pathD += 'Z';
+        } else {
+            // 从最左边的点开始
+            pathD = `M ${svgPoints[0][0]} ${svgPoints[0][1]} `;
+            // 沿着曲线向右
+            for (let i = 1; i < svgPoints.length; i++) {
+                pathD += `L ${svgPoints[i][0]} ${svgPoints[i][1]} `;
+            }
+            // 到最右边的点的底部
+            pathD += `L ${svgPoints[svgPoints.length - 1][0]} ${height - margin} `;
+            // 到最左边的点的底部
+            pathD += `L ${svgPoints[0][0]} ${height - margin} `;
+            // 闭合路径
+            pathD += 'Z';
+        }
 
-        // 添加到路径列表
+        // 添加填充区域
         this.paths.push({
             d: pathD,
             fill: color
         });
 
-        // 添加边界线
-        this.addLineSegment(
-            xRange[0],
-            y1,
-            xRange[1],
-            y2,
-            'blue',  // 使用蓝色作为线条颜色
-            style
-        );
+        // 添加曲线本身
+        let curvePath = `M ${svgPoints[0][0]} ${svgPoints[0][1]} `;
+        for (let i = 1; i < svgPoints.length; i++) {
+            curvePath += `L ${svgPoints[i][0]} ${svgPoints[i][1]} `;
+        }
+
+        // 添加曲线
+        this.paths.push({
+            d: curvePath,
+            fill: 'none',
+            stroke: color.replace('0.2', '1'),
+            'stroke-width': '2'
+        });
     }
 
     addHorizontalLine(
@@ -595,7 +635,14 @@ export class CoordinateSystem {
         // 在绘制网格之后，添加路径渲染代码
         // 先渲染填充区域
         for (const path of this.paths) {
-            svg += `<path d="${path.d}" fill="${path.fill}"/>`;
+            let pathAttr = `d="${path.d}" fill="${path.fill}"`;
+            if (path.stroke) {
+                pathAttr += ` stroke="${path.stroke}"`;
+            }
+            if (path['stroke-width']) {
+                pathAttr += ` stroke-width="${path['stroke-width']}"`;
+            }
+            svg += `<path ${pathAttr}/>`;
         }
         
         // 绘制坐标轴

@@ -19,28 +19,67 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
 
     generate(): IGeneratorOutput {
         const question = this.generateQuestion();
-        const wrongAnswers = this.generateWrongAnswers(question);
         const content = this.formatQuestion(question);
-        const explanation = this.generateExplanation(question);
+        const correctAnswer = this.formatAnswer(question.distance, question);
+        
+        // 生成错误答案
+        const wrongAnswers = [
+            // 忘记开根号
+            `$${roundTo(question.distance * question.distance, 2)}$`,
+            // 直接相加
+            `$${Math.abs(question.pointB.x - question.pointA.x) + Math.abs(question.pointB.y - question.pointA.y)}$`,
+            // 只考虑x方向
+            `$\\sqrt{${roundTo(Math.pow(question.pointB.x - question.pointA.x, 2), 2)}}$`,
+            // 只考虑y方向
+            `$\\sqrt{${roundTo(Math.pow(question.pointB.y - question.pointA.y, 2), 2)}}$`
+        ];
+
+        // 过滤重复答案和与正确答案相同的答案
+        const uniqueWrongAnswers = wrongAnswers.filter(ans => {
+            const cleanAns = ans.replace(/[\$\\sqrt{}]/g, '');
+            const cleanCorrect = correctAnswer.replace(/[\$\\sqrt{}]/g, '');
+            return cleanAns !== cleanCorrect;
+        }).slice(0, 3);
 
         return {
             content,
-            correctAnswer: this.formatAnswer(question.distance, question),
-            wrongAnswers,
-            explanation,
-            type: 'text'
+            correctAnswer: `$${correctAnswer}$`,
+            wrongAnswers: uniqueWrongAnswers,
+            explanation: this.generateExplanation(question),
+            type: 'text',
+            displayOptions: {
+                latex: true
+            }
         };
     }
 
     private generateQuestion(): CoordinateQuestion {
         let pointA: Point, pointB: Point, distance: number;
         
-        do {
-            pointA = this.generatePoint();
-            pointB = this.generatePoint();
-            distance = this.calculateDistance(pointA, pointB);
-        } while (!this.isValidDistance(distance));
+        // 对于难度1，我们应该生成能产生简单平方根的点
+        if (this.difficulty === 1) {
+            // 预设一些简单的点对，这些点对之间的距离是简单的平方根值
+            const simplePoints = [
+                { A: {x: 1, y: 0}, B: {x: 2, y: 1} },  // sqrt{2}
+                { A: {x: 0, y: 0}, B: {x: 1, y: 1} },  // sqrt{2}
+                { A: {x: 2, y: 2}, B: {x: 4, y: 3} },  // sqrt{5}
+                { A: {x: 4, y: 0}, B: {x: 3, y: 1} },  // sqrt{2}
+                { A: {x: 0, y: 2}, B: {x: 2, y: 0} },  // sqrt{8}
+            ];
+            
+            const selectedPair = simplePoints[Math.floor(Math.random() * simplePoints.length)];
+            pointA = selectedPair.A;
+            pointB = selectedPair.B;
+        } else {
+            do {
+                pointA = this.generatePoint();
+                pointB = this.generatePoint();
+                distance = this.calculateDistance(pointA, pointB);
+            } while (!this.isValidDistance(distance));
+        }
 
+        distance = this.calculateDistance(pointA, pointB);
+        
         return {
             pointA,
             pointB,
@@ -81,8 +120,6 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
             case 3: return 7;
             case 4: return 8;
             case 5: return 9;
-            case 6: return 10;
-            case 7: return 12;
             default: return 5;
         }
     }
@@ -93,9 +130,7 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
             case 2:
             case 3: return 0;
             case 4: return 1;
-            case 5:
-            case 6: return 2;
-            case 7: return 3;
+            case 5: return 2;
             default: return 0;
         }
     }
@@ -108,23 +143,21 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
     }
 
     private isValidDistance(distance: number): boolean {
-        // 确保距离在合理范围内
         if (distance === 0) return false;
         
         switch (this.difficulty) {
             case 1:
+                // 难度1只允许简单的平方根值
+                const validRoots = [Math.sqrt(1), Math.sqrt(2), Math.sqrt(4), Math.sqrt(5), Math.sqrt(8)];
+                return validRoots.some(root => Math.abs(root - distance) < 0.0001);
             case 2:
-                // 确保是整数
                 return Number.isInteger(distance) && distance <= 10;
             case 3:
                 return distance <= 12;
             case 4:
                 return distance <= 15;
             case 5:
-            case 6:
                 return distance <= 20;
-            case 7:
-                return distance <= 25;
             default:
                 return true;
         }
@@ -146,54 +179,13 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
         const dx = pointB.x - pointA.x;
         const dy = pointB.y - pointA.y;
         const sumSquared = roundTo(dx * dx + dy * dy, 2);
+        
+        // 如果是完全平方数，返回简化后的数字
+        const sqrtValue = Math.sqrt(sumSquared);
+        if (Number.isInteger(sqrtValue)) {
+            return `${sqrtValue}`;
+        }
         return `\\sqrt{${sumSquared}}`;
-    }
-
-    private generateWrongAnswers(question: CoordinateQuestion): string[] {
-        const wrongAnswers: Set<string> = new Set();
-        const { pointA, pointB } = question;
-        const dx = pointB.x - pointA.x;
-        const dy = pointB.y - pointA.y;
-        const sumSquared = roundTo(dx * dx + dy * dy, 2);
-        const correctAnswer = `\\sqrt{${sumSquared}}`;
-
-        try {
-            // 错误类型1：忘记平方，直接相加绝对值
-            const wrong1 = Math.abs(dx) + Math.abs(dy);
-            wrongAnswers.add(`\\sqrt{${roundTo(wrong1, 2)}}`);
-
-            // 错误类型2：忘记开根号
-            wrongAnswers.add(sumSquared.toString());
-
-            // 错误类型3：将减法写成加法
-            const wrong3Squared = Math.pow(pointB.x + pointA.x, 2) + Math.pow(pointB.y + pointA.y, 2);
-            wrongAnswers.add(`\\sqrt{${roundTo(wrong3Squared, 2)}}`);
-
-            // 错误类型4：只计算x方向的平方
-            const wrong4 = dx * dx;
-            wrongAnswers.add(`\\sqrt{${roundTo(wrong4, 2)}}`);
-
-            // 错误类型5：只计算y方向的平方
-            const wrong5 = dy * dy;
-            wrongAnswers.add(`\\sqrt{${roundTo(wrong5, 2)}}`);
-
-        } catch (error) {
-            console.error('Error generating wrong answer:', error);
-        }
-
-        // 移除无效答案
-        wrongAnswers.delete(correctAnswer);
-        wrongAnswers.delete('\\sqrt{0}');
-        wrongAnswers.delete('\\sqrt{NaN}');
-        wrongAnswers.delete('\\sqrt{Infinity}');
-
-        // 如果还是没有足够的错误答案，添加一些基本的错误答案
-        while (wrongAnswers.size < 3) {
-            const baseWrong = sumSquared + wrongAnswers.size + 1;
-            wrongAnswers.add(`\\sqrt{${baseWrong}}`);
-        }
-
-        return Array.from(wrongAnswers).slice(0, 3);
     }
 
     private generateExplanation(question: CoordinateQuestion): string {
@@ -223,4 +215,13 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
 
 \\[因此，兩點之間的距離為\\space \\sqrt{${sumSquared}}。\\]`;
     }
-} 
+
+    // 辅助方法：格式化数字（处理完全平方数）
+    private formatLatexNumber(value: number): string {
+        const squared = roundTo(value * value, 2);
+        if (Number.isInteger(Math.sqrt(squared))) {
+            return `$${Math.sqrt(squared)}$`;
+        }
+        return `$\\sqrt{${squared}}$`;
+    }
+}

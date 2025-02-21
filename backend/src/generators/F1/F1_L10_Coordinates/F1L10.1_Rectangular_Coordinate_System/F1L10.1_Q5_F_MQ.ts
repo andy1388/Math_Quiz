@@ -675,9 +675,13 @@ export default class F1L10_1_Q5_F_MQ extends QuestionGenerator {
                 labelSize: 16
             });
 
-            // 添加 y≥2x+3 的区域和边界线
-            demoSystem.addLinearConstraint(2, 3, true, 'rgba(255, 0, 0, 0.2)', 'solid');  // 添加阴影区域
-            demoSystem.addObliqueLine(2, 3, "blue", "solid");  // 添加边界线
+            // 添加 y > x² 的区域
+            demoSystem.addLinearConstraint(
+                (x: number) => x * x,  // 函数 f(x) = x²
+                0,                     // y-截距
+                true,                  // y > x²
+                'rgba(255, 0, 0, 0.2)' // 半透明红色
+            );
 
             // 添加网格线（-5 到 5）
             for (let i = -5; i <= 5; i++) {
