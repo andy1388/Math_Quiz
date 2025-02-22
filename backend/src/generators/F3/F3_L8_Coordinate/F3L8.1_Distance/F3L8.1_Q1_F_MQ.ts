@@ -22,29 +22,166 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
         const content = this.formatQuestion(question);
         const correctAnswer = this.formatAnswer(question.distance, question);
         
-        // 生成错误答案
-        const wrongAnswers = [
-            // 忘记开根号
-            `$${roundTo(question.distance * question.distance, 2)}$`,
-            // 直接相加
-            `$${Math.abs(question.pointB.x - question.pointA.x) + Math.abs(question.pointB.y - question.pointA.y)}$`,
-            // 只考虑x方向
-            `$\\sqrt{${roundTo(Math.pow(question.pointB.x - question.pointA.x, 2), 2)}}$`,
-            // 只考虑y方向
-            `$\\sqrt{${roundTo(Math.pow(question.pointB.y - question.pointA.y, 2), 2)}}$`
-        ];
+        // 计算基本值
+        const dx = question.pointB.x - question.pointA.x;
+        const dy = question.pointB.y - question.pointA.y;
+        const dxSquared = roundTo(dx * dx, 2);
+        const dySquared = roundTo(dy * dy, 2);
+        const sumSquared = roundTo(dx * dx + dy * dy, 2);
 
-        // 过滤重复答案和与正确答案相同的答案
-        const uniqueWrongAnswers = wrongAnswers.filter(ans => {
-            const cleanAns = ans.replace(/[\$\\sqrt{}]/g, '');
-            const cleanCorrect = correctAnswer.replace(/[\$\\sqrt{}]/g, '');
-            return cleanAns !== cleanCorrect;
-        }).slice(0, 3);
+        // 创建一个Set来存储唯一的错误答案
+        const wrongAnswerSet = new Set<string>();
+
+        if (this.difficulty === 1) {
+            // 预设一些简单的错误答案（都是平方根或整数形式）
+            const simpleWrongAnswers = [
+                // 常见的平方根值
+                `$\\sqrt{2}$`,
+                `$\\sqrt{3}$`,
+                `$\\sqrt{5}$`,
+                `$\\sqrt{8}$`,
+                // 简单整数
+                `$1$`,
+                `$2$`,
+                `$3$`
+            ];
+
+            // 过滤掉正确答案
+            for (const ans of simpleWrongAnswers) {
+                const cleanAns = ans.replace(/[\$\\sqrt{}]/g, '');
+                const cleanCorrect = correctAnswer.replace(/[\$\\sqrt{}]/g, '');
+                if (cleanAns !== cleanCorrect && !wrongAnswerSet.has(ans)) {
+                    wrongAnswerSet.add(ans);
+                }
+                if (wrongAnswerSet.size >= 3) break;
+            }
+
+            // 如果错误答案不够3个，添加更多平方根形式的答案
+            const extraSquareRoots = [4, 6, 7, 9, 10];
+            let i = 0;
+            while (wrongAnswerSet.size < 3 && i < extraSquareRoots.length) {
+                const newAns = `$\\sqrt{${extraSquareRoots[i]}}$`;
+                const cleanAns = newAns.replace(/[\$\\sqrt{}]/g, '');
+                const cleanCorrect = correctAnswer.replace(/[\$\\sqrt{}]/g, '');
+                if (cleanAns !== cleanCorrect) {
+                    wrongAnswerSet.add(newAns);
+                }
+                i++;
+            }
+
+            // 如果还是不够，添加更多整数
+            let integer = 1;
+            while (wrongAnswerSet.size < 3) {
+                const newAns = `$${integer}$`;
+                const cleanAns = newAns.replace(/[\$\\sqrt{}]/g, '');
+                const cleanCorrect = correctAnswer.replace(/[\$\\sqrt{}]/g, '');
+                if (cleanAns !== cleanCorrect) {
+                    wrongAnswerSet.add(newAns);
+                }
+                integer++;
+            }
+        } else if (this.difficulty === 2) {
+            // 难度2的错误答案生成逻辑
+            const possibleWrongAnswers = [
+                // 忘记开根号
+                `$${sumSquared}$`,
+                // 直接相加绝对值
+                `$${Math.abs(dx) + Math.abs(dy)}$`,
+                // x方向距离
+                `$${Math.abs(dx)}$`,
+                // y方向距离
+                `$${Math.abs(dy)}$`,
+                // x和y的最大值
+                `$${Math.max(Math.abs(dx), Math.abs(dy))}$`,
+                // 只计算x方向的平方
+                `$${Math.abs(dx * dx)}$`,
+                // 只计算y方向的平方
+                `$${Math.abs(dy * dy)}$`
+            ];
+
+            // 过滤并添加错误答案
+            for (const ans of possibleWrongAnswers) {
+                const cleanAns = ans.replace(/[\$\\sqrt{}]/g, '');
+                const cleanCorrect = correctAnswer.replace(/[\$\\sqrt{}]/g, '');
+                if (cleanAns !== cleanCorrect && !wrongAnswerSet.has(ans)) {
+                    wrongAnswerSet.add(ans);
+                }
+                if (wrongAnswerSet.size >= 3) break;
+            }
+
+            // 如果错误答案不够3个，添加一些变体
+            const baseValue = Math.sqrt(sumSquared);
+            const variations = [
+                Math.floor(baseValue),
+                Math.ceil(baseValue),
+                Math.round(baseValue * 2),
+                Math.round(baseValue / 2)
+            ];
+
+            for (const variation of variations) {
+                if (variation > 0 && variation !== baseValue) {
+                    const newAns = `$${variation}$`;
+                    if (!wrongAnswerSet.has(newAns)) {
+                        wrongAnswerSet.add(newAns);
+                    }
+                    if (wrongAnswerSet.size >= 3) break;
+                }
+            }
+        } else {
+            // 难度3的错误答案生成逻辑
+            const possibleValues = [
+                sumSquared,                    // 忘记开根号
+                Math.abs(dx) + Math.abs(dy),   // 直接相加
+                dxSquared,                     // 只考虑x方向的平方
+                dySquared,                     // 只考虑y方向的平方
+                Math.round(sumSquared/2),      // 一半的平方和
+                Math.round(sumSquared*2),      // 两倍的平方和
+                Math.pow(Math.abs(dx), 2),     // x方向距离的平方
+                Math.pow(Math.abs(dy), 2),     // y方向距离的平方
+                9,                             // 一些常见的完全平方数
+                16,
+                25,
+                36
+            ];
+
+            // 过滤并添加错误答案
+            for (const value of possibleValues) {
+                const ans = this.simplifyAnswer(value);
+                const cleanAns = ans.replace(/[\$\\sqrt{}]/g, '');
+                const cleanCorrect = correctAnswer.replace(/[\$\\sqrt{}]/g, '');
+                
+                if (cleanAns !== cleanCorrect && !wrongAnswerSet.has(ans)) {
+                    wrongAnswerSet.add(ans);
+                }
+                if (wrongAnswerSet.size >= 3) break;
+            }
+
+            // 如果错误答案不够3个，添加一些变体
+            const baseValue = Math.round(Math.sqrt(sumSquared));
+            while (wrongAnswerSet.size < 3) {
+                const variation = baseValue + wrongAnswerSet.size;
+                const newValue = variation * variation + 1;  // 确保不是完全平方数
+                const newAns = `$\\sqrt{${newValue}}$`;
+                if (!wrongAnswerSet.has(newAns)) {
+                    wrongAnswerSet.add(newAns);
+                }
+            }
+        }
+
+        // 确保至少有3个错误答案
+        const wrongAnswers = Array.from(wrongAnswerSet).slice(0, 3);
+        while (wrongAnswers.length < 3) {
+            const newValue = wrongAnswers.length + 1;
+            const newAns = `$${newValue}$`;
+            if (!wrongAnswers.includes(newAns)) {
+                wrongAnswers.push(newAns);
+            }
+        }
 
         return {
             content,
             correctAnswer: `$${correctAnswer}$`,
-            wrongAnswers: uniqueWrongAnswers,
+            wrongAnswers,
             explanation: this.generateExplanation(question),
             type: 'text',
             displayOptions: {
@@ -188,6 +325,30 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
         return `\\sqrt{${sumSquared}}`;
     }
 
+    private roundToSigFigs(num: number, sigFigs: number = 3): number {
+        if (num === 0) return 0;
+        
+        const magnitude = Math.floor(Math.log10(Math.abs(num))) + 1;
+        const scale = Math.pow(10, sigFigs - magnitude);
+        return Math.round(num * scale) / scale;
+    }
+
+    private simplifyAnswer(value: number | string): string {
+        // 如果输入是字符串，先转换为数字
+        const num = typeof value === 'string' ? parseFloat(value) : value;
+        if (isNaN(num)) return value.toString();
+        
+        // 检查是否是完全平方数
+        const sqrt = Math.sqrt(num);
+        if (Number.isInteger(sqrt)) {
+            return `$${sqrt}$`;
+        }
+        
+        // 对平方根内的数字保持3位有效数字
+        const roundedNum = this.roundToSigFigs(num, 3);
+        return `$\\sqrt{${roundedNum}}$`;
+    }
+
     private generateExplanation(question: CoordinateQuestion): string {
         const { pointA, pointB } = question;
         const dx = pointB.x - pointA.x;
@@ -196,7 +357,7 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
         const dyRounded = roundTo(dy, 2);
         const dxSquared = roundTo(dx * dx, 2);
         const dySquared = roundTo(dy * dy, 2);
-        const sumSquared = roundTo(dx * dx + dy * dy, 2);
+        const sumSquared = this.roundToSigFigs(dx * dx + dy * dy, 3);  // 使用3位有效数字
 
         return `解題步驟：
 \\[1.\\space 使用兩點距離公式：d = \\sqrt{(x_2-x_1)^2 + (y_2-y_1)^2}\\]
@@ -214,14 +375,5 @@ export default class F3L8_1_Q1_F_MQ extends QuestionGenerator {
 \\[d = \\sqrt{${sumSquared}}\\]
 
 \\[因此，兩點之間的距離為\\space \\sqrt{${sumSquared}}。\\]`;
-    }
-
-    // 辅助方法：格式化数字（处理完全平方数）
-    private formatLatexNumber(value: number): string {
-        const squared = roundTo(value * value, 2);
-        if (Number.isInteger(Math.sqrt(squared))) {
-            return `$${Math.sqrt(squared)}$`;
-        }
-        return `$\\sqrt{${squared}}$`;
     }
 }
