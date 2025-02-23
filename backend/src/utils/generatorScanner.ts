@@ -8,6 +8,16 @@ import {
     GeneratorList 
 } from '../types/GeneratorTypes';
 
+// 将接口定义移到类的外部
+interface FolderContent {
+    subFolders: {
+        id: string;
+        title: string;
+        path: string;
+    }[];
+    generators: GeneratorList[];
+}
+
 export class GeneratorScanner {
     private readonly GENERATORS_PATH: string;
     private static structureCache: DirectoryStructure | null = null;
@@ -35,17 +45,17 @@ export class GeneratorScanner {
             const forms = await fs.promises.readdir(this.GENERATORS_PATH);
             const structure: DirectoryStructure = {};
 
+            // 扫描所有文件夹
             for (const form of forms) {
-                if (form.startsWith('F')) {
-                    const formPath = path.join(this.GENERATORS_PATH, form);
-                    const formStat = await fs.promises.stat(formPath);
-                    
-                    if (formStat.isDirectory()) {
-                        structure[form] = {
-                            title: form,
-                            chapters: await this.scanChaptersBasic(formPath)
-                        };
-                    }
+                const formPath = path.join(this.GENERATORS_PATH, form);
+                const formStat = await fs.promises.stat(formPath);
+                
+                if (formStat.isDirectory()) {
+                    console.log('Scanning directory:', form);
+                    structure[form] = {
+                        title: form,
+                        chapters: await this.scanChaptersBasic(formPath)
+                    };
                 }
             }
 
@@ -61,57 +71,92 @@ export class GeneratorScanner {
         const chapters: { [key: string]: ChapterStructure } = {};
         const items = await fs.promises.readdir(formPath);
 
-        // 按L数字排序
-        const sortedItems = items
-            .filter(item => item.includes('L'))
-            .sort((a, b) => {
-                const numA = parseInt(a.match(/L(\d+)/)?.[1] || '0');
-                const numB = parseInt(b.match(/L(\d+)/)?.[1] || '0');
-                return numA - numB;
-            });
+        const sortedItems = items.sort((a, b) => {
+            const getNumber = (str: string) => {
+                const match = str.match(/L(\d+)/);
+                return match ? parseInt(match[1]) : 0;
+            };
+            return getNumber(a) - getNumber(b);
+        });
 
         for (const item of sortedItems) {
             const chapterPath = path.join(formPath, item);
             const stat = await fs.promises.stat(chapterPath);
             
             if (stat.isDirectory()) {
+                // 扫描目录中的生成器文件
+                const dirItems = await fs.promises.readdir(chapterPath);
+                const sections: { [key: string]: SectionStructure } = {};
+                
+                // 检查目录中的生成器文件
+                const generators = await this.scanGeneratorsInPath(chapterPath);
+                if (generators.length > 0) {
+                    sections[''] = {
+                        title: item,
+                        generators: generators,
+                        path: chapterPath
+                    };
+                }
+
+                // 检查子目录
+                for (const dirItem of dirItems) {
+                    const dirItemPath = path.join(chapterPath, dirItem);
+                    const dirItemStat = await fs.promises.stat(dirItemPath);
+                    
+                    if (dirItemStat.isDirectory()) {
+                        const subGenerators = await this.scanGeneratorsInPath(dirItemPath);
+                        if (subGenerators.length > 0) {
+                            sections[dirItem] = {
+                                title: dirItem,
+                                generators: subGenerators,
+                                path: dirItemPath
+                            };
+                        }
+                    }
+                }
+
                 chapters[item] = {
                     title: item,
-                    sections: await this.scanSectionsBasic(chapterPath)
+                    sections: sections
                 };
             }
         }
         return chapters;
     }
 
-    private async scanSectionsBasic(chapterPath: string) {
-        const sections: { [key: string]: SectionStructure } = {};
-        const items = await fs.promises.readdir(chapterPath);
+    // 新增：递归扫描目录中的所有生成器文件
+    private async scanAllGeneratorsInDirectory(dirPath: string): Promise<GeneratorList[]> {
+        const generators: GeneratorList[] = [];
+        const items = await fs.promises.readdir(dirPath);
 
-        // 按小节编号排序
-        const sortedItems = items.sort((a, b) => {
-            const numA = parseFloat(a.match(/\d+\.\d+/)?.[0] || '0');
-            const numB = parseFloat(b.match(/\d+\.\d+/)?.[0] || '0');
-            return numA - numB;
-        });
+        for (const item of items) {
+            const fullPath = path.join(dirPath, item);
+            const stat = await fs.promises.stat(fullPath);
 
-        for (const item of sortedItems) {
-            const sectionPath = path.join(chapterPath, item);
-            const stat = await fs.promises.stat(sectionPath);
-            
             if (stat.isDirectory()) {
-                // 检查是否有子目录
-                const subDirs = await this.scanSubSections(sectionPath);
-                const generators = await this.scanGeneratorsInPath(sectionPath);
+                // 递归扫描子目录
+                const subGenerators = await this.scanAllGeneratorsInDirectory(fullPath);
+                generators.push(...subGenerators);
+            } else if (item.endsWith('_MQ.ts')) {
+                const baseName = item.replace('.ts', '');
+                const descFileName = `${baseName}.desc.txt`;
                 
-                sections[item] = {
-                    title: item,
-                    generators: generators,
-                    subSections: subDirs  // 添加子目录
-                };
+                if (items.includes(descFileName)) {
+                    const descPath = path.join(dirPath, descFileName);
+                    const content = fs.readFileSync(descPath, 'utf-8');
+                    const lines = content.split('\n');
+                    
+                    generators.push({
+                        id: baseName,
+                        title: lines[1]?.trim() || item,
+                        difficulty: lines[0]?.trim() || '1',
+                        path: path.relative(this.GENERATORS_PATH, path.join(dirPath, item))
+                    });
+                }
             }
         }
-        return sections;
+
+        return generators;
     }
 
     // 新增：扫描第4层子目录
@@ -145,27 +190,33 @@ export class GeneratorScanner {
     // 新增：扫描指定路径下的生成器文件
     private async scanGeneratorsInPath(dirPath: string): Promise<GeneratorList[]> {
         try {
+            const generators: GeneratorList[] = [];
             const files = await fs.promises.readdir(dirPath);
-            const generators = files
-                .filter(f => f.endsWith('_MQ.ts'))
-                .map(file => {
-                    const filePath = path.join(dirPath, file);
-                    const descPath = filePath.replace('.ts', '.desc.txt');
+            
+            // 只检查当前目录中的生成器文件
+            const tsFiles = files.filter(file => file.endsWith('.ts'));
+            for (const tsFile of tsFiles) {
+                const baseName = tsFile.replace('.ts', '');
+                const descFileName = `${baseName}.desc.txt`;
+                
+                if (files.includes(descFileName)) {
+                    const tsPath = path.join(dirPath, tsFile);
+                    const descPath = path.join(dirPath, descFileName);
                     
-                    let title = file;
-                    let difficulty = '1';
-                    if (fs.existsSync(descPath)) {
-                        const content = fs.readFileSync(descPath, 'utf-8');
-                        const lines = content.split('\n');
-                        title = lines[1]?.trim() || file;
-                    }
-
-                    return {
-                        id: path.basename(file, '.ts'),
+                    const content = fs.readFileSync(descPath, 'utf-8');
+                    const lines = content.split('\n');
+                    const title = lines[1]?.trim() || tsFile;
+                    const difficulty = lines[0]?.trim() || '1';
+                    
+                    generators.push({
+                        id: path.basename(tsFile, '.ts'),
                         title,
-                        difficulty
-                    };
-                });
+                        difficulty,
+                        path: path.relative(this.GENERATORS_PATH, tsPath)
+                    });
+                }
+            }
+            
             return generators;
         } catch (error) {
             console.error(`Error scanning generators in ${dirPath}:`, error);
@@ -181,38 +232,8 @@ export class GeneratorScanner {
         }
 
         const generators: GeneratorInfo[] = [];
-        const self = this;
         
-        const extractInfo = (filePath: string) => {
-            const parts = filePath.split(path.sep);
-            const chapterPart = parts.find(p => p.includes('_L'));
-            const sectionPart = parts.find(p => p.match(/L\d+\.\d+/));
-            const subSectionPart = parts.find(p => p.match(/L\d+\.\d+\.\d+/));
-
-            const chapterMatch = chapterPart?.match(/F\d+_L(\d+)_(.+)/);
-            const sectionMatch = sectionPart?.match(/F\d+L(\d+\.\d+)_(.+)/);
-            const subSectionMatch = subSectionPart?.match(/F\d+L(\d+\.\d+\.\d+)_(.+)/);
-
-            return {
-                chapter: {
-                    id: chapterPart || '',
-                    title: chapterPart?.replace(/_/g, ' ') || '',
-                    number: chapterMatch ? `L${chapterMatch[1]}` : ''
-                },
-                section: {
-                    id: sectionPart || '',
-                    title: sectionMatch ? sectionMatch[2].replace(/_/g, ' ') : '',
-                    number: sectionMatch ? sectionMatch[1] : ''
-                },
-                subSection: subSectionMatch ? {
-                    id: subSectionPart || '',
-                    title: subSectionMatch[2].replace(/_/g, ' '),
-                    number: subSectionMatch[1]
-                } : undefined
-            };
-        };
-        
-        // 使用箭头函数来保持 this 的指向
+        // 递归搜索所有目录
         const scanDir = async (dirPath: string) => {
             const files = await fs.promises.readdir(dirPath);
             
@@ -221,29 +242,39 @@ export class GeneratorScanner {
                 const stat = await fs.promises.stat(filePath);
                 
                 if (stat.isDirectory()) {
-                    // 递归扫描子目录
+                    // 递归搜索子目录
                     await scanDir(filePath);
                 } else if (file.endsWith('_MQ.ts')) {
+                    // 检查是否存在对应的 .desc.txt 文件
                     const descPath = filePath.replace('.ts', '.desc.txt');
                     
-                    let title = file;
-                    let difficulty = '1';
                     if (fs.existsSync(descPath)) {
+                        // 读取描述文件
                         const content = fs.readFileSync(descPath, 'utf-8');
                         const lines = content.split('\n');
-                        title = lines[1].trim();
-                    }
+                        const title = lines[1]?.trim() || file;
+                        const difficulty = lines[0]?.trim() || '1';
 
-                    const info = extractInfo(path.relative(self.GENERATORS_PATH, filePath));
-                    
-                    generators.push({
-                        id: path.basename(file, '.ts'),
-                        title,
-                        difficulty,
-                        path: path.relative(fullPath, filePath),
-                        chapter: info.chapter,
-                        section: info.section
-                    });
+                        // 获取相对路径
+                        const relativePath = path.relative(this.GENERATORS_PATH, filePath);
+                        
+                        generators.push({
+                            id: path.basename(file, '.ts'),
+                            title,
+                            difficulty,
+                            path: relativePath,
+                            chapter: {
+                                id: '',
+                                title: '',
+                                number: ''
+                            },
+                            section: {
+                                id: '',
+                                title: '',
+                                number: ''
+                            }
+                        });
+                    }
                 }
             }
         };
@@ -252,61 +283,65 @@ export class GeneratorScanner {
         return generators;
     }
 
+    // 修改 getFolderContent 方法
+    public async getFolderContent(folderPath: string): Promise<FolderContent> {
+        try {
+            const fullPath = path.join(this.GENERATORS_PATH, folderPath);
+            console.log('Scanning folder:', fullPath);
+            
+            if (!fs.existsSync(fullPath)) {
+                throw new Error(`Folder not found: ${fullPath}`);
+            }
+
+            const items = await fs.promises.readdir(fullPath);
+            console.log('Found items:', items);
+            
+            const generators: GeneratorList[] = [];
+            const subFolders: { id: string; title: string; path: string; }[] = [];
+
+            // 处理当前目录中的所有项目
+            for (const item of items) {
+                const itemPath = path.join(fullPath, item);
+                const stat = await fs.promises.stat(itemPath);
+
+                if (stat.isDirectory() && !item.startsWith('.')) {
+                    // 如果是目录，添加到子文件夹列表
+                    subFolders.push({
+                        id: item,
+                        title: item,
+                        path: path.join(folderPath, item)
+                    });
+                } else if (item.endsWith('_MQ.ts')) {
+                    // 如果是生成器文件，添加到生成器列表
+                    const baseName = item.replace('.ts', '');
+                    const descFileName = `${baseName}.desc.txt`;
+                    
+                    if (items.includes(descFileName)) {
+                        const descPath = path.join(fullPath, descFileName);
+                        const content = fs.readFileSync(descPath, 'utf-8');
+                        const lines = content.split('\n');
+                        
+                        generators.push({
+                            id: baseName,
+                            title: lines[1]?.trim() || item,
+                            difficulty: lines[0]?.trim() || '1',
+                            path: path.relative(this.GENERATORS_PATH, itemPath)
+                        });
+                    }
+                }
+            }
+
+            console.log('Returning content:', { subFolders, generators });
+            return { subFolders, generators };
+        } catch (error) {
+            console.error('Error in getFolderContent:', error);
+            throw error;
+        }
+    }
+
     // 清除缓存的方法（如果需要）
     static clearCache() {
         GeneratorScanner.structureCache = null;
-    }
-
-    // 添加新的公共方法
-    public async getFolderContent(folderPath: string) {
-        const fullPath = path.join(this.GENERATORS_PATH, folderPath);
-        
-        if (!fs.existsSync(fullPath)) {
-            throw new Error('Folder not found');
-        }
-        
-        // 读取文件夹内容
-        const items = await fs.promises.readdir(fullPath);
-        const subFolders = [];
-        const generators = [];
-        
-        for (const item of items) {
-            const itemPath = path.join(fullPath, item);
-            const stat = await fs.promises.stat(itemPath);
-            
-            if (stat.isDirectory()) {
-                // 不再分割名称，保持完整路径名
-                subFolders.push({
-                    id: item,
-                    title: item,  // 保持完整名称
-                    path: path.join(folderPath, item)  // 保持完整路径
-                });
-            } else if (item.endsWith('_MQ.ts')) {
-                const descPath = itemPath.replace('.ts', '.desc.txt');
-                let title = item;
-                let difficulty = '1';
-                
-                if (fs.existsSync(descPath)) {
-                    const content = fs.readFileSync(descPath, 'utf-8');
-                    const lines = content.split('\n');
-                    if (lines.length >= 2) {
-                        difficulty = lines[0].trim();
-                        title = lines[1].trim();
-                    }
-                }
-                
-                generators.push({
-                    id: path.basename(item, '.ts'),
-                    title,
-                    difficulty
-                });
-            }
-        }
-        
-        return {
-            subFolders,
-            generators
-        };
     }
 
     // 添加新的公共方法来获取生成器文件路径
@@ -336,5 +371,35 @@ export class GeneratorScanner {
         }
         
         return generatorPath;
+    }
+
+    // 添加 extractInfo 方法
+    private extractInfo(filePath: string) {
+        const parts = filePath.split(path.sep);
+        const chapterPart = parts.find(p => p.includes('_L'));
+        const sectionPart = parts.find(p => p.match(/L\d+\.\d+/));
+        const subSectionPart = parts.find(p => p.match(/L\d+\.\d+\.\d+/));
+
+        const chapterMatch = chapterPart?.match(/F\d+_L(\d+)_(.+)/);
+        const sectionMatch = sectionPart?.match(/F\d+L(\d+\.\d+)_(.+)/);
+        const subSectionMatch = subSectionPart?.match(/F\d+L(\d+\.\d+\.\d+)_(.+)/);
+
+        return {
+            chapter: {
+                id: chapterPart || '',
+                title: chapterPart?.replace(/_/g, ' ') || '',
+                number: chapterMatch ? `L${chapterMatch[1]}` : ''
+            },
+            section: {
+                id: sectionPart || '',
+                title: sectionMatch ? sectionMatch[2].replace(/_/g, ' ') : '',
+                number: sectionMatch ? sectionMatch[1] : ''
+            },
+            subSection: subSectionMatch ? {
+                id: subSectionPart || '',
+                title: subSectionMatch[2].replace(/_/g, ' '),
+                number: subSectionMatch[1]
+            } : undefined
+        };
     }
 } 

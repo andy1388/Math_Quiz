@@ -21,6 +21,7 @@ export interface GeneratorList {
     id: string;
     title: string;
     difficulty: string;
+    path?: string;  // 添加可选的 path 属性
 }
 
 // 小节结构
@@ -34,7 +35,8 @@ export interface SectionStructure {
 // 章节结构
 export interface ChapterStructure {
     title: string;
-    sections: { [key: string]: SectionStructure };
+    sections?: { [key: string]: SectionStructure };  // 使 sections 变为可选
+    generators?: GeneratorList[];  // 添加 generators 字段
 }
 
 // Form结构

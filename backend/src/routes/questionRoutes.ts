@@ -58,7 +58,9 @@ router.get('/generate/:generatorId', async (req, res) => {
 router.get('/folder-content/:path(*)', async (req, res) => {
     try {
         const folderPath = req.params.path;
+        console.log('Requesting folder content for:', folderPath);
         const content = await scanner.getFolderContent(folderPath);
+        console.log('Content found:', content);
         res.json(content);
     } catch (error) {
         console.error('Error scanning folder:', error);
