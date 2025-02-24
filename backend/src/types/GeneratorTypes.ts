@@ -49,7 +49,7 @@ export interface FormStructure {
 
 // 完整目录结构
 export interface DirectoryStructure {
-    [formId: string]: FormStructure;  // key 是 F1, F2 等
+    [name: string]: DirectoryItem;
 }
 
 // 生成器结构
@@ -58,4 +58,16 @@ export interface GeneratorStructure {
         title: string;
         generators: GeneratorInfo[];
     };
+}
+
+// 文件或目录的基本结构
+export interface DirectoryItem {
+    title: string;
+    type: 'directory' | 'file';
+    path?: string;
+    children?: DirectoryStructure;
+    // 如果是文件，可能有这些属性
+    fileType?: 'ts' | 'desc';
+    difficulty?: string;
+    description?: string;
 } 

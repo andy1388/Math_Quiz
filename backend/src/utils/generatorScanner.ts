@@ -36,34 +36,61 @@ export class GeneratorScanner {
 
     // 只扫描基本结构
     async scanBasicStructure() {
-        // 如果缓存存在，直接返回
-        if (GeneratorScanner.structureCache) {
-            return GeneratorScanner.structureCache;
-        }
-
         try {
-            const forms = await fs.promises.readdir(this.GENERATORS_PATH);
-            const structure: DirectoryStructure = {};
-
-            // 扫描所有文件夹
-            for (const form of forms) {
-                const formPath = path.join(this.GENERATORS_PATH, form);
-                const formStat = await fs.promises.stat(formPath);
-                
-                if (formStat.isDirectory()) {
-                    console.log('Scanning directory:', form);
-                    structure[form] = {
-                        title: form,
-                        chapters: await this.scanChaptersBasic(formPath)
-                    };
-                }
-            }
-
-            // 保存到缓存
-            GeneratorScanner.structureCache = structure;
+            const structure = await this.scanDirectory(this.GENERATORS_PATH);
             return structure;
         } catch (error) {
+            console.error('扫描目录失败:', error);
             throw error;
+        }
+    }
+
+    // 递归扫描目录
+    private async scanDirectory(dirPath: string): Promise<DirectoryStructure> {
+        const structure: DirectoryStructure = {};
+        
+        try {
+            const items = await fs.promises.readdir(dirPath);
+            
+            for (const item of items) {
+                const fullPath = path.join(dirPath, item);
+                const stat = await fs.promises.stat(fullPath);
+                
+                if (stat.isDirectory()) {
+                    // 对于目录，递归扫描
+                    structure[item] = {
+                        title: item,
+                        type: 'directory',
+                        children: await this.scanDirectory(fullPath)
+                    };
+                } else if (item.endsWith('.ts') || item.endsWith('.desc.txt')) {
+                    const baseName = item.replace(/\.(ts|desc\.txt)$/, '');
+                    const fileType = item.endsWith('.ts') ? 'ts' : 'desc';
+                    
+                    // 如果是 .ts 文件，尝试读取对应的 .desc.txt
+                    if (fileType === 'ts') {
+                        const descPath = fullPath.replace('.ts', '.desc.txt');
+                        if (fs.existsSync(descPath)) {
+                            const content = await fs.promises.readFile(descPath, 'utf-8');
+                            const lines = content.split('\n');
+                            
+                            structure[item] = {
+                                title: lines[1]?.trim() || baseName,
+                                type: 'file',
+                                fileType: 'ts',
+                                path: path.relative(this.GENERATORS_PATH, fullPath),
+                                difficulty: lines[0]?.trim() || '1',
+                                description: lines[2]?.trim()
+                            };
+                        }
+                    }
+                }
+            }
+            
+            return structure;
+        } catch (error) {
+            console.error(`扫描目录失败 ${dirPath}:`, error);
+            return {};
         }
     }
 
@@ -346,31 +373,50 @@ export class GeneratorScanner {
 
     // 添加新的公共方法来获取生成器文件路径
     public async getGeneratorPath(generatorId: string): Promise<string> {
-        // 搜索生成器文件
-        const searchDir = async (dirPath: string): Promise<string | null> => {
-            const items = await fs.promises.readdir(dirPath);
-            
-            for (const item of items) {
-                const fullPath = path.join(dirPath, item);
-                const stat = await fs.promises.stat(fullPath);
+        try {
+            // 搜索生成器文件
+            const searchDir = async (dirPath: string): Promise<string | null> => {
+                const items = await fs.promises.readdir(dirPath);
                 
-                if (stat.isDirectory()) {
-                    const result = await searchDir(fullPath);
-                    if (result) return result;
-                } else if (item === `${generatorId}.ts`) {
-                    return fullPath;
+                for (const item of items) {
+                    const fullPath = path.join(dirPath, item);
+                    const stat = await fs.promises.stat(fullPath);
+                    
+                    if (stat.isDirectory()) {
+                        const result = await searchDir(fullPath);
+                        if (result) return result;
+                    } else if (item === `${generatorId}.ts`) {
+                        console.log('Found generator at:', fullPath);
+                        // 确保返回的是相对于 generators 目录的路径
+                        const relativePath = path.relative(this.GENERATORS_PATH, fullPath);
+                        console.log('Relative path:', relativePath);
+                        return relativePath;
+                    }
                 }
-            }
+                
+                return null;
+            };
             
-            return null;
-        };
-        
-        const generatorPath = await searchDir(this.GENERATORS_PATH);
-        if (!generatorPath) {
-            throw new Error(`Generator not found: ${generatorId}`);
+            const generatorPath = await searchDir(this.GENERATORS_PATH);
+            if (!generatorPath) {
+                throw new Error(`Generator not found: ${generatorId}`);
+            }
+
+            // 构建完整的模块路径
+            const fullPath = path.join(this.GENERATORS_PATH, generatorPath);
+            console.log('Full module path:', fullPath);
+            
+            // 确保文件存在
+            if (!fs.existsSync(fullPath)) {
+                throw new Error(`Generator file not found: ${fullPath}`);
+            }
+
+            return fullPath;
+            
+        } catch (error) {
+            console.error('Error finding generator:', error);
+            throw error;
         }
-        
-        return generatorPath;
     }
 
     // 添加 extractInfo 方法
