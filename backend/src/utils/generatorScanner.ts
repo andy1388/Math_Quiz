@@ -84,12 +84,11 @@ export class GeneratorScanner {
             const stat = await fs.promises.stat(chapterPath);
             
             if (stat.isDirectory()) {
-                // 扫描目录中的生成器文件
-                const dirItems = await fs.promises.readdir(chapterPath);
-                const sections: { [key: string]: SectionStructure } = {};
-                
                 // 检查目录中的生成器文件
                 const generators = await this.scanGeneratorsInPath(chapterPath);
+                const sections: { [key: string]: SectionStructure } = {};
+
+                // 直接将生成器添加到根部分，不创建额外的子目录
                 if (generators.length > 0) {
                     sections[''] = {
                         title: item,
@@ -98,12 +97,13 @@ export class GeneratorScanner {
                     };
                 }
 
-                // 检查子目录
+                // 只有当子目录名称与当前目录名称不同时才扫描
+                const dirItems = await fs.promises.readdir(chapterPath);
                 for (const dirItem of dirItems) {
                     const dirItemPath = path.join(chapterPath, dirItem);
                     const dirItemStat = await fs.promises.stat(dirItemPath);
                     
-                    if (dirItemStat.isDirectory()) {
+                    if (dirItemStat.isDirectory() && dirItem !== item) {  // 添加这个检查
                         const subGenerators = await this.scanGeneratorsInPath(dirItemPath);
                         if (subGenerators.length > 0) {
                             sections[dirItem] = {
