@@ -87,12 +87,25 @@ function renderDirectoryStructure(structure) {
     
     // 將條目轉換為數組並排序
     const entries = Object.entries(structure).map(([name, item]) => {
-        // 提取 L 後面的數字（例如從 F1_L10_Coordinates 中提取 10）
-        const levelMatch = item.title?.match(/L(\d+)/);
+        // 如果有描述文件内容，提取真正的标题
+        if (item.description) {
+            const lines = item.description.split('\n');
+            // 找到第一个非空且不是分隔符的行作为标题
+            const title = lines.find(line => {
+                const trimmed = line.trim();
+                return trimmed && !trimmed.includes('===') && !trimmed.match(/^[-=]+$/);
+            });
+            if (title) {
+                item.title = title.trim();
+            }
+        }
+        
+        // 提取 L 後面的數字
+        const levelMatch = name.match(/L(\d+)/);
         const levelNumber = levelMatch ? parseInt(levelMatch[1]) : 0;
         
-        // 提取題號（如果存在）
-        const questionMatch = item.title?.match(/Q(\d+)/);
+        // 提取題號
+        const questionMatch = name.match(/Q(\d+)/);
         const questionNumber = questionMatch ? parseInt(questionMatch[1]) : 0;
         
         return {
@@ -104,12 +117,7 @@ function renderDirectoryStructure(structure) {
     }).sort((a, b) => {
         // 如果都是文件夾，按 L 後面的數字排序
         if (a.item.type === 'directory' && b.item.type === 'directory') {
-            // 先按 L 後面的數字排序
-            if (a.levelNumber !== b.levelNumber) {
-                return a.levelNumber - b.levelNumber;
-            }
-            // 如果 L 數字相同，則按名稱排序
-            return a.name.localeCompare(b.name);
+            return a.levelNumber - b.levelNumber;
         }
         // 如果都是文件，按題號排序
         if (a.item.type === 'file' && b.item.type === 'file') {
@@ -126,7 +134,7 @@ function renderDirectoryStructure(structure) {
                 <div class="folder">
                     <div class="folder-title" data-path="${item.path || name}">
                         <span class="icon folder-icon">📁</span>
-                        <span class="folder-name">${item.title}</span>
+                        <span class="folder-name">${item.title || name}</span>
                     </div>
                     <div class="folder-content">
                         ${renderDirectoryStructure(item.children || {})}
@@ -139,7 +147,6 @@ function renderDirectoryStructure(structure) {
                     <span class="icon file-icon">📄</span>
                     <span class="generator-title">${item.title}</span>
                     ${item.difficulty ? `<span class="difficulty-badge">${item.difficulty}</span>` : ''}
-                    ${item.description ? `<span class="description">${item.description}</span>` : ''}
                 </div>
             `;
         }
