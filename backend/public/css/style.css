@@ -131,4 +131,29 @@ footer {
 
 .cta-button:hover {
     background: #2980b9;
+}
+
+/* 难度按钮样式 */
+.difficulty-buttons {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.difficulty-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: white;
+}
+
+.difficulty-btn.active {
+  background: #47a7f5;
+  color: white;
+  border-color: #47a7f5;
 } 

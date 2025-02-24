@@ -153,18 +153,16 @@
 
 .difficulty-label {
     color: #333;
-    font-size: 20px;
-    font-weight: bold;
+    font-size: 16px;
     white-space: nowrap;
 }
 
 .difficulty-buttons {
     display: flex;
     gap: 10px;
-    flex-wrap: nowrap;
 }
 
-.diff-btn {
+.difficulty-btn {
     width: 36px;
     height: 36px;
     border: 2px solid #33ccff;
@@ -172,23 +170,17 @@
     background: white;
     color: #333;
     font-weight: bold;
-    font-size: 16px;
     cursor: pointer;
     transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    flex-shrink: 0;
 }
 
-.diff-btn:hover {
+.difficulty-btn:hover {
     transform: scale(1.1);
     border-color: #33ccff;
     background: rgba(51, 204, 255, 0.1);
 }
 
-.diff-btn.active {
+.difficulty-btn.active {
     background: #33ccff;
     color: white;
     border-color: #33ccff;
