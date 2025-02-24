@@ -204,8 +204,8 @@ function addEventListeners() {
                     throw new Error('No generator path found');
                 }
 
-                // 从路径中提取生成器ID（保留完整文件名，但去掉.ts）
-                const generatorId = generatorPath.replace(/\\/g, '/'); // 统一使用正斜杠
+                // 从路径中提取生成器ID
+                const generatorId = generatorPath.replace(/\\/g, '/');
                 const fileName = generatorId.split('/').pop();
                 if (!fileName) {
                     throw new Error('Invalid generator path');
@@ -220,6 +220,17 @@ function addEventListeners() {
                 );
                 item.classList.add('active');
 
+                // 先获取生成器信息
+                const infoResponse = await fetch(`/api/questions/generator-info/${id}`);
+                if (!infoResponse.ok) {
+                    throw new Error('Failed to get generator info');
+                }
+                
+                const { levelNumber } = await infoResponse.json();
+                
+                // 立即更新难度按钮
+                updateDifficultyButtons(levelNumber);
+
                 // 生成题目
                 const response = await fetch(`/api/questions/generate/${id}?difficulty=1`);
                 if (!response.ok) {
@@ -227,6 +238,9 @@ function addEventListeners() {
                 }
 
                 const question = await response.json();
+                question.maxDifficulty = parseInt(levelNumber);
+                question.currentDifficulty = 1;
+                
                 displayQuestion(question);
                 
             } catch (error) {
@@ -290,22 +304,25 @@ function addGeneratorEventListeners(container) {
 }
 
 // 更新難度按鈕
-function updateDifficultyButtons(levelNumber) {
-    const difficultyFilter = document.querySelector('.difficulty-filter');
-    if (!difficultyFilter) return;
-    
+function updateDifficultyButtons(maxDifficulty) {
+    const difficultySelector = document.querySelector('.difficulty-selector');
+    if (!difficultySelector) return;
+
     // 清空現有按鈕
-    difficultyFilter.innerHTML = '<span>難度：</span>';
+    const buttonsContainer = difficultySelector.querySelector('.difficulty-buttons');
+    if (!buttonsContainer) return;
     
+    buttonsContainer.innerHTML = '';
+
     // 生成新的難度按鈕
-    for (let i = 1; i <= levelNumber; i++) {
+    for (let i = 1; i <= maxDifficulty; i++) {
         const button = document.createElement('button');
-        button.className = 'diff-btn' + (i === 1 ? ' active' : '');
-        button.dataset.difficulty = i;
+        button.className = 'difficulty-btn' + (i === 1 ? ' active' : '');
+        button.dataset.level = i;
         button.textContent = i;
         button.addEventListener('click', () => {
             // 移除其他按鈕的 active 類
-            difficultyFilter.querySelectorAll('.diff-btn').forEach(btn => 
+            buttonsContainer.querySelectorAll('.difficulty-btn').forEach(btn => 
                 btn.classList.remove('active')
             );
             // 添加當前按鈕的 active 類
@@ -317,11 +334,8 @@ function updateDifficultyButtons(levelNumber) {
                 startPractice(activeGenerator.dataset.path, i);
             }
         });
-        difficultyFilter.appendChild(button);
+        buttonsContainer.appendChild(button);
     }
-    
-    // 顯示難度選擇器
-    difficultyFilter.style.display = 'flex';
 }
 
 // 更新 CSS - 合併所有樣式

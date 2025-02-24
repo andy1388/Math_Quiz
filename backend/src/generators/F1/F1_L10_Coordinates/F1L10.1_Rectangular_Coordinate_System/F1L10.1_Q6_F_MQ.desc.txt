@@ -2,7 +2,7 @@
 Position of Points on Coordinate Plane (Drawing)
 ===================================
 
-Level number：8
+Level number：2
 
 題型：
 - 給定一個點的座標
