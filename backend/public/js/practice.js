@@ -85,9 +85,43 @@ function renderDirectoryStructure(structure) {
 
     let html = '<div class="directory-structure">';
     
-    Object.entries(structure).forEach(([name, item]) => {
+    // 將條目轉換為數組並排序
+    const entries = Object.entries(structure).map(([name, item]) => {
+        // 提取 L 後面的數字（例如從 F1_L10_Coordinates 中提取 10）
+        const levelMatch = item.title?.match(/L(\d+)/);
+        const levelNumber = levelMatch ? parseInt(levelMatch[1]) : 0;
+        
+        // 提取題號（如果存在）
+        const questionMatch = item.title?.match(/Q(\d+)/);
+        const questionNumber = questionMatch ? parseInt(questionMatch[1]) : 0;
+        
+        return {
+            name,
+            item,
+            levelNumber,
+            questionNumber
+        };
+    }).sort((a, b) => {
+        // 如果都是文件夾，按 L 後面的數字排序
+        if (a.item.type === 'directory' && b.item.type === 'directory') {
+            // 先按 L 後面的數字排序
+            if (a.levelNumber !== b.levelNumber) {
+                return a.levelNumber - b.levelNumber;
+            }
+            // 如果 L 數字相同，則按名稱排序
+            return a.name.localeCompare(b.name);
+        }
+        // 如果都是文件，按題號排序
+        if (a.item.type === 'file' && b.item.type === 'file') {
+            return a.questionNumber - b.questionNumber;
+        }
+        // 文件夾優先
+        return a.item.type === 'directory' ? -1 : 1;
+    });
+    
+    // 渲染排序後的條目
+    entries.forEach(({name, item}) => {
         if (item.type === 'directory') {
-            // 渲染文件夹
             html += `
                 <div class="folder">
                     <div class="folder-title" data-path="${item.path || name}">
@@ -100,7 +134,6 @@ function renderDirectoryStructure(structure) {
                 </div>
             `;
         } else if (item.type === 'file' && item.fileType === 'ts') {
-            // 只渲染 .ts 文件
             html += `
                 <div class="generator-item" data-path="${item.path}">
                     <span class="icon file-icon">📄</span>
