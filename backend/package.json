@@ -13,6 +13,8 @@
   "dependencies": {
     "@types/mathjs": "^9.4.2",
     "algebra.js": "^0.2.6",
+    "algebrite": "^1.4.0",
+    "nerdamer": "^1.1.13",
     "polynomial": "^1.4.5",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

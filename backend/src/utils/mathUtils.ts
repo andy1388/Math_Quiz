@@ -4,6 +4,9 @@
 
 import { create, all } from 'mathjs';
 import type { Fraction, MathJsStatic } from 'mathjs';
+const algebrite = require('algebrite');
+const nerdamer = require('nerdamer');
+require('nerdamer/all');
 
 // 创建一个新的 math 实例
 const math: MathJsStatic = create(all);
@@ -2295,3 +2298,44 @@ export function shuffleArray<T>(array: T[]): T[] {
     }
     return newArray;
 }
+
+/**
+ * 代數運算工具
+ */
+export const AlgebraUtils = {
+    /**
+     * 展開代數式
+     */
+    expand(expression: string): string {
+        try {
+            return algebrite.expand(expression).toString();
+        } catch (error) {
+            console.error('Expansion error:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * 因式分解
+     */
+    factor(expression: string): string {
+        try {
+            return algebrite.factor(expression).toString();
+        } catch (error) {
+            console.error('Factorization error:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * 解方程
+     */
+    solveEquation(equation: string, variable: string = 'x'): string[] {
+        try {
+            return nerdamer.solve(equation, variable).toString().split(',');
+        } catch (error) {
+            console.error('Equation solving error:', error);
+            throw error;
+        }
+    }
+};
